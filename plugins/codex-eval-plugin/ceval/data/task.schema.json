@@ -116,6 +116,12 @@
           }
         }
       }
+    },
+    "human_summary": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 1000,
+      "description": "Two or three plain-language sentences explaining the software development workflow and behavior tested, separate from execution instructions."
     }
   }
 }

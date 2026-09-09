@@ -11,11 +11,12 @@
       <div class="model-filter"><span id="tasks-label">Tasks</span><details id="tasks-menu"><summary id="tasks-summary" aria-labelledby="tasks-label tasks-summary">All tasks</summary><div id="task-options" class="model-options"></div></details></div>
       <div class="model-filter"><span id="models-label">Models</span><details id="models-menu"><summary id="models-summary" aria-labelledby="models-label models-summary">All models</summary><div id="model-options" class="model-options"></div></details></div>
       <div class="axis-controls">
-      <label>X-axis<select id="x"></select></label>
-      <label>Y-axis<select id="y"></select></label>
+      <div class="axis-setting"><label>X-axis<select id="x"></select></label><label class="scale-toggle"><input id="log-x" type="checkbox">Log scale</label></div>
+      <div class="axis-setting"><label>Y-axis<select id="y"></select></label><label class="scale-toggle"><input id="log-y" type="checkbox">Log scale</label></div>
       </div>
     </div>
     <div class="legend"><span class="codex-key">● <span>Codex</span></span><span class="claude-key">● <span>Claude Code</span></span></div>
+    <div id="plot-note" class="plot-note" role="status" hidden></div>
     <div class="plot-wrap"><svg id="plot" viewBox="0 0 1200 560" role="group" aria-label="Evaluation attempts. Focus a point to inspect its details."></svg><div id="tooltip" class="tooltip" role="tooltip" hidden></div></div>
   </section>
   <section class="panel task-panel" aria-labelledby="task-table-title"><h2 id="task-table-title">Task summaries</h2><div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Description</th><th scope="col">Difficulty</th><th scope="col">Development type</th></tr></thead><tbody id="task-summaries"></tbody></table></div></section>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-09-09
+
+- Add independent logarithmic axis toggles with explicit zero-value handling and clearer nested, provider-colored checkboxes.
+- Add select-all and group toggles for task/difficulty and model/provider selections.
+- Add authored two-to-three sentence workflow summaries, separate from detailed agent instructions.
+- Plot per-run/task/model/effort averages across repeats, include failed attempts, preserve missing measurements, and show pass/repeat counts. All new runs, including smoke runs, default to three repeats.
+- Add `configure` for explicit model IDs, task IDs, and repeat counts; preserve full task portfolios and invalidate prior approvals when execution settings change.
+- Add `dashboard --scope` for independent simulation dashboards and write per-task averages alongside reports.
+
 ## 0.2.3 — 2026-09-09
 
 - Add model checkboxes and task checkboxes grouped by difficulty, supporting any combination.

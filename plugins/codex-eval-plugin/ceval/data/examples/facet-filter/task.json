@@ -19,5 +19,6 @@
     "kind": "original",
     "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
     "sources": []
-  }
+  },
+  "human_summary": "This task tests building reliable filtering and sorting for a frontend data view. The developer must combine several filters, preserve predictable ordering, and keep the original data unchanged."
 }

@@ -74,6 +74,23 @@
           }
         }
       }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_ids"
+      ],
+      "properties": {
+        "task_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "description": "Schema 2 customer suites require all three difficulty tiers and provenance for every declared workflow. Schema 1 remains readable for existing runs. Runtime validation additionally checks hashes, source links, paths, and native settings.",

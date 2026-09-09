@@ -19,5 +19,6 @@
     "kind": "original",
     "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
     "sources": []
-  }
+  },
+  "human_summary": "This task tests maintaining an interactive search feature when requests overlap and users change their selection. The developer must prevent stale results, handle cancellation and cleanup, and preserve keyboard navigation."
 }

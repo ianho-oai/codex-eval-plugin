@@ -9,6 +9,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 import zipfile
@@ -131,7 +132,7 @@ def self_check():
             'status': 'passed', 'note': 'Structure validation only. Run validate --check-graders and unit/integration tests for behavior.'}
 
 
-def smoke(provider, output, model=None, binary=None):
+def smoke(provider, output, model=None, binary=None, repeats=3):
     """One-command live check using only the bundled original, trusted slug task."""
     destination = Path(output).resolve()
     require(not destination.exists(), 'Smoke output exists; choose a new directory to preserve the earlier run')
@@ -147,7 +148,7 @@ def smoke(provider, output, model=None, binary=None):
     path = destination/'suite/suite.json'
     s = read_json(path)
     selected_model = model or ('gpt-5.6-luna' if provider == 'codex' else 'claude-sonnet-5')
-    s.update(tasks=['tasks/slug-normalization'], repeats=1,
+    s.update(tasks=['tasks/slug-normalization'], repeats=repeats,
              matrix=[{'provider':provider, 'model':selected_model, 'efforts':['default' if 'haiku' in selected_model else 'medium']}])
     s['execution'][provider+'_bin'] = exe
     s['execution'][provider+'_version'] = match.group()
@@ -194,6 +195,42 @@ def demo(output):
     return {'output': str(out.resolve()), 'simulation': True, 'rows': len(rows)}
 
 
+def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False):
+    path, s, _, _, _ = load_suite(suite)
+    catalog = read_json(DATA/'models.json')['models']
+    if all_models:
+        selected_models = [m['provider']+':'+m['id'] for m in catalog if m.get('default')]
+    if selected_models is not None:
+        known = {(m['provider'],m['id']):[m['default_effort']] for m in catalog}
+        known.update({(m['provider'],m['model']):m['efforts'] for m in s['matrix']})
+        matrix = []
+        for value in selected_models:
+            parts = value.split(':', 1)
+            require(len(parts) == 2 and tuple(parts) in known, 'Unknown model selection; use provider:exact-model-id from the catalog or suite')
+            provider, model = parts
+            matrix.append({'provider':provider,'model':model,'efforts':known[(provider,model)]})
+        s['matrix'] = matrix
+    if all_tasks:
+        s.pop('selection', None)
+    elif task_ids is not None:
+        s['selection'] = {'task_ids':task_ids}
+    if repeats is not None:
+        s['repeats'] = repeats
+    # Validate the complete proposed suite before replacing the customer's file.
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix='.configure-', dir=path.parent, delete=False) as f:
+        json.dump(s, f)
+        candidate = Path(f.name)
+    try:
+        _, _, tasks, _, seal = load_suite(candidate)
+    finally:
+        candidate.unlink(missing_ok=True)
+    write_json(path, s)
+    return {'suite':str(path), 'matrix':s['matrix'],
+            'task_ids':s.get('selection', {}).get('task_ids', [t['spec']['id'] for t in tasks]),
+            'repeats':s['repeats'], 'scheduled_cells':len(schedule(s,tasks)), 'seal':seal,
+            'next':'Run validate --check-graders, review plan, then approve before execution. Prior approvals do not authorize changed settings.'}
+
+
 def parser():
     p = argparse.ArgumentParser(prog='codex-eval', description='Discover, freeze, run, grade, and compare native coding agents.')
     p.add_argument('--version', action='version', version=__version__)
@@ -203,6 +240,9 @@ def parser():
         a = sub.add_parser(name); a.add_argument('suite')
         if name == 'validate': a.add_argument('--check-graders', action='store_true')
         if name == 'approve': a.add_argument('--by', required=True)
+    a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
+    m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
+    t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
     a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true')
     a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
@@ -212,11 +252,11 @@ def parser():
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')
-    a = sub.add_parser('dashboard'); a.add_argument('run_dir', nargs='*', default=['evaluations'], help='Evaluation workspace(s); defaults to all live runs under evaluations/'); a.add_argument('--port', type=int, default=8765)
+    a = sub.add_parser('dashboard'); a.add_argument('run_dir', nargs='*', default=['evaluations'], help='Evaluation workspace(s); defaults to all live runs under evaluations/'); a.add_argument('--port', type=int, default=8765); a.add_argument('--scope', action='store_true', help='Show only the supplied run(s) or directory tree; do not expand to the entire evaluation workspace')
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
     a = sub.add_parser('image-pin'); a.add_argument('suite'); a.add_argument('--image', required=True)
-    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary')
+    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary'); a.add_argument('--repeats', type=int, default=3)
     return p
 
 
@@ -240,6 +280,7 @@ def main(argv=None):
                 result = {'seal': seal, 'suite': s, 'tasks': [t['spec'] for t in tasks],
                           'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
                           'note': 'Review tasks, limits, CLI versions, exact model IDs, rates, and execution mode before approval. Model support and API access need doctor/live validation.'}
+        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks)
         elif c == 'run': result = run(a.suite, a.output, a.resume)
         elif c == 'models': result = models(a.provider, a.refresh)
         elif c == 'benchmarks': result = read_json(DATA/'benchmarks.json')
@@ -254,11 +295,11 @@ def main(argv=None):
             result = {'output': a.output, 'coverage_note': result['coverage_note']}
         elif c == 'snapshot': result = snapshot(a.repo, a.commit, a.output)
         elif c == 'report': result = report(a.run_dir)
-        elif c == 'dashboard': serve(a.run_dir, a.port); return 0
+        elif c == 'dashboard': serve(a.run_dir, a.port, scope=a.scope); return 0
         elif c == 'export': result = export_plugin(a.output)
         elif c == 'self-check': result = self_check()
         elif c == 'demo': result = demo(a.output)
-        elif c == 'smoke': result = smoke(a.provider, a.output, a.model, a.binary)
+        elif c == 'smoke': result = smoke(a.provider, a.output, a.model, a.binary, a.repeats)
         elif c == 'image-pin':
             s = read_json(a.suite)
             r = execute(['docker', 'image', 'inspect', a.image, '--format', '{{.Id}}'], None, clean_env(), 30)

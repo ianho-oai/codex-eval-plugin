@@ -58,6 +58,8 @@ tasks/my-task/
   grader/          # immutable verifier, never mounted to agent
 ```
 
+`task.json` also needs a `human_summary` for newly authored tasks: two or three plain-language sentences explaining the development workflow and the behavior under test. Keep detailed implementation requirements in `instruction.md`; the dashboard uses the shorter summary.
+
 `task.json` contains `id`, `use_case`, `difficulty`, `difficulty_rationale`, `benchmark_refs`, `allowed_paths`, and `grader`. See `task.schema.json` for the schema. Grader argv uses `{candidate}` and `{grader}` placeholders and runs with no shell interpolation. Return exit 0 only when every requirement and regression passes, 1 for a behavioral failure, and another code for infrastructure/setup failure. Avoid catching every exception as success or silently skipping dependencies. Print short check results without secrets.
 
 ## Verifier quality

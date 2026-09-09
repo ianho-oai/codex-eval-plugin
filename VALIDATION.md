@@ -59,3 +59,10 @@ The command checks the installed version and capabilities, runs one original tru
 - Self-check, JavaScript syntax, export, and extracted standalone self-check pass.
 - Browser review verified all 21 points and 10 deduplicated task summaries; task checkboxes grouped by difficulty; arbitrary model combinations; table filtering; separate axis row; five shared metrics; larger rounded tick labels; label toggle without connectors; six-field popup; and consistent grey for all four failures. No browser console errors observed.
 - Descriptions for older runs come from matching local task definitions when available; new runs snapshot descriptions. This release does not rerun or alter paid evaluations.
+
+## 0.3.0 configurable repeated evaluations — 2026-09-09
+
+- 40 offline tests pass, including model/task/repeat selection, approval invalidation, invalid-selection rollback, scoped dashboards, separate-run averages, partial repeats, failure-inclusive means, and missing telemetry. Self-check, JavaScript syntax, export, and extracted standalone self-check pass.
+- Browser checks verify global/difficulty bulk selections, nested groups, provider-colored checkboxes, short summary fallback, independent log axes, finite coordinates, and clear mean labels. No console errors observed.
+- Three new customer-role simulations prepared nine tasks with authored two-sentence summaries. Nine starting baselines fail, nine oracles pass, and sixteen targeted mutants are rejected. Evidence and fictional dialogues are ignored/local.
+- The expanded live plan has 108 Codex attempts and 54 Claude attempts (three repeats for six models across nine tasks). The v0.3.0 engine and suites are frozen separately. Codex execution has started; Claude requires the user-terminal command because this session's host disallows Anthropic. Completion and current coverage must be read from local round2 results; preparation alone is not a live result.

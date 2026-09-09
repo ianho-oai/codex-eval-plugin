@@ -12,7 +12,7 @@ One Codex skill discovers the customer's workflows and designs representative ta
 ./eval dashboard evaluations/demo
 ```
 
-Open **http://127.0.0.1:8765**. The dark dashboard has task checkboxes grouped by difficulty, model checkboxes, shared cost/latency/token axes on a separate row with rounded ticks, six-field hover/focus popups, toggleable model labels, grey failed attempts, a task summary table, and CSV export. Demo points are explicitly synthetic.
+Open **http://127.0.0.1:8765**. The dark dashboard has task checkboxes grouped by difficulty with select-all toggles, model checkboxes, mean cost/latency/token axes on a separate row with rounded ticks and independent log-scale toggles, six-field hover/focus popups, toggleable model labels, grey failed attempts, a plain-language task summary table, and CSV export. Demo points are explicitly synthetic.
 
 Python 3.11+ is required. The three original example graders also use Node.js 18+. The orchestration and dashboard have no Python/npm runtime dependencies.
 
@@ -148,3 +148,31 @@ The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invo
 ### Dashboard design
 
 The chart is the main view. Model-name labels use Codex blue (`#339cff`, blue300 in the [OpenAI developer stylesheet](https://developers.openai.com/_astro/PageLayout.BSuKgUPa.css)) and Claude orange. Typography prefers locally installed OpenAI Sans, the family identified in [OpenAI design guidelines](https://openai.com/brand/), with system sans-serif fallbacks; no font download is required. Summary tables, explanatory sections, and run-count badges are omitted from the UI. Detailed telemetry and source provenance remain available through CLI reports, JSON, and CSV.
+
+### Choose models, tasks, and repeats
+
+Configure an authored suite before validation and approval. Repeat `--model` and `--task` for any combination:
+
+```sh
+./eval configure evaluations/customer/suite.json \
+  --model codex:gpt-5.6-sol --model claude:claude-sonnet-5 \
+  --task TASK_ID --task ANOTHER_TASK_ID --repeats 3
+./eval validate evaluations/customer/suite.json --check-graders
+./eval plan evaluations/customer/suite.json
+./eval approve evaluations/customer/suite.json --by "Customer reviewer"
+./eval run evaluations/customer/suite.json --output evaluations/customer/run
+```
+
+`--all-tasks` clears the execution subset; the full easy/medium/hard portfolio stays intact. `--all-models` restores the default catalog matrix. Unknown selections are rejected without modifying the suite. Changes need renewed validation and approval.
+
+All new suites and smoke commands default to three fresh attempts per task/model configuration. Charts show arithmetic mean cost, latency, and tokens, including failed attempts. Popups show the pass count; any failure remains grey. Partial groups are labelled pending. Missing telemetry stays unavailable rather than becoming zero. Separate runs and effort settings are never averaged together; raw attempts remain in CSV/results, and `report` writes `averages.json`.
+
+Give each customer simulation its own directory and dashboard, combining its provider runs:
+
+```sh
+./eval dashboard evaluations/simulations/interview --scope --port 8881
+./eval dashboard evaluations/simulations/history --scope --port 8882
+./eval dashboard evaluations/simulations/github --scope --port 8883
+```
+
+New task designs include `human_summary`: two or three plain-language sentences about the development workflow and what the test exercises. This supplies the table; detailed agent requirements remain in `instruction.md`. Older runs use a concise metadata-based fallback when an authored summary is unavailable.

@@ -126,6 +126,8 @@ def load_suite(path):
     require(isinstance(s, dict) and s.get('schema_version') in (1, 2), 'Unsupported suite schema')
     if s['schema_version'] == 2:
         fields |= {'purpose', 'workflows'}
+    if 'selection' in s:
+        fields.add('selection')
     require(set(s) == fields, f'Suite fields must be exactly {sorted(fields)}')
     if s['schema_version'] == 2:
         require(s['purpose'] in ('customer', 'smoke'), 'Suite purpose must be customer or smoke')
@@ -169,12 +171,14 @@ def load_suite(path):
         root = child(path.parent, rel)
         t = read_json(root / 'task.json')
         required = {'id', 'use_case', 'difficulty', 'difficulty_rationale', 'benchmark_refs', 'allowed_paths', 'grader'}
-        require(isinstance(t, dict) and required <= set(t) <= required | {'workflow_id', 'provenance'}, f'Invalid task fields: {rel}')
+        require(isinstance(t, dict) and required <= set(t) <= required | {'workflow_id', 'provenance', 'human_summary'}, f'Invalid task fields: {rel}')
         require(isinstance(t['id'], str) and ID.fullmatch(t['id']) and t['id'] not in ids, 'Invalid or duplicate task id')
         ids.add(t['id'])
         require(t['difficulty'] in ('easy', 'medium', 'hard'), 'Difficulty must be easy, medium, hard')
         for k in ('use_case', 'difficulty_rationale'):
             require(isinstance(t[k], str) and bool(t[k].strip()), f'Missing {k}')
+        if 'human_summary' in t:
+            require(isinstance(t['human_summary'], str) and 40 <= len(t['human_summary'].strip()) <= 1000, 'human_summary must be 40..1000 characters of plain-language workflow description')
         refs = {x['id'] for x in read_json(DATA / 'benchmarks.json')['benchmarks']}
         require(isinstance(t['benchmark_refs'], list) and all(x in refs for x in t['benchmark_refs']), 'Unknown benchmark references')
         from .catalog import validate_provenance
@@ -198,6 +202,12 @@ def load_suite(path):
     from .catalog import coverage
     portfolio_coverage = coverage(s, tasks)
     require(not portfolio_coverage['missing'], 'Missing workflow difficulty tiers: '+str(portfolio_coverage['missing']))
+    if 'selection' in s:
+        selected = s['selection']
+        require(isinstance(selected, dict) and set(selected) == {'task_ids'}, 'selection must contain only task_ids')
+        task_ids = selected['task_ids']
+        require(isinstance(task_ids, list) and task_ids and all(isinstance(x, str) for x in task_ids), 'Select at least one task ID')
+        require(len(set(task_ids)) == len(task_ids) and set(task_ids) <= ids, 'Unknown or duplicate selected task IDs')
     frozen = {'suite': s, 'task_hashes': {t['spec']['id']: t['hash'] for t in tasks},
               'pricing': pricing, 'engine': engine_digest(), 'version': __version__}
     return path, s, tasks, pricing, digest(frozen)

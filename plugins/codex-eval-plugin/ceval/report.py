@@ -13,17 +13,24 @@ from urllib.parse import urlparse
 from .core import DATA, EvalError, digest, load_suite, read_json, require, write_json
 
 
+def legacy_summary(spec):
+    workflow = spec.get('use_case') or 'the recorded development workflow'
+    rationale = (spec.get('difficulty_rationale') or 'The developer must implement the requested behavior and pass the automated checks').strip().rstrip('.')
+    return f"This task tests {workflow[0].lower() + workflow[1:]}. {rationale}."
+
+
 def describe_tasks(tasks):
     return [{'task_id': task['spec']['id'], 'difficulty': task['spec']['difficulty'],
              'use_case': task['spec']['use_case'],
              'description': (task['root'] / 'instruction.md').read_text().strip(),
+             'human_summary': task['spec'].get('human_summary') or legacy_summary(task['spec']),
              'difficulty_rationale': task['spec'].get('difficulty_rationale', '')}
             for task in tasks]
 
 
 def task_summaries(root, run, rows):
     if 'task_summaries' in run:
-        return run['task_summaries']
+        return [dict(t, human_summary=t.get('human_summary') or legacy_summary(t)) for t in run['task_summaries']]
     # Older runs did not snapshot descriptions. Use only a matching nearby suite;
     # descriptive metadata never alters signed attempt records or their scores.
     candidates = [root / 'suite.json', root.parent / 'suite.json']
@@ -42,6 +49,7 @@ def task_summaries(root, run, rows):
     return list({(r['task_id'], r.get('difficulty')):
                  {'task_id': r['task_id'], 'difficulty': r.get('difficulty'),
                   'use_case': r.get('use_case') or 'Not recorded',
+                  'human_summary': legacy_summary(r),
                   'description': 'Task description was not saved with this run.'}
                  for r in rows}.values())
 
@@ -56,10 +64,10 @@ def dataset(root):
             require(read_json(f) == r and read_json(f.parent / 'result.sha256.json').get('sha256') == digest(r), 'Result integrity check failed')
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
-    return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'summary': summarize(rows, len(run.get('schedule', [])))}
+    return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
 
 
-def dashboard_dataset(roots):
+def dashboard_dataset(roots, *, scope=False):
     if isinstance(roots, (str, Path)):
         roots = [roots]
     discovered = []
@@ -68,7 +76,7 @@ def dashboard_dataset(roots):
         if (root/'run.json').is_file():
             # Existing per-run commands also show the whole evaluation workspace.
             workspace = next((p for p in root.parents if p.name == 'evaluations'), None)
-            if workspace and not read_json(root/'run.json').get('simulation'):
+            if workspace and not scope and not read_json(root/'run.json').get('simulation'):
                 root = workspace
             else:
                 discovered.append(root)
@@ -91,7 +99,7 @@ def dashboard_dataset(roots):
     require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
     if len(roots) == 1:
         return dataset(roots[0])
-    rows, sources, stopped, tasks = [], [], [], []
+    rows, sources, stopped, tasks, averages = [], [], [], [], []
     scheduled = 0
     for root in roots:
         data = dataset(root)  # Verify every original artifact before combining views.
@@ -101,13 +109,41 @@ def dashboard_dataset(roots):
                         'state': run.get('state'), 'execution': run['suite'].get('execution')})
         rows.extend(dict(row, source_run=source) for row in data['rows'])
         tasks.extend(dict(task, source_run=source) for task in data['tasks'])
+        averages.extend(dict(row, source_run=source) for row in data['averages'])
         scheduled += data['summary']['scheduled']
         if run.get('stop_reason'):
             stopped.append(f"{run['suite']['name']}: {run['stop_reason']}")
     return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
             'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
             'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
-            'rows': rows, 'tasks': tasks, 'summary': summarize(rows, scheduled)}
+            'rows': rows, 'tasks': tasks, 'averages': averages, 'summary': summarize(rows, scheduled)}
+
+
+MEAN_FIELDS = ('cost_usd', 'latency_seconds', 'input_tokens', 'output_tokens', 'cache_read_tokens')
+
+
+def average_attempts(rows, run):
+    key = lambda r: (r.get('task_id'), r.get('provider'), r.get('model'), r.get('effort'))
+    scheduled, groups = {}, {}
+    for cell in run.get('schedule', []):
+        scheduled[key(cell)] = scheduled.get(key(cell), 0) + 1
+    for row in rows:
+        groups.setdefault(key(row), []).append(row)
+    averages = []
+    for identity, group in groups.items():
+        first = group[0]
+        expected = scheduled.get(identity, run.get('suite', {}).get('repeats', len(group)))
+        successes = sum(r.get('completion') == 1 for r in group)
+        point = {k: first.get(k) for k in ('task_id', 'difficulty', 'provider', 'model', 'effort', 'execution_mode')}
+        point.update(attempts=len(group), expected_attempts=expected, successes=successes,
+                     completion=int(successes == expected and len(group) == expected),
+                     status='pending' if len(group) < expected else 'passed' if successes == len(group) else 'failed',
+                     valid=all(r.get('valid') for r in group), simulation=bool(run.get('simulation')))
+        for field in MEAN_FIELDS:
+            values = [r.get(field) for r in group]
+            point[field] = statistics.mean(values) if all(type(v) in (int, float) and math.isfinite(v) for v in values) else None
+        averages.append(point)
+    return averages
 
 
 def summarize(rows, scheduled):
@@ -158,13 +194,15 @@ def csv_text(rows):
 def report(root):
     d = dataset(root)
     write_json(Path(root) / 'summary.json', d['summary'])
+    write_json(Path(root) / 'averages.json', {'rows': d['averages']})
     (Path(root) / 'results.csv').write_text(csv_text(d['rows']))
     return d['summary']
 
 
 class Handler(BaseHTTPRequestHandler):
-    def __init__(self, *args, root, **kwargs):
+    def __init__(self, *args, root, scope=False, **kwargs):
         self.root = root
+        self.scope = scope
         super().__init__(*args, **kwargs)
 
     def log_message(self, *args):
@@ -178,9 +216,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             if path == '/api/results':
-                data, mime = json.dumps(dashboard_dataset(self.root)).encode(), 'application/json'
+                data, mime = json.dumps(dashboard_dataset(self.root, scope=self.scope)).encode(), 'application/json'
             elif path == '/results.csv':
-                data, mime = csv_text(dashboard_dataset(self.root)['rows']).encode(), 'text/csv'
+                data, mime = csv_text(dashboard_dataset(self.root, scope=self.scope)['rows']).encode(), 'text/csv'
             elif path in ('/', '/app.js', '/style.css'):
                 p = DATA / 'web' / {'/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css'}[path]
                 data, mime = p.read_bytes(), {'/': 'text/html', '/app.js': 'text/javascript', '/style.css': 'text/css'}[path]
@@ -200,11 +238,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-def serve(root, port):
+def serve(root, port, scope=False):
     roots = [root] if isinstance(root, (str, Path)) else root
     roots = [Path(p).resolve() for p in roots]
-    dashboard_dataset(roots)
-    server = ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, root=roots))
+    dashboard_dataset(roots, scope=scope)
+    server = ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, root=roots, scope=scope))
     print(f'Dashboard: http://127.0.0.1:{server.server_port}', flush=True)
     try:
         server.serve_forever()

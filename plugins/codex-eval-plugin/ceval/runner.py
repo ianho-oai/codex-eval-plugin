@@ -121,7 +121,10 @@ def validate_graders(path):
 
 def schedule(s, tasks):
     cells = []
+    selected = s.get('selection', {}).get('task_ids')
     for t in tasks:
+        if selected is not None and t['spec']['id'] not in selected:
+            continue
         for m in s['matrix']:
             for effort in m['efforts']:
                 for repeat in range(1, s['repeats']+1):

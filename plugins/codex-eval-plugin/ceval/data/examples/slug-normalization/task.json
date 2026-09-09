@@ -19,5 +19,6 @@
     "kind": "original",
     "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
     "sources": []
-  }
+  },
+  "human_summary": "This task tests a small backend bug fix that makes text safe to use in web addresses. The developer must handle accented characters, punctuation, and invalid inputs while preserving the existing function interface."
 }

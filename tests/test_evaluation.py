@@ -12,12 +12,12 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'plugins/codex-eval-plugin'))
-from ceval.cli import initialize, main, export_plugin, demo, load_local_keys
+from ceval.cli import initialize, main, export_plugin, demo, load_local_keys, parser, configure
 from ceval.core import DATA, EvalError, child, digest, load_suite, read_json, tree, write_json, allowed_changes
 from ceval.telemetry import normalize
 from ceval.runner import schedule, validate_graders, execute, clean_env, run, native_argv
 from ceval.discovery import history, user_text, timestamp
-from ceval.report import dataset, dashboard_dataset, summarize, csv_text
+from ceval.report import dataset, dashboard_dataset, summarize, csv_text, average_attempts
 
 
 class LocalKeyTests(unittest.TestCase):
@@ -78,6 +78,24 @@ class SuiteTests(Workspace):
         checks = validate_graders(self.path)
         self.assertEqual(len(checks),3)
         self.assertTrue(all(c['baseline']['exit_code']==1 and c['oracle']['exit_code']==0 for c in checks))
+
+    def test_configure_models_tasks_and_repeats_is_validated_and_sealed(self):
+        self.approve()
+        result = configure(self.path, ['codex:gpt-5.6-luna','claude:claude-sonnet-5'], ['slug-normalization'], 3)
+        _, suite, tasks, _, seal = load_suite(self.path)
+        self.assertEqual(len(tasks), 3)  # Preserve the full portfolio.
+        self.assertEqual(len(schedule(suite, tasks)), 6)
+        self.assertEqual({c['task_id'] for c in schedule(suite,tasks)}, {'slug-normalization'})
+        self.assertNotEqual(read_json(self.suite_dir/'approval.json')['seal'], seal)
+        self.assertEqual(result['repeats'], 3)
+        before = self.path.read_bytes()
+        with self.assertRaises(EvalError):configure(self.path, task_ids=['unknown-task'])
+        self.assertEqual(self.path.read_bytes(), before)
+        with self.assertRaises(EvalError):configure(self.path, selected_models=['codex:unknown-model'])
+        self.assertEqual(self.path.read_bytes(), before)
+        configure(self.path, all_tasks=True)
+        _, suite, tasks, _, _ = load_suite(self.path)
+        self.assertEqual(len(schedule(suite,tasks)), 18)
 
     def test_seeded_schedule_covers_cartesian_product(self):
         self.s['repeats']=4
@@ -229,6 +247,8 @@ class RunnerTests(Workspace):
         descriptions = dataset(out)['tasks']
         self.assertEqual(len(descriptions), 1)
         self.assertTrue(descriptions[0]['description'])
+        self.assertTrue(descriptions[0]['human_summary'])
+        self.assertNotEqual(descriptions[0]['human_summary'], descriptions[0]['description'])
         (self.suite_dir/'tasks/slug-normalization/instruction.md').write_text('Changed after run')
         self.assertEqual(dataset(out)['tasks'], descriptions)
 
@@ -281,6 +301,45 @@ class RunnerTests(Workspace):
 
 
 class DiscoveryAndReportTests(Workspace):
+    def test_repeat_averages_include_failures_and_preserve_missing_telemetry(self):
+        rows = [{'task_id':'one','provider':'codex','model':'test','effort':'medium',
+                 'completion':int(i != 1),'valid':True,'cost_usd':cost,'latency_seconds':latency,
+                 'input_tokens':100,'output_tokens':10,'cache_read_tokens':0}
+                for i, (cost, latency) in enumerate([(1, 10), (2, 20), (6, 60)])]
+        run = {'suite':{'repeats':3}, 'schedule':[dict(r, repeat=i) for i,r in enumerate(rows)]}
+        point = average_attempts(rows, run)[0]
+        self.assertEqual((point['cost_usd'],point['latency_seconds']), (3, 30))
+        self.assertEqual((point['completion'],point['successes'],point['attempts']), (0,2,3))
+        self.assertEqual(point['cache_read_tokens'], 0)
+        partial = average_attempts(rows[:1], run)[0]
+        self.assertEqual((partial['status'],partial['expected_attempts'],partial['completion']), ('pending',3,0))
+        rows[1]['cost_usd'] = None
+        self.assertIsNone(average_attempts(rows, run)[0]['cost_usd'])
+        self.assertEqual(parser().parse_args(['smoke','--provider','codex','--output','unused']).repeats, 3)
+        self.assertEqual(read_json(self.path)['repeats'], 1)  # Explicit fixture override survives.
+
+    def test_dashboard_scope_keeps_one_simulation_and_averages_runs_separately(self):
+        workspace = self.root/'evaluations'
+        for name in ('interview','github'):
+            out = workspace/name/'run'
+            demo(out)
+            manifest = read_json(out/'run.json'); manifest['simulation'] = False
+            write_json(out/'run.json', manifest)
+            rows = read_json(out/'results.json')['rows']
+            for row in rows:
+                row['simulation'] = False
+                dest = out/'attempts'/row['cell_id']
+                write_json(dest/'result.json', row)
+                write_json(dest/'result.sha256.json', {'sha256':digest(row)})
+            write_json(out/'results.json', {'rows':rows})
+        scoped = dashboard_dataset(workspace/'interview'/'run', scope=True)
+        combined = dashboard_dataset(workspace/'interview'/'run')
+        self.assertEqual(len(scoped['rows']),18)
+        self.assertEqual(len(scoped['averages']),6)
+        self.assertEqual(len(combined['rows']),36)
+        self.assertEqual(len(combined['averages']),12)
+        self.assertEqual(len({r['source_run'] for r in combined['averages']}),2)
+
     def test_combined_dashboard_retains_sources_and_deduplicates_directories(self):
         one, two = self.root/'one', self.root/'two'
         demo(one); demo(two)
