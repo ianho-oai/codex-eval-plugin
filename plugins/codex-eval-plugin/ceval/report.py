@@ -10,7 +10,40 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .core import DATA, EvalError, digest, read_json, require, write_json
+from .core import DATA, EvalError, digest, load_suite, read_json, require, write_json
+
+
+def describe_tasks(tasks):
+    return [{'task_id': task['spec']['id'], 'difficulty': task['spec']['difficulty'],
+             'use_case': task['spec']['use_case'],
+             'description': (task['root'] / 'instruction.md').read_text().strip(),
+             'difficulty_rationale': task['spec'].get('difficulty_rationale', '')}
+            for task in tasks]
+
+
+def task_summaries(root, run, rows):
+    if 'task_summaries' in run:
+        return run['task_summaries']
+    # Older runs did not snapshot descriptions. Use only a matching nearby suite;
+    # descriptive metadata never alters signed attempt records or their scores.
+    candidates = [root / 'suite.json', root.parent / 'suite.json']
+    candidates.extend(sorted(root.parent.glob('*/suite.json')))
+    for path in candidates:
+        try:
+            if path.is_file() and read_json(path) == run.get('suite'):
+                _, _, tasks, _, _ = load_suite(path)
+                return [dict(t, metadata_source='local_task_definition') for t in describe_tasks(tasks)]
+        except (EvalError, OSError, ValueError, KeyError, TypeError):
+            continue
+    if run.get('simulation'):
+        tasks = [{'spec': read_json(p / 'task.json'), 'root': p}
+                 for p in sorted((DATA / 'examples').iterdir()) if (p / 'task.json').is_file()]
+        return describe_tasks(tasks)
+    return list({(r['task_id'], r.get('difficulty')):
+                 {'task_id': r['task_id'], 'difficulty': r.get('difficulty'),
+                  'use_case': r.get('use_case') or 'Not recorded',
+                  'description': 'Task description was not saved with this run.'}
+                 for r in rows}.values())
 
 
 def dataset(root):
@@ -23,7 +56,7 @@ def dataset(root):
             require(read_json(f) == r and read_json(f.parent / 'result.sha256.json').get('sha256') == digest(r), 'Result integrity check failed')
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
-    return {'schema_version': 1, 'run': run, 'rows': rows, 'summary': summarize(rows, len(run.get('schedule', [])))}
+    return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'summary': summarize(rows, len(run.get('schedule', [])))}
 
 
 def dashboard_dataset(roots):
@@ -58,7 +91,7 @@ def dashboard_dataset(roots):
     require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
     if len(roots) == 1:
         return dataset(roots[0])
-    rows, sources, stopped = [], [], []
+    rows, sources, stopped, tasks = [], [], [], []
     scheduled = 0
     for root in roots:
         data = dataset(root)  # Verify every original artifact before combining views.
@@ -67,13 +100,14 @@ def dashboard_dataset(roots):
         sources.append({'id': source, 'name': run['suite']['name'],
                         'state': run.get('state'), 'execution': run['suite'].get('execution')})
         rows.extend(dict(row, source_run=source) for row in data['rows'])
+        tasks.extend(dict(task, source_run=source) for task in data['tasks'])
         scheduled += data['summary']['scheduled']
         if run.get('stop_reason'):
             stopped.append(f"{run['suite']['name']}: {run['stop_reason']}")
     return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
             'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
             'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
-            'rows': rows, 'summary': summarize(rows, scheduled)}
+            'rows': rows, 'tasks': tasks, 'summary': summarize(rows, scheduled)}
 
 
 def summarize(rows, scheduled):

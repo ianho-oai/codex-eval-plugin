@@ -52,3 +52,10 @@ The command checks the installed version and capabilities, runs one original tru
 - Browser review verified the chart-first layout, model-name labels, six-field point popups, keyboard activation/Escape, task/provider/outcome filtering, alternate axes, missing-measurement empty state, and zero removed summary tables. No console errors were observed.
 - Typography stays offline with OpenAI Sans when installed and system fallbacks. Codex uses blue300 from the checked official OpenAI developer palette; Claude retains orange.
 - UI simplification does not alter source runs, grading, prices, metrics, CSV, or report data. Frozen comparison engines remain in their original evaluation directories.
+
+## 0.2.3 dashboard controls and task descriptions — 2026-09-09
+
+- 37 offline tests pass, including run-time task-description snapshots, matching legacy definitions, combined source attribution, baseline/oracle checks, and unchanged signed result records.
+- Self-check, JavaScript syntax, export, and extracted standalone self-check pass.
+- Browser review verified all 21 points and 10 deduplicated task summaries; task checkboxes grouped by difficulty; arbitrary model combinations; table filtering; separate axis row; five shared metrics; larger rounded tick labels; label toggle without connectors; six-field popup; and consistent grey for all four failures. No browser console errors observed.
+- Descriptions for older runs come from matching local task definitions when available; new runs snapshot descriptions. This release does not rerun or alter paid evaluations.

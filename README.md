@@ -12,7 +12,7 @@ One Codex skill discovers the customer's workflows and designs representative ta
 ./eval dashboard evaluations/demo
 ```
 
-Open **http://127.0.0.1:8765**. The dark dashboard has task/provider/difficulty/outcome filters, configurable scatter-plot axes, six-field hover/focus popups, model-name labels, and CSV export. Demo points are explicitly synthetic.
+Open **http://127.0.0.1:8765**. The dark dashboard has task checkboxes grouped by difficulty, model checkboxes, shared cost/latency/token axes on a separate row with rounded ticks, six-field hover/focus popups, toggleable model labels, grey failed attempts, a task summary table, and CSV export. Demo points are explicitly synthetic.
 
 Python 3.11+ is required. The three original example graders also use Node.js 18+. The orchestration and dashboard have no Python/npm runtime dependencies.
 

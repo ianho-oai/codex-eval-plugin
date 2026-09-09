@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3 — 2026-09-09
+
+- Add model checkboxes and task checkboxes grouped by difficulty, supporting any combination.
+- Add a filtered task summary table with descriptions, difficulty, and development type; snapshot descriptions for new runs and recover available older definitions.
+- Remove the outcome filter and use consistent grey for failed attempts.
+- Add a top-right label toggle and remove label connector lines.
+- Put axis selectors on a separate row and limit them to shared total cost, end-to-end latency, input/output tokens, and cache-read tokens; enlarge axis text and use rounded, comma-formatted tick intervals.
+
 ## 0.2.2 — 2026-09-09
 
 - Simplify the dashboard to a workflow evaluation chart with X-axis/Y-axis controls and model labels.

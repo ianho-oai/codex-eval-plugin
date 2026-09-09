@@ -281,8 +281,10 @@ def run(path, output, resume=False):
     try:
         cells = schedule(s, tasks)
         if not (output / 'run.json').exists():
+            from .report import describe_tasks
             write_json(output / 'run.json', {'schema_version': 1, 'seal': seal, 'suite': s, 'pricing': pricing,
                        'approval': approval, 'schedule': cells, 'created_at': now(),
+                       'task_summaries': describe_tasks(tasks),
                        'host': {'platform': platform.platform(), 'python': platform.python_version()},
                        'state': 'running', 'simulation': False})
         pf = preflight(s)

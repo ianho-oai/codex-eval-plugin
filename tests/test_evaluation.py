@@ -226,6 +226,11 @@ class RunnerTests(Workspace):
         self.assertTrue(all(r['completion']==1 for r in first['rows']))
         self.assertEqual(read_json(out/'results.json'),first)
         self.assertEqual(dataset(out)['summary']['attempted'],2)
+        descriptions = dataset(out)['tasks']
+        self.assertEqual(len(descriptions), 1)
+        self.assertTrue(descriptions[0]['description'])
+        (self.suite_dir/'tasks/slug-normalization/instruction.md').write_text('Changed after run')
+        self.assertEqual(dataset(out)['tasks'], descriptions)
 
     def test_changed_suite_cannot_resume(self):
         self.prep()
@@ -289,6 +294,23 @@ class DiscoveryAndReportTests(Workspace):
         self.assertEqual((one/'results.json').read_bytes(), before)
         self.assertEqual(dashboard_dataset([one]), dataset(one))
         self.assertIn('source_run', csv_text(combined['rows']).splitlines()[0])
+
+    def test_legacy_task_descriptions_use_matching_suite_without_changing_results(self):
+        out = self.root/'legacy'
+        demo(out)
+        manifest = read_json(out/'run.json')
+        manifest['suite'] = self.s
+        write_json(out/'run.json', manifest)
+        before = (out/'results.json').read_bytes()
+        tasks = dataset(out)['tasks']
+        self.assertEqual(len(tasks), 3)
+        self.assertTrue(all(t['description'] and t['use_case'] for t in tasks))
+        self.assertTrue(all(t['metadata_source'] == 'local_task_definition' for t in tasks))
+        self.assertEqual((out/'results.json').read_bytes(), before)
+        other = self.root/'other'
+        demo(other)
+        combined = dashboard_dataset([out, other])
+        self.assertEqual({t['source_run'] for t in combined['tasks']}, {str(out.resolve()), str(other.resolve())})
 
     def test_combined_dashboard_checks_every_source_integrity(self):
         one, two = self.root/'one', self.root/'two'
