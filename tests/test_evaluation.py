@@ -423,8 +423,9 @@ class CatalogTests(Workspace):
         task['provenance']['sources'][0]['source_url'] = 'https://example.com/wrong'
         with self.assertRaisesRegex(EvalError, 'original source URL'):
             validate_provenance(task)
-        task['provenance'] = []
-        with self.assertRaises(EvalError): validate_provenance(task)
+        for malformed in ([], None):
+            task['provenance'] = malformed
+            with self.assertRaises(EvalError): validate_provenance(task)
 
     def test_legacy_suite_compatibility(self):
         self.s['schema_version'] = 1

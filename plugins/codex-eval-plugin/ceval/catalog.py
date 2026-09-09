@@ -88,9 +88,9 @@ def coverage(suite, tasks):
 
 
 def validate_provenance(task):
-    provenance = task.get('provenance')
-    if provenance is None:
+    if 'provenance' not in task:
         return
+    provenance = task['provenance']
     require(isinstance(provenance, dict) and set(provenance) == {'kind', 'rationale', 'sources'}, 'Provenance needs kind, rationale, and sources')
     require(provenance['kind'] in ('benchmark-inspired', 'original'), 'Unknown provenance kind')
     require(isinstance(provenance['rationale'], str) and provenance['rationale'].strip(), 'Explain task inspiration or original-design rationale')
