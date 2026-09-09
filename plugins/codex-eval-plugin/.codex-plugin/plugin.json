@@ -1,19 +1,19 @@
 {
   "name": "codex-eval-plugin",
-  "version": "0.2.0",
-  "description": "End-to-end customer-owned headless Codex versus Claude Code evaluation.",
+  "version": "0.2.1",
+  "description": "Explicitly requested headless evaluation tests comparing Codex with Claude Code.",
   "author": {
     "name": "Ian Ho"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Codex Eval",
-    "shortDescription": "Evaluate coding workflows end to end.",
-    "longDescription": "Discover representative workflows, approve verifiable tasks, compare native headless agents, and explore results in a reusable local dashboard.",
+    "shortDescription": "Run explicitly requested Codex comparisons.",
+    "longDescription": "Invoke only when the user explicitly wants to run evaluation tests comparing Codex against another coding agent. Discover workflows, approve tasks, run native Codex and Claude Code, and inspect measured results.",
     "developerName": "Ian Ho",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Help me evaluate Codex and Claude Code on my software development workflows."
+    "defaultPrompt": "Use $evaluate to run evaluation tests comparing Codex against Claude Code on my software development workflows."
   },
   "repository": "https://github.com/ianho-oai/codex-eval-plugin",
   "homepage": "https://github.com/ianho-oai/codex-eval-plugin",

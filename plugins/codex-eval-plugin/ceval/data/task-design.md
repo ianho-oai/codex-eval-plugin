@@ -62,6 +62,8 @@ tasks/my-task/
 
 ## Verifier quality
 
+State ordering and precedence explicitly, with a conflicting-input example. For example: “lowest to highest: defaults, config, environment, flags; later values override earlier ones. With config=10, environment=20, flags=30, return30.” Avoid relying on a list whose direction can be interpreted differently. Distinguish missing, empty, whitespace, zero, and false when those cases affect success.
+
 - Prove the starting snapshot fails and the oracle passes. The CLI checks both, but this alone is not sufficient proof of grader quality.
 - Add mutants/adversarial candidates: no-op, hardcoded example output, deny-all, ignored filter, unsafe path, removed regression test, stale async response. Check public behavior, not implementation symbols.
 - Use a pristine verifier container. Do not run candidate-supplied tests as the sole acceptance criterion. Test-authoring tasks need mutation/coverage goals plus independent behavioral checks; a new test file alone is not completion.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 — 2026-09-09
+
+- Disable implicit skill invocation; require an explicit request for Codex comparison evaluations.
+- Exclude known automatic approval-review transcripts from local workflow discovery and disclose truncation separately from parser completeness.
+- Clarify suite-directory ownership and task precedence requirements following three customer simulations.
+
 ## 0.2.0 — 2026-09-09
 
 - Bundle 1,658 pinned public task references and 46 detailed design examples across 13 benchmark families.

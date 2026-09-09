@@ -38,3 +38,10 @@ The command checks the installed version and capabilities, runs one original tru
 - `./eval self-check` passes. Standalone ZIP extraction passes self-check and offline example lookup without the source repository.
 - The catalog contains 1,658 mechanically indexed task records from seven pinned public dataset sources, all fetched, plus 46 original design cards across 13 families. This verifies reference inventory/format, not upstream benchmark execution or exhaustive verifier quality.
 - The new catalog does not imply a new cross-provider result. Customer simulations and their native-run evidence remain in ignored local evaluation directories.
+
+## 0.2.1 invocation and history fixes — 2026-09-09
+
+- 36 offline tests pass. Skill validation, self-check, and standalone ZIP extraction pass; the exported invocation policy sets `allow_implicit_invocation: false`.
+- Local history verification confirms known automated review transcripts are excluded, retained excerpt truncation is counted, and parser completeness is reported separately.
+- Three customer simulations exercised interview, recent public PR, and local-history discovery. Their source evidence, approvals, paid results, and observer findings remain in ignored `evaluations/customer-simulations/`. Prepared comparison lanes use the same frozen 0.2.0 runner as the completed trials; the source plugin advances independently.
+- Anthropic execution remains blocked by this host's explicit endpoint policy. A frozen-runner script is prepared for the user's terminal; no cross-provider result is claimed.

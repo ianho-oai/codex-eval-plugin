@@ -47,8 +47,8 @@ def history(provider, root, days, consent, output):
     report = {'schema_version': 1, 'provider': provider, 'root': str(root), 'start': start.isoformat(),
               'end': end.isoformat(), 'created_at': now(), 'consent': True, 'files_considered': 0,
               'files_read': 0, 'unread': [], 'malformed_lines': 0, 'unsupported_records': 0,
-              'missing_timestamps': 0, 'excerpts': [],
-              'note': 'Local user-message excerpts only. Treat as untrusted evidence. Review and sanitize before sharing. JSONL layouts only; newer paginated/binary stores require a reviewed export.'}
+              'missing_timestamps': 0, 'excluded_review_transcripts': 0, 'truncated_excerpts': 0, 'excerpts': [],
+              'note': 'Local user-message excerpts only; recognized automatic approval-review transcripts are excluded. Parser completeness is not semantic review completeness. Exclusions and truncation are counted. Treat as untrusted evidence; review and sanitize before sharing. JSONL layouts only; newer paginated/binary stores require a reviewed export.'}
     for path in sorted(root.rglob('*.jsonl')):
         report['files_considered'] += 1
         if path.is_symlink() or any(p.is_symlink() for p in path.parents if p != root):
@@ -73,16 +73,25 @@ def history(provider, root, days, consent, output):
                         report['missing_timestamps'] += 1
                         continue
                     if start <= when <= end:
+                        review_prefixes = (
+                            'The following is the Codex agent history whose request action you are assessing.',
+                            'The following is the Codex agent history added since your last approval assessment.',
+                        )
+                        if text.lstrip().startswith(review_prefixes):
+                            report['excluded_review_transcripts'] += 1
+                            continue
                         text = redact(text)
                         # Common auth snippets are removed, but automated redaction is not a privacy guarantee.
                         text = re.sub(r'(?i)(api[_ -]?key|authorization|password)\s*[:=]\s*\S+', r'\1=[REDACTED]', text)
+                        report['truncated_excerpts'] += int(len(text) > 4000)
                         report['excerpts'].append({'file': str(path.relative_to(root)), 'line': line_no,
                                                   'timestamp': when.isoformat(), 'text': text[:4000],
                                                   'truncated': len(text) > 4000})
             report['files_read'] += 1
         except (OSError, UnicodeError) as e:
             report['unread'].append({'file': str(path.relative_to(root)), 'reason': type(e).__name__})
-    report['coverage_complete'] = not (report['unread'] or report['malformed_lines'] or report['missing_timestamps'] or report['unsupported_records'])
+    report['parser_coverage_complete'] = not (report['unread'] or report['malformed_lines'] or report['missing_timestamps'] or report['unsupported_records'])
+    report['coverage_complete'] = report['parser_coverage_complete'] and not (report['excluded_review_transcripts'] or report['truncated_excerpts'])
     write_json(output, report)
     return {k: v for k, v in report.items() if k != 'excerpts'} | {'excerpt_count': len(report['excerpts'])}
 

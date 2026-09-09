@@ -1,4 +1,4 @@
-# Codex Eval · 0.2.0
+# Codex Eval · 0.2.1
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -40,3 +40,7 @@ python3 bin/codex-eval portfolio evaluations/customer/discovery.json --suite eva
 ```
 
 The [offline catalog](ceval/data/catalog.md) bundles 1,658 public task references and 46 detailed design examples. New customer suites require easy/medium/hard tasks per discovered workflow, with original source links and adaptation notes or an explicit original-design rationale.
+
+Keep one suite per directory: `validation.json` and `approval.json` belong to that directory. For separately approved provider suites, use separate directories with identical task snapshots; do not put two suite JSON files beside the same approval receipt.
+
+The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.

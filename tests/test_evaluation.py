@@ -431,3 +431,26 @@ class CatalogTests(Workspace):
         self.s['schema_version'] = 1
         self.s.pop('purpose'); self.s.pop('workflows'); self.save()
         load_suite(self.path)
+
+class HistoryCoverageTests(unittest.TestCase):
+    def test_review_transcripts_are_excluded_and_truncation_disclosed(self):
+        from datetime import datetime, timezone
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            records = []
+            for text in [
+                'The following is the Codex agent history whose request action you are assessing.\n>>> TRANSCRIPT START\nEmbedded tool output\n>>> APPROVAL REQUEST START',
+                'The following is the Codex agent history added since your last approval assessment.\n>>> TRANSCRIPT DELTA START\nEmbedded tool output\n>>> APPROVAL REQUEST START',
+                'Build a dashboard. ' + 'x'*5000,
+            ]:
+                records.append({'type':'response_item','timestamp':datetime.now(timezone.utc).isoformat(),
+                    'payload':{'role':'user','content':[{'type':'input_text','text':text}]}})
+            (root/'session.jsonl').write_text('\n'.join(json.dumps(r) for r in records))
+            output = root/'evidence.json'
+            result = history('codex', root, 1, True, output)
+            self.assertEqual(result['excluded_review_transcripts'], 2)
+            self.assertEqual(result['truncated_excerpts'], 1)
+            self.assertEqual(result['excerpt_count'], 1)
+            self.assertTrue(result['parser_coverage_complete'])
+            self.assertFalse(result['coverage_complete'])
+            self.assertNotIn('Embedded tool output', output.read_text())

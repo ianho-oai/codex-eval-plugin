@@ -31,8 +31,8 @@ Python 3.11+ is required. The three original example graders also use Node.js 18
 ./eval portfolio evaluations/customer/discovery.json --suite evaluations/customer/suite.json --output evaluations/customer/portfolio.json
 # Replace example tasks with approved customer tasks, workflow IDs, and provenance.
 # Build a toolchain image once, including each task's test/build dependencies:
-docker build -t codex-eval:0.1.0 plugins/codex-eval-plugin
-./eval image-pin evaluations/customer/suite.json --image codex-eval:0.1.0
+docker build -t codex-eval:0.2.1 plugins/codex-eval-plugin
+./eval image-pin evaluations/customer/suite.json --image codex-eval:0.2.1
 
 # Set OPENAI_API_KEY and ANTHROPIC_API_KEY in your environment or ignored .env.local.
 # Never put keys in the suite or chat; exported values take precedence over .env.local.
@@ -140,3 +140,7 @@ Tests use small local fixtures and protocol emulators, with no paid API calls. T
 ## Task inspiration library
 
 The plugin bundles 1,658 upstream task records and 46 detailed design cards across 13 benchmark families. Search locally, adapt suitable examples, and cite original sources; original tasks are welcome when no source fits. New customer suites enforce easy/medium/hard coverage per workflow. [Coverage, sources, and refresh procedure](plugins/codex-eval-plugin/ceval/data/catalog.md).
+
+Keep one suite per directory: `validation.json` and `approval.json` belong to that directory. For separately approved provider suites, use separate directories with identical task snapshots; do not put two suite JSON files beside the same approval receipt.
+
+The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.
