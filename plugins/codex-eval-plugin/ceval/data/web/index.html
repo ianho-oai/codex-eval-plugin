@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Codex Eval · Results</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><a class="brand" href="/">◈ <span>Codex Eval</span></a><span class="local">LOCAL WORKSPACE</span><a class="export" href="/results.csv">Export CSV ↗</a></header>
+<main>
+  <div id="banner" class="banner" hidden></div>
+  <div class="intro"><div><p class="eyebrow">WORKFLOW EVALUATION</p><h1>Performance, with proof.</h1><p id="subtitle">Loading evaluation results…</p></div><div class="run-status"><span id="state">—</span><small id="runname"></small></div></div>
+  <section id="stats" class="stats" aria-label="Run summary"></section>
+  <section class="panel">
+    <div class="section-head"><div><h2>Explore the tradeoffs</h2><p>One point per attempt. Choose a task, then compare the outcomes.</p></div><div class="legend"><span class="codex-dot"></span>Codex <span class="claude-dot"></span>Claude Code</div></div>
+    <div class="filters">
+      <label>Task<select id="task"><option value="">All tasks</option></select></label>
+      <label>Provider<select id="provider"><option value="">Both providers</option><option value="codex">Codex</option><option value="claude">Claude Code</option></select></label>
+      <label>Difficulty<select id="difficulty"><option value="">All difficulties</option><option>easy</option><option>medium</option><option>hard</option></select></label>
+      <label>Outcome<select id="outcome"><option value="">All attempts</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="invalid">Infrastructure invalid</option></select></label>
+    </div>
+    <div class="axes"><label>Horizontal axis<select id="x"></select></label><label>Vertical axis<select id="y"></select></label><span id="plotcount"></span></div>
+    <div class="plot-wrap"><svg id="plot" viewBox="0 0 1000 440" role="img" aria-label="Scatter plot comparing evaluation attempts"></svg></div>
+    <div id="detail" class="detail" aria-live="polite">Select a point or table row to inspect its measured outcome.</div>
+    <p class="footnote" id="plotnote">Missing measurements are omitted from the plot and remain visible in the table.</p>
+  </section>
+  <section class="panel"><div class="section-head"><div><h2>Results by configuration</h2><p>Filtered attempts. Failure costs count toward cost per success.</p></div></div><div class="table-wrap"><table id="groups"><thead><tr><th>Configuration</th><th>Pass / attempted</th><th>Scorable</th><th>Invalid</th><th>Known cost</th><th>Cost / success</th></tr></thead><tbody></tbody></table></div></section>
+  <section class="panel"><div class="section-head"><div><h2>Every attempt</h2><p id="rowcount"></p></div><button id="refresh">Refresh results</button></div><div class="table-wrap"><table id="attempts"><thead><tr><th>Task / difficulty</th><th>Model / effort</th><th>Repeat</th><th>Outcome</th><th>End to end</th><th>Total cost</th><th>Input</th><th>Output</th><th>Cache read</th><th>Turns</th></tr></thead><tbody></tbody></table></div></section>
+  <section class="notes"><h3>Read the comparison correctly</h3><p>Native product harnesses and tokenizers differ. Codex conversation turns and Claude native turns are different units. Unknown metrics stay unavailable. OpenAI costs are rate-card estimates; Claude costs are native reported totals. The cost range in each attempt allows for unreported cache writes and context tiers.</p><p id="environment"></p><p id="coverage"></p></section>
+</main><footer>Customer-owned tasks. Verifiable outcomes. Reproducible orchestration.</footer>
+<script src="/app.js"></script>
+</body></html>

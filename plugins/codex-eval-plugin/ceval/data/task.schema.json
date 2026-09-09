@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evaluation task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "use_case",
+    "difficulty",
+    "difficulty_rationale",
+    "benchmark_refs",
+    "allowed_paths",
+    "grader"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}$"
+    },
+    "use_case": {
+      "type": "string",
+      "minLength": 1
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "difficulty_rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "benchmark_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "deepswe",
+          "swe-bench",
+          "terminal-bench",
+          "aider-polyglot"
+        ]
+      }
+    },
+    "allowed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "grader": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "async-search",
+  "use_case": "Frontend asynchronous search state and race-condition repair",
+  "difficulty": "hard",
+  "difficulty_rationale": "Requires a complete async lifecycle: debouncing, stale response rejection, cancellation, errors, and disposal; verified with controlled scheduling.",
+  "benchmark_refs": ["deepswe", "terminal-bench"],
+  "allowed_paths": ["search.cjs"],
+  "grader": ["node", "{grader}/verify.cjs", "{candidate}"]
+}

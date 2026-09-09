@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-09",
+  "scope": "Concise public methodology index. Original summaries only; task imports require per-source licensing review. No private material or copied benchmark datasets.",
+  "benchmarks": [
+    {
+      "id": "deepswe",
+      "name": "Datacurve DeepSWE",
+      "url": "https://deepswe.datacurve.ai/",
+      "repository": "https://github.com/datacurve-ai/deep-swe",
+      "paper": "https://arxiv.org/abs/2607.07946",
+      "task_types": [
+        "long-horizon feature implementation",
+        "cross-module engineering",
+        "async lifecycle repair"
+      ],
+      "design_principles": [
+        "Original tasks from real repositories",
+        "Behavioral verification that permits different implementations",
+        "Hold reference solutions and tests outside agent environments"
+      ],
+      "application": "Use fresh multi-step customer workflows with state, compatibility, and regression checks. Grade final observable behavior.",
+      "licensing": "Reference links and methodology only. Check the license of each task and underlying repository before importing.",
+      "distinction": "This is Datacurve\u2019s benchmark, distinct from the Agentica/Together DeepSWE-Preview coding model. Customer runs here use native product harnesses, so are not comparable to its mini-swe-agent leaderboard."
+    },
+    {
+      "id": "swe-bench",
+      "name": "SWE-bench",
+      "url": "https://www.swebench.com/SWE-bench/guides/evaluation/",
+      "repository": "https://github.com/SWE-bench/SWE-bench",
+      "task_types": [
+        "repository bug fixing",
+        "regression repair"
+      ],
+      "design_principles": [
+        "Pinned starting repository state",
+        "Reproducible container environment",
+        "Fail-to-pass behavior and pass-to-pass regression checks"
+      ],
+      "application": "Turn a workflow into a specific issue with a failing behavioral check, plus regression tests. Preserve the base commit and dependencies.",
+      "licensing": "No dataset bundled. Imported code and benchmark material require their respective licenses."
+    },
+    {
+      "id": "terminal-bench",
+      "name": "Terminal-Bench / Harbor task format",
+      "url": "https://www.tbench.ai/",
+      "format": "https://www.harborframework.com/docs/tasks",
+      "task_types": [
+        "terminal workflows",
+        "build and test repair",
+        "multi-step artifact creation"
+      ],
+      "design_principles": [
+        "Self-contained task environment",
+        "Explicit instruction and resource/time limits",
+        "Executable verifier and held-out oracle"
+      ],
+      "application": "Validate tangible filesystem or program outputs in a clean verifier environment. Pin toolchain and avoid external service dependencies.",
+      "licensing": "No task files copied. Review each upstream task and dependency license before reuse."
+    },
+    {
+      "id": "aider-polyglot",
+      "name": "Aider Polyglot",
+      "url": "https://aider.chat/docs/leaderboards/",
+      "task_types": [
+        "multi-language code editing",
+        "function implementation"
+      ],
+      "design_principles": [
+        "Executable coding exercises across languages",
+        "Report editing correctness and cost",
+        "Document retry protocol"
+      ],
+      "application": "Useful inspiration for small/medium coding tasks with explicit language/runtime constraints. This runner uses one attempt per repeat, without automated repair retries.",
+      "licensing": "Original examples only. Exercise collections have separate upstream licenses."
+    }
+  ]
+}

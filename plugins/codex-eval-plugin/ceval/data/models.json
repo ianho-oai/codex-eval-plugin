@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-09",
+  "note": "Public catalog snapshot, not an account entitlement or a perpetual latest-model selector. Review refresh output, capability support and prices. Different providers have different effort semantics.",
+  "models": [
+    {
+      "id": "gpt-5.6-sol",
+      "provider": "codex",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "provider": "codex",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra"
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "provider": "codex",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna"
+    },
+    {
+      "id": "gpt-6-astra",
+      "provider": "codex",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://developers.openai.com/api/docs/models/gpt-6-astra"
+    },
+    {
+      "id": "claude-fable-5-1",
+      "provider": "claude",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "id": "claude-opus-5",
+      "provider": "claude",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "id": "claude-sonnet-5",
+      "provider": "claude",
+      "default": true,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "provider": "claude",
+      "default": true,
+      "default_effort": "default",
+      "efforts": [
+        "default"
+      ],
+      "availability": "verify on customer account",
+      "source": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "id": "claude-mythos-5-1",
+      "provider": "claude",
+      "default": false,
+      "default_effort": "medium",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "limited access; verify Claude Code support",
+      "source": "https://platform.claude.com/docs/en/models/overview"
+    }
+  ]
+}

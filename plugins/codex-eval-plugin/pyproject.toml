@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-eval-plugin"
+version = "0.1.0"
+description = "Customer-owned headless coding-agent evaluation"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+codex-eval = "ceval.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ceval*"]
+
+[tool.setuptools.package-data]
+ceval = ["data/**/*", "data/*"]

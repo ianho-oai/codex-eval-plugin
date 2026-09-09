@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Frozen evaluation suite",
+  "type": "object",
+  "required": [
+    "execution",
+    "limits",
+    "matrix",
+    "name",
+    "pricing",
+    "repeats",
+    "schema_version",
+    "seed",
+    "tasks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "execution": {
+      "type": "object"
+    },
+    "limits": {
+      "type": "object"
+    },
+    "matrix": {
+      "type": "array"
+    },
+    "name": {
+      "type": "string"
+    },
+    "pricing": {
+      "type": "string"
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "tasks": {
+      "type": "array"
+    }
+  },
+  "description": "Runtime core.load_suite additionally enforces paths, task shapes, matrix uniqueness, immutable image IDs, resource limits and sealed content."
+}

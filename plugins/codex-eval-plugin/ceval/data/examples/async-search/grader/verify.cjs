@@ -1,0 +1,40 @@
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const {createSearch} = require(path.join(process.argv[2], 'search.cjs'));
+const flush = async () => { for(let i=0;i<8;i++) await Promise.resolve(); };
+function fixture(fetchOverride) {
+  const jobs = new Map(), states = [], calls = []; let id = 0;
+  const timers = {setTimeout(fn, ms) { jobs.set(++id, {fn,ms}); return id; }, clearTimeout(id) {jobs.delete(id);} };
+  const fetchResults = fetchOverride || ((query, options) => new Promise((resolve,reject) => calls.push({query,...options,resolve,reject})));
+  const control = createSearch({fetchResults,onState:s=>states.push(s),delay:75,timers});
+  return {control,states,calls,jobs, fire() {const all=[...jobs.values()];jobs.clear();all.forEach(j=>{assert.equal(j.ms,75);j.fn();});}};
+}
+(async () => {
+  const f=fixture();
+  f.control.search(' alpha '); f.control.search('beta');
+  assert.deepEqual(f.states.at(-1),{status:'loading',query:'beta',items:[]});
+  assert.equal(f.jobs.size,1); assert.equal(f.calls.length,0);
+  f.fire(); assert.equal(f.calls[0].query,'beta'); assert.ok(f.calls[0].signal instanceof AbortSignal);
+  f.control.search('gamma'); assert.equal(f.calls[0].signal.aborted,true);
+  const n=f.states.length; f.calls[0].resolve(['stale']); await flush(); assert.equal(f.states.length,n);
+  f.fire(); f.calls[1].resolve(['fresh']); await flush();
+  assert.deepEqual(f.states.at(-1),{status:'success',query:'gamma',items:['fresh']});
+  f.control.search('gamma'); f.fire(); assert.equal(f.calls.length,3);
+  f.calls[2].reject(new Error('network')); await flush();
+  assert.deepEqual(f.states.at(-1),{status:'error',query:'gamma',items:[],error:'network'});
+  f.control.search('old'); f.fire(); f.control.search('new');
+  const count=f.states.length; f.calls[3].reject(new Error('old error')); await flush(); assert.equal(f.states.length,count);
+  f.control.search('  '); assert.equal(f.jobs.size,0);
+  assert.deepEqual(f.states.at(-1),{status:'idle',query:'',items:[]});
+  f.control.search('dispose'); f.fire(); const last=f.calls.at(-1);
+  f.control.dispose(); f.control.dispose(); assert.equal(last.signal.aborted,true);
+  const before=f.states.length; last.resolve(['late']); await flush(); f.control.search('ignored');f.fire();
+  assert.equal(f.states.length,before); assert.equal(f.jobs.size,0);
+  const g=fixture();g.control.search('pending');g.control.dispose();g.fire();assert.equal(g.calls.length,0);
+  const h=fixture(()=>{throw new Error('sync');});h.control.search('x');h.fire();await flush();
+  assert.equal(h.states.at(-1).error,'sync');
+  const a=fixture();a.control.search('abort');a.fire();const err=new Error('aborted');err.name='AbortError';
+  a.calls[0].reject(err);await flush();assert.equal(a.states.at(-1).status,'loading');
+  const empty=fixture();empty.control.search('');assert.equal(empty.calls.length,0);assert.equal(empty.jobs.size,0);
+  console.log('PASS: debounce, race rejection, abort, errors, empty query, duplicate query, disposal');
+})().catch(e => {console.log('FAIL:',e.message);process.exit(1);});
