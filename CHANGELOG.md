@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2026-09-09
+
+- Simplify the dashboard to a workflow evaluation chart with X-axis/Y-axis controls and model labels.
+- Replace inline details with a six-field hover/focus popup; remove summary cards, tables, run badges, and explanatory footer.
+- Use OpenAI developer-palette blue for Codex, retain Claude orange, and improve offline typography.
+
 ## 0.2.1 — 2026-09-09
 
 - Disable implicit skill invocation; require an explicit request for Codex comparison evaluations.

@@ -15,77 +15,76 @@ function option(select,value,label){const o=el('option',label);o.value=value;sel
 for(const [key,label] of Object.entries(metrics)){option($('x'),key,label);option($('y'),key,label);}
 $('x').value='cost_usd';$('y').value='latency_seconds';
 function filtered(){return data.rows.filter(r=>(!$('task').value||r.task_id===$('task').value)&&(!$('provider').value||r.provider===$('provider').value)&&(!$('difficulty').value||r.difficulty===$('difficulty').value)&&(!$('outcome').value||($('outcome').value==='pass'?r.completion===1:$('outcome').value==='invalid'?!r.valid:r.completion===0)));}
-function details(r){
-  const tokens=`Input ${num(r.input_tokens)} · Output ${num(r.output_tokens)} · Cache read ${num(r.cache_read_tokens)} · Cache write ${num(r.cache_write_tokens)} · Reasoning ${num(r.reasoning_tokens)}`;
-  $('detail').textContent=`${r.task_id} / ${r.model} / ${r.effort} / repeat ${r.repeat}: ${r.completion?'PASS':'FAIL'} (${r.status}). ${num(r.latency_seconds)}s end to end; ${money(r.cost_usd)} — ${r.cost_source||'unavailable'}. Cost envelope ${money(r.cost_lower_usd)}–${money(r.cost_upper_usd)}. ${tokens}. Turns ${num(r.turns)} (${r.turn_unit||'unknown unit'}). ${r.cost_note||''} ${r.diagnostic||''}${r.source_run?' Source run: '+r.source_run:''}`;
+const colors={codex:'#339cff',claude:'#eaa582'};
+function hideDetails(){ $('tooltip').hidden=true; }
+function details(r,dot){
+  const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',colors[r.provider]||'#eee');
+  const list=el('dl');
+  for(const [label,value] of [['Model',r.model],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',r.completion===1?'Pass':'Fail'],['Total cost',money(r.cost_usd)],['End-to-end latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']]){
+    list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
+  }
+  popup.append(list);popup.hidden=false;
+  const anchor=dot.getBoundingClientRect(),wrap=$('plot').parentElement.getBoundingClientRect();
+  const fixed=getComputedStyle(popup).position==='fixed',bounds=fixed?{left:0,top:0,width:innerWidth,height:innerHeight}:wrap;
+  let left=anchor.right-bounds.left+14,top=anchor.top-bounds.top-popup.offsetHeight/2;
+  if(left+popup.offsetWidth>bounds.width-8)left=anchor.left-bounds.left-popup.offsetWidth-14;
+  popup.style.left=Math.max(8,Math.min(left,bounds.width-popup.offsetWidth-8))+'px';
+  popup.style.top=Math.max(8,Math.min(top,bounds.height-popup.offsetHeight-8))+'px';
 }
 function svg(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
 function plot(rows){
-  const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
+  hideDetails();const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
   const points=rows.filter(r=>defined(r[x])&&defined(r[y]));
-  $('plotcount').textContent=`${points.length} plotted · ${rows.length-points.length} missing measurements`;
-  $('plotnote').textContent=(x==='turns'||y==='turns'?'Turn counts use different native units; compare within each provider. ':'')+'Missing measurements remain in the table. PASS and FAIL are labeled on every point; select a point for provenance.';
-  if(!points.length){root.append(svg('text',{x:500,y:210,'text-anchor':'middle',class:'empty'},'No measured points for these filters and axes.'));return;}
-  const maxX=Math.max(...points.map(r=>r[x]),.001)*1.18,maxY=Math.max(...points.map(r=>r[y]),.001)*1.16;
-  const left=90,right=955,top=28,bottom=370;
+  if(!points.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},'No measured points for these filters and axes.'));return;}
+  const maxX=Math.max(...points.map(r=>r[x]),.001)*1.2,maxY=Math.max(...points.map(r=>r[y]),.001)*1.2;
+  const left=100,right=1160,top=30,bottom=485;
   for(let i=0;i<=5;i++){
     const a=left+(right-left)*i/5,b=bottom-(bottom-top)*i/5;
-    root.append(svg('line',{x1:a,x2:a,y1:top,y2:bottom,class:'grid'}));
-    root.append(svg('line',{x1:left,x2:right,y1:b,y2:b,class:'grid'}));
-    root.append(svg('text',{x:a,y:bottom+24,'text-anchor':'middle',class:'tick'},x.includes('cost')?money(maxX*i/5):num(maxX*i/5)));
-    root.append(svg('text',{x:left-13,y:b+4,'text-anchor':'end',class:'tick'},y.includes('cost')?money(maxY*i/5):num(maxY*i/5)));
+    root.append(svg('line',{x1:a,x2:a,y1:top,y2:bottom,class:'grid'}),svg('line',{x1:left,x2:right,y1:b,y2:b,class:'grid'}));
+    root.append(svg('text',{x:a,y:bottom+25,'text-anchor':'middle',class:'tick'},x.includes('cost')?money(maxX*i/5):num(maxX*i/5)));
+    root.append(svg('text',{x:left-14,y:b+4,'text-anchor':'end',class:'tick'},y.includes('cost')?money(maxY*i/5):num(maxY*i/5)));
   }
-  root.append(svg('text',{x:520,y:426,'text-anchor':'middle',class:'axis-label'},metrics[x]));
-  root.append(svg('text',{transform:'translate(18 210) rotate(-90)','text-anchor':'middle',class:'axis-label'},metrics[y]));
-  points.forEach(r=>{
-    const px=left+r[x]/maxX*(right-left),py=bottom-r[y]/maxY*(bottom-top),color=r.provider==='codex'?'#ececec':'#eaa582';
-    const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${r.model} ${r.task_id} repeat ${r.repeat} ${r.completion?'PASS':'FAIL'}`});
-    dot.append(svg('title',{},`${r.model} / ${r.effort} / ${r.task_id}: ${r.status}`));
-    dot.addEventListener('click',()=>details(r));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r);}});
-    root.append(dot,svg('text',{x:px+10,y:py+3,fill:color,class:'outcome-label'},r.completion?'PASS':'FAIL'));
-  });
-}
-function table(rows){
-  const body=$('attempts').querySelector('tbody');body.replaceChildren();
-  $('rowcount').textContent=`${rows.length} attempts match the current filters. No failed attempts are hidden by default.`;
-  for(const r of rows){
-    const tr=el('tr');tr.tabIndex=0;tr.addEventListener('click',()=>details(r));tr.addEventListener('keydown',e=>{if(e.key==='Enter')details(r);});
-    const t=el('td',r.task_id);t.append(el('small',r.difficulty||'—'));
-    const m=el('td',r.model);m.append(el('small',`${r.provider} / ${r.effort}`));
-    if(r.source_run)m.append(el('small',r.source_run));
-    const out=el('td');out.append(el('span',r.completion?'PASS':'FAIL','badge'+(r.valid?(r.completion?'':' fail'):' invalid')),el('small',r.status));
-    const cost=el('td',money(r.cost_usd));cost.append(el('small',r.cost_source||'unavailable'));
-    const turns=el('td',num(r.turns));turns.append(el('small',r.turn_unit==='codex_conversation_turn'?'conversation':'native'));
-    tr.append(t,m,el('td',r.repeat),out,el('td',defined(r.latency_seconds)?num(r.latency_seconds)+'s':'—'),cost,el('td',num(r.input_tokens)),el('td',num(r.output_tokens)),el('td',num(r.cache_read_tokens)),turns);body.append(tr);
+  root.append(svg('text',{x:630,y:545,'text-anchor':'middle',class:'axis-label'},metrics[x]),svg('text',{transform:'translate(20 260) rotate(-90)','text-anchor':'middle',class:'axis-label'},metrics[y]));
+  const placed=[],coords=points.map(r=>({r,px:left+r[x]/maxX*(right-left),py:bottom-r[y]/maxY*(bottom-top)}));
+  const labelLayer=svg('g'),pointLayer=svg('g');root.append(labelLayer,pointLayer);
+  for(const {r,px,py} of coords){
+    const color=colors[r.provider]||'#ccc';
+    const label=svg('text',{fill:color,class:'model-label'},r.model);labelLayer.append(label);
+    const width=label.getComputedTextLength()+4,height=16;let best=null;
+    for(let step=0;step<16;step++)for(const sign of (step?[1,-1]:[1]))for(const side of [1,-1]){
+      const lx=side===1?px+13:px-width-13,ly=py+4+step*18*sign;
+      const box={x:lx,y:ly-12,w:width,h:height};
+      if(box.x<left||box.x+width>right||box.y<top||box.y+height>bottom)continue;
+      const hits=placed.filter(b=>box.x<b.x+b.w+3&&box.x+box.w+3>b.x&&box.y<b.y+b.h+3&&box.y+box.h+3>b.y).length;
+      const covers=coords.filter(p=>p.px>box.x-8&&p.px<box.x+width+8&&p.py>box.y-8&&p.py<box.y+height+8).length;
+      const score=hits*10000+covers*1000+step*18+(side===-1?2:0);
+      if(!best||score<best.score)best={...box,ly,side,score};
+    }
+    best=best||{x:px+13,y:py-12,w:width,h:height,ly:py+4,side:1};placed.push(best);
+    label.setAttribute('x',best.x);label.setAttribute('y',best.ly);
+    if(Math.abs(best.ly-py-4)>18)labelLayer.insertBefore(svg('line',{x1:px,y1:py,x2:best.side===1?best.x-3:best.x+width+3,y2:best.ly-4,stroke:color,class:'leader'}),label);
+    const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${r.model}, ${r.task_id}, ${r.difficulty}, ${r.completion===1?'Pass':'Fail'}`,'aria-describedby':'tooltip'});
+    dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
+    dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
+    dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});
+    pointLayer.append(dot);
   }
-  if(!rows.length){const tr=el('tr');const td=el('td','No attempts match these filters.','empty-row');td.colSpan=10;tr.append(td);body.append(tr);}
-  const groupBody=$('groups').querySelector('tbody');groupBody.replaceChildren();
-  const groups=new Map();for(const r of rows){const k=[r.provider,r.model,r.effort].join(' / ');if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r);}
-  for(const [key,rs] of groups){const wins=rs.filter(r=>r.completion===1).length,valid=rs.filter(r=>r.valid).length,known=rs.filter(r=>defined(r.cost_usd)),cost=known.reduce((a,r)=>a+r.cost_usd,0);const tr=el('tr');tr.append(el('td',key),el('td',`${wins} / ${rs.length}`),el('td',valid),el('td',rs.length-valid),el('td',money(cost)+(known.length<rs.length?` (${rs.length-known.length} missing)` :'')),el('td',wins&&known.length===rs.length?money(cost/wins):'Unavailable'));groupBody.append(tr);}
 }
-function render(){
-  const rows=filtered();plot(rows);table(rows);
-  const wins=rows.filter(r=>r.completion===1).length,invalid=rows.filter(r=>!r.valid).length;
-  const costs=rows.filter(r=>defined(r.cost_usd));const stats=[['Verified completion',`${wins} / ${rows.length}`,'Binary outcome · current filters'],['Scheduled / pending',`${data.summary.scheduled} / ${data.summary.pending}`,'Whole run · planned matrix'],['Known total cost',money(costs.reduce((a,r)=>a+r.cost_usd,0)),`${rows.length-costs.length} attempts with unavailable cost`],['Infrastructure invalid',invalid,'Included in all-attempt count']];
-  $('stats').replaceChildren(...stats.map(([label,value,note])=>{const box=el('div',undefined,'stat');box.append(el('small',label),el('strong',value),el('p',note));return box;}));
-}
+function render(){if(data)plot(filtered());}
 async function load(){
-  try {
-    const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);data=await r.json();
-    const selected=$('task').value;$('task').replaceChildren();option($('task'),'','All tasks');[...new Set(data.rows.map(r=>r.task_id))].sort().forEach(t=>option($('task'),t,t));$('task').value=selected;
-    $('runname').textContent=data.run.suite.name;$('state').textContent=data.run.state||'unknown';
-    $('subtitle').textContent='Compare verified task completion, time, tokens, and cost across native coding agents.';
+  try{
+    const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);
+    const next=await r.json(),unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
     const simulated=data.run.simulation||data.rows.some(r=>r.simulation);
     $('banner').hidden=!simulated&&!data.run.stop_reason;
-    $('banner').textContent=simulated?'DEMO DATA — These points are synthetic interface fixtures. They are not model benchmark results.':`Run stopped: ${data.run.stop_reason}. Pending cells have not been evaluated.`;
-    const ex=data.run.suite.execution;
-    $('environment').textContent=ex?`Environment: ${ex.mode}. ${ex.mode==='local'?'Trusted local development; host and grader isolation are not guaranteed.':`Image ${ex.image}.`} Codex ${ex.codex_version}; Claude Code ${ex.claude_version}.`:'Synthetic preview; no provider calls were made.';
-    if(data.run.sources)$('environment').textContent=data.run.sources.map(s=>`${s.name}: ${s.execution?`${s.execution.mode}; Codex ${s.execution.codex_version}; Claude Code ${s.execution.claude_version}`:'synthetic preview'}`).join(' · ');
-    const providers=new Set(data.rows.filter(r=>!r.not_started&&r.provider_success).map(r=>r.provider));
-    $('coverage').textContent=[data.run.comparison_note,providers.size<2&&!simulated?'Live validation does not cover both providers. These results cannot establish a Codex-versus-Claude comparison.':''].filter(Boolean).join(' ');
+    $('banner').textContent=simulated?'Demo data — synthetic interface fixtures.':`Run stopped: ${data.run.stop_reason}.`;
+    if(unchanged)return;
+    const selected=$('task').value;$('task').replaceChildren();option($('task'),'','All tasks');[...new Set(data.rows.map(r=>r.task_id))].sort().forEach(t=>option($('task'),t,t));
+    if([...$('task').options].some(o=>o.value===selected))$('task').value=selected;
     render();
-  }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;$('subtitle').textContent='Results could not be loaded.';}
+  }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;}
 }
 for(const id of ['task','provider','difficulty','outcome','x','y'])$(id).addEventListener('change',render);
-$('refresh').addEventListener('click',load);load();
-setInterval(load, 15000);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideDetails();});
+window.addEventListener('resize',hideDetails);document.addEventListener('pointerdown',e=>{if(!e.target.closest('.point'))hideDetails();});
+load();setInterval(load,15000);

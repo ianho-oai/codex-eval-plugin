@@ -45,3 +45,10 @@ The command checks the installed version and capabilities, runs one original tru
 - Local history verification confirms known automated review transcripts are excluded, retained excerpt truncation is counted, and parser completeness is reported separately.
 - Three customer simulations exercised interview, recent public PR, and local-history discovery. Their source evidence, approvals, paid results, and observer findings remain in ignored `evaluations/customer-simulations/`. Prepared comparison lanes use the same frozen 0.2.0 runner as the completed trials; the source plugin advances independently.
 - Anthropic execution remains blocked by this host's explicit endpoint policy. A frozen-runner script is prepared for the user's terminal; no cross-provider result is claimed.
+
+## 0.2.2 dashboard simplification — 2026-09-09
+
+- 36 offline tests, JavaScript syntax validation, and plugin self-check pass; the standalone ZIP exports successfully.
+- Browser review verified the chart-first layout, model-name labels, six-field point popups, keyboard activation/Escape, task/provider/outcome filtering, alternate axes, missing-measurement empty state, and zero removed summary tables. No console errors were observed.
+- Typography stays offline with OpenAI Sans when installed and system fallbacks. Codex uses blue300 from the checked official OpenAI developer palette; Claude retains orange.
+- UI simplification does not alter source runs, grading, prices, metrics, CSV, or report data. Frozen comparison engines remain in their original evaluation directories.

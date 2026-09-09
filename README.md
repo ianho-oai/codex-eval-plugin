@@ -12,7 +12,7 @@ One Codex skill discovers the customer's workflows and designs representative ta
 ./eval dashboard evaluations/demo
 ```
 
-Open **http://127.0.0.1:8765**. The dark dashboard has task/provider/difficulty/outcome filters, configurable scatter-plot axes, point details, every attempt, and CSV export. Demo points are explicitly synthetic.
+Open **http://127.0.0.1:8765**. The dark dashboard has task/provider/difficulty/outcome filters, configurable scatter-plot axes, six-field hover/focus popups, model-name labels, and CSV export. Demo points are explicitly synthetic.
 
 Python 3.11+ is required. The three original example graders also use Node.js 18+. The orchestration and dashboard have no Python/npm runtime dependencies.
 
@@ -144,3 +144,7 @@ The plugin bundles 1,658 upstream task records and 46 detailed design cards acro
 Keep one suite per directory: `validation.json` and `approval.json` belong to that directory. For separately approved provider suites, use separate directories with identical task snapshots; do not put two suite JSON files beside the same approval receipt.
 
 The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.
+
+### Dashboard design
+
+The chart is the main view. Model-name labels use Codex blue (`#339cff`, blue300 in the [OpenAI developer stylesheet](https://developers.openai.com/_astro/PageLayout.BSuKgUPa.css)) and Claude orange. Typography prefers locally installed OpenAI Sans, the family identified in [OpenAI design guidelines](https://openai.com/brand/), with system sans-serif fallbacks; no font download is required. Summary tables, explanatory sections, and run-count badges are omitted from the UI. Detailed telemetry and source provenance remain available through CLI reports, JSON, and CSV.

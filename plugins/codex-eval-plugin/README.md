@@ -1,4 +1,4 @@
-# Codex Eval · 0.2.1
+# Codex Eval · 0.2.2
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
