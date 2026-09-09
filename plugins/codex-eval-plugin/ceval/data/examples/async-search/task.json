@@ -3,7 +3,21 @@
   "use_case": "Frontend asynchronous search state and race-condition repair",
   "difficulty": "hard",
   "difficulty_rationale": "Requires a complete async lifecycle: debouncing, stale response rejection, cancellation, errors, and disposal; verified with controlled scheduling.",
-  "benchmark_refs": ["deepswe", "terminal-bench"],
-  "allowed_paths": ["search.cjs"],
-  "grader": ["node", "{grader}/verify.cjs", "{candidate}"]
+  "benchmark_refs": [
+    "deepswe",
+    "terminal-bench"
+  ],
+  "allowed_paths": [
+    "search.cjs"
+  ],
+  "grader": [
+    "node",
+    "{grader}/verify.cjs",
+    "{candidate}"
+  ],
+  "provenance": {
+    "kind": "original",
+    "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
+    "sources": []
+  }
 }

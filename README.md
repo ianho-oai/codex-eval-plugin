@@ -19,7 +19,7 @@ Python 3.11+ is required. The three original example graders also use Node.js 18
 ## Customer workflow
 
 1. Invoke the plugin's **evaluate** skill. Combine an interview, explicitly selected local session history, and selected GitHub/GitLab repository/PR/MR evidence. Stop discovery whenever there is enough to propose tasks.
-2. Review the proposed use cases and easy/medium/hard tasks. Approve the portfolio.
+2. Review easy/medium/hard tasks for every discovered workflow, each with benchmark source links or an original-design rationale. Approve the portfolio.
 3. The skill builds frozen task snapshots, behavioral graders, and known-good solutions. Review the concrete matrix, limits, environment, and pricing; approve once.
 4. Run the deterministic CLI. View results in the fixed dashboard; no per-customer frontend or orchestration generation.
 
@@ -27,7 +27,9 @@ Python 3.11+ is required. The three original example graders also use Node.js 18
 
 ```sh
 ./eval init evaluations/customer
-# Complete discovery and replace example tasks with approved customer tasks.
+# Complete discovery.json.workflows and propose three tiers per workflow:
+./eval portfolio evaluations/customer/discovery.json --suite evaluations/customer/suite.json --output evaluations/customer/portfolio.json
+# Replace example tasks with approved customer tasks, workflow IDs, and provenance.
 # Build a toolchain image once, including each task's test/build dependencies:
 docker build -t codex-eval:0.1.0 plugins/codex-eval-plugin
 ./eval image-pin evaluations/customer/suite.json --image codex-eval:0.1.0
@@ -59,6 +61,8 @@ For trusted-code development without Docker, use `init ... --mode local`, pin lo
 | `repo --provider github --repo OWNER/REPO --output FILE` | Read merged PR metadata through `gh` |
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
 | `snapshot --repo PATH --commit FULL_SHA --output TASK/baseline` | Export a regular-file snapshot without Git history |
+| `examples --query TEXT [--inventory]` | Search offline task design examples and upstream metadata |
+| `portfolio DISCOVERY --suite SUITE --output FILE` | Propose three difficulty slots per workflow and register coverage |
 | `benchmarks`, `models` | Inspect dated methodology/model catalogs |
 | `validate SUITE --check-graders` | Verify schema, paths, baseline failure, and oracle success |
 | `plan SUITE`, `approve SUITE --by NAME` | Review and seal exact inputs |
@@ -132,3 +136,7 @@ python3 -m unittest discover -s tests -v
 ```
 
 Tests use small local fixtures and protocol emulators, with no paid API calls. They cover orchestration, native telemetry shapes, graders, approval invalidation, resume, budget stops, secret exclusion, and standalone packaging. Live-provider coverage is recorded separately in [validation notes](VALIDATION.md). Keep customer data, credentials, history extracts, and generated runs out of Git.
+
+## Task inspiration library
+
+The plugin bundles 1,658 upstream task records and 46 detailed design cards across 13 benchmark families. Search locally, adapt suitable examples, and cite original sources; original tasks are welcome when no source fits. New customer suites enforce easy/medium/hard coverage per workflow. [Coverage, sources, and refresh procedure](plugins/codex-eval-plugin/ceval/data/catalog.md).

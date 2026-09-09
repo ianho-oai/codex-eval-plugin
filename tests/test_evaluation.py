@@ -54,7 +54,7 @@ class Workspace(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.suite_dir = self.root/'suite'
-        initialize(self.suite_dir, 'local', None)
+        initialize(self.suite_dir, 'local', None, purpose='smoke')
         self.path = self.suite_dir/'suite.json'
         self.s = read_json(self.path)
         self.s['matrix'] = [{'provider':'codex','model':'gpt-5.6-sol','efforts':['medium']}]
@@ -368,3 +368,65 @@ class DiscoveryAndReportTests(Workspace):
 
 
 if __name__ == '__main__':unittest.main()
+
+class CatalogTests(Workspace):
+    def test_catalog_integrity_and_lookup(self):
+        from ceval.catalog import examples
+        cards = read_json(DATA/'task-examples.json')['examples']
+        inventory = read_json(DATA/'task-inventory.json')['tasks']
+        refs = {b['id'] for b in read_json(DATA/'benchmarks.json')['benchmarks']}
+        ids = [x['id'] for x in cards+inventory]
+        self.assertEqual(len(ids), len(set(ids)))
+        by_id = {x['id']: x for x in inventory}
+        for card in cards:
+            self.assertIn(card['benchmark'], refs)
+            if card.get('inventory_id'):
+                self.assertEqual(card['source_url'], by_id[card['inventory_id']]['source_url'])
+            self.assertTrue(card['what_it_tests'] and card['how_it_tests'])
+        self.assertEqual(examples('frontend editor focus', limit=1)['examples'][0]['benchmark'], 'deepswe')
+        self.assertEqual(examples('unmatchedzzzz')['examples'], [])
+
+    def test_portfolio_scaffolds_every_workflow(self):
+        from ceval.catalog import portfolio
+        discovery = self.suite_dir/'discovery.json'
+        write_json(discovery, {'workflows': [
+            {'id':'front','name':'Frontend','description':'Editor focus'},
+            {'id':'api','name':'Backend API','description':'Streaming cancellation'}]})
+        result = portfolio(discovery, self.path)
+        self.assertEqual(result['minimum_tasks'], 6)
+        self.assertEqual({(s['workflow_id'], s['difficulty']) for s in result['slots']},
+                         {(w,t) for w in ('front','api') for t in ('easy','medium','hard')})
+        self.assertEqual(read_json(self.path)['purpose'], 'customer')
+
+    def test_customer_requires_each_tier_for_each_workflow(self):
+        self.s.update(purpose='customer', workflows=[{'id':'front','name':'Frontend','description':'UI behavior'}])
+        self.save()
+        for task in self.s['tasks']:
+            path = self.suite_dir/task/'task.json'
+            spec = read_json(path); spec['workflow_id'] = 'front'; write_json(path,spec)
+        load_suite(self.path)
+        self.s['workflows'].append({'id':'api','name':'Backend','description':'API behavior'})
+        self.save()
+        with self.assertRaisesRegex(EvalError, 'Missing workflow difficulty tiers'):
+            load_suite(self.path)
+
+    def test_provenance_links_original_tasks_and_malformed_values(self):
+        from ceval.catalog import validate_provenance
+        task = read_json(self.suite_dir/self.s['tasks'][0]/'task.json')
+        task['benchmark_refs'] = []
+        validate_provenance(task)
+        card = read_json(DATA/'task-examples.json')['examples'][0]
+        task['benchmark_refs'] = [card['benchmark']]
+        task['provenance'] = {'kind':'benchmark-inspired','rationale':'Adapt editor behavior','sources':[
+            {'example_id':card['id'],'source_url':card['source_url'],'adaptation':'Independent synthetic editor fixture'}]}
+        validate_provenance(task)
+        task['provenance']['sources'][0]['source_url'] = 'https://example.com/wrong'
+        with self.assertRaisesRegex(EvalError, 'original source URL'):
+            validate_provenance(task)
+        task['provenance'] = []
+        with self.assertRaises(EvalError): validate_provenance(task)
+
+    def test_legacy_suite_compatibility(self):
+        self.s['schema_version'] = 1
+        self.s.pop('purpose'); self.s.pop('workflows'); self.save()
+        load_suite(self.path)

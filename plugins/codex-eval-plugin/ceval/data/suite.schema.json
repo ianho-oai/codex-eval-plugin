@@ -36,14 +36,62 @@
       "maximum": 100
     },
     "schema_version": {
-      "const": 1
+      "enum": [
+        1,
+        2
+      ]
     },
     "seed": {
       "type": "integer"
     },
     "tasks": {
       "type": "array"
+    },
+    "purpose": {
+      "enum": [
+        "customer",
+        "smoke"
+      ]
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
-  "description": "Runtime core.load_suite additionally enforces paths, task shapes, matrix uniqueness, immutable image IDs, resource limits and sealed content."
+  "description": "Schema 2 customer suites require all three difficulty tiers and provenance for every declared workflow. Schema 1 remains readable for existing runs. Runtime validation additionally checks hashes, source links, paths, and native settings.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "purpose",
+          "workflows"
+        ]
+      }
+    }
+  ]
 }

@@ -21,9 +21,21 @@ Initialize an ignored, customer-owned directory with `EVAL init evaluations/cust
 
 ## 2. Propose a representative task portfolio
 
-Map observed workflows to use cases, frequency, difficulty (easy, medium, hard), expected behavior, and benchmark methodology links. Use `EVAL benchmarks` for the bundled public reference catalog, especially Datacurve DeepSWE, SWE-bench, Terminal-Bench, and Aider Polyglot. Create original customer-relevant tasks; do not claim they are official benchmark tasks or copy material without license review. Past merged solutions are leakage risks: create analogous fresh tasks where possible.
+Record each distinct development workflow in `discovery.json.workflows` as `{ "id": "frontend", "name": "Frontend changes", "description": "..." }`. Every discovered workflow must have at least one easy, one medium, and one hard task. Three workflows means at least nine tasks. Keep the full discovered workflow list; do not merge unrelated workflows or drop difficult ones just to reduce coverage. Explain scope reductions to the customer.
 
-Show a concise table: task, workflow, difficulty/rationale, acceptance checks, benchmark inspiration, runtime estimate. Ask the customer to approve this portfolio before constructing it. If they say stop asking/build now, stop discovery and propose with explicit assumptions; task approval is still required.
+Use the bundled offline catalog before authoring:
+
+```sh
+EVAL examples --query 'frontend async cancellation' --limit 5
+EVAL examples --query 'your specific workflow' --inventory --limit 10
+EVAL portfolio evaluations/customer/discovery.json --suite evaluations/customer/suite.json --output evaluations/customer/portfolio.json
+```
+
+`examples` searches detailed design cards first; `--inventory` also searches mechanically indexed upstream tasks. Read each match's `what_it_tests`, `how_it_tests`, evidence scope, and adaptation guidance. Inspect the linked source before using a mechanical-only entry. Search is keyword-based candidate retrieval, not a recommendation guarantee. `benchmarks` gives family methodology. `portfolio` creates three proposal slots per workflow and registers workflows in the suite; the skill still designs the actual tasks.
+
+Create fresh customer-relevant tasks inspired by suitable examples. For each task, record `workflow_id` and `provenance`: kind `benchmark-inspired`, rationale, and sources containing the catalog `example_id`, exact original `source_url`, and a concrete `adaptation` explanation. Include the family in `benchmark_refs`. Methodology-only cards must be described as methodology inspiration, never as a specific upstream task. If no source fits, use kind `original`, explain why, and set sources to `[]`; benchmark_refs may also be empty. Never force a weak citation or copy upstream solutions. Do not claim these are official benchmark scores. Preserve upstream licensing boundaries when importing code.
+
+Show a concise table: task, workflow, difficulty/rationale, acceptance checks, benchmark inspiration with original source link (or original-design rationale), runtime estimate. Ask the customer to approve this portfolio before constructing it. If they say stop asking/build now, stop discovery and propose with explicit assumptions; task approval is still required.
 
 ## 3. Build and freeze before handoff
 

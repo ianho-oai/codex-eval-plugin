@@ -3,7 +3,21 @@
   "use_case": "Frontend product filtering and pagination",
   "difficulty": "medium",
   "difficulty_rationale": "Combines query normalization, facets, stable sorting, immutability, and pagination boundaries.",
-  "benchmark_refs": ["aider-polyglot", "swe-bench"],
-  "allowed_paths": ["filter.cjs"],
-  "grader": ["node", "{grader}/verify.cjs", "{candidate}"]
+  "benchmark_refs": [
+    "aider-polyglot",
+    "swe-bench"
+  ],
+  "allowed_paths": [
+    "filter.cjs"
+  ],
+  "grader": [
+    "node",
+    "{grader}/verify.cjs",
+    "{candidate}"
+  ],
+  "provenance": {
+    "kind": "original",
+    "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
+    "sources": []
+  }
 }

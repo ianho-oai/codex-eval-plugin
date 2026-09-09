@@ -71,3 +71,7 @@ One skill: discovery → proposal → task authoring → customer approval
 - Combining runs is a convenience for exploration. Different suites may use different tasks, environments, and settings, so combined display alone does not prove a fair benchmark.
 
 Start the combined dashboard from the project directory with `./eval dashboard`. See `README.md` for installation and the full CLI sequence, and `VALIDATION.md` for measured smoke-test results.
+
+## Task design library (0.2.0)
+
+Discovery records named workflows. `examples` retrieves relevant original design summaries and optionally upstream task metadata from a bundled, pinned public catalog. `portfolio` creates three proposal slots per workflow; the skill authors fresh runnable tasks. New customer suites enforce easy/medium/hard coverage per workflow and validate inspiration links or original-design rationale before approval. See [catalog scope](plugins/codex-eval-plugin/ceval/data/catalog.md).

@@ -31,3 +31,10 @@ In a permitted terminal with Claude Code and `ANTHROPIC_API_KEY` configured in t
 ```
 
 The command checks the installed version and capabilities, runs one original trusted-local task, and writes measured results to `evaluations/claude-smoke/run`. Pass `--model` to test a specific account-visible model. Keep secrets out of chat and Git. Share only sanitized results if further debugging is needed.
+
+## 0.2.0 task catalog and portfolio coverage — 2026-09-09
+
+- 35 offline tests pass, including per-workflow tier enforcement, provenance validation, catalog integrity/search, original-task fallback, and legacy suite compatibility.
+- `./eval self-check` passes. Standalone ZIP extraction passes self-check and offline example lookup without the source repository.
+- The catalog contains 1,658 mechanically indexed task records from seven pinned public dataset sources, all fetched, plus 46 original design cards across 13 families. This verifies reference inventory/format, not upstream benchmark execution or exhaustive verifier quality.
+- The new catalog does not imply a new cross-provider result. Customer simulations and their native-run evidence remain in ignored local evaluation directories.

@@ -3,7 +3,21 @@
   "use_case": "Small backend bug fix with regression coverage",
   "difficulty": "easy",
   "difficulty_rationale": "One pure function, explicit edge cases, no cross-module state.",
-  "benchmark_refs": ["swe-bench", "aider-polyglot"],
-  "allowed_paths": ["slug.py"],
-  "grader": ["python3", "{grader}/verify.py", "{candidate}"]
+  "benchmark_refs": [
+    "swe-bench",
+    "aider-polyglot"
+  ],
+  "allowed_paths": [
+    "slug.py"
+  ],
+  "grader": [
+    "python3",
+    "{grader}/verify.py",
+    "{candidate}"
+  ],
+  "provenance": {
+    "kind": "original",
+    "rationale": "Original compact harness fixture. Benchmark family references describe general methodology, not a copied upstream task.",
+    "sources": []
+  }
 }

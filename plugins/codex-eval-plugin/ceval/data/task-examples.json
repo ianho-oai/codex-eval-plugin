@@ -1,0 +1,879 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-09",
+  "scope": "Original design summaries with pinned task links where available. Methodology-only cards are explicitly labeled; benchmark execution and verifier correctness are not certified by inclusion.",
+  "examples": [
+    {
+      "id": "example/deepswe/tasks/quill-shared-toolbar-focus",
+      "inventory_id": "deepswe/tasks/quill-shared-toolbar-focus",
+      "benchmark": "deepswe",
+      "title": "Shared editor toolbar and focus",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/quill-shared-toolbar-focus/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/quill-shared-toolbar-focus/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "State ownership when several rich-text editors share one toolbar; focus, selection, disabled state, and cleanup.",
+      "how_it_tests": "Interaction tests switch active editors, apply toolbar actions, inspect selection and picker state, and remove/recreate editors.",
+      "workflow_tags": [
+        "frontend-ui",
+        "async-concurrency"
+      ],
+      "adaptation_guidance": "Adapt to the customer's editor or shared controls. Grade user-visible state and cleanup rather than private implementation names.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/ink-grid-box-layout",
+      "inventory_id": "deepswe/tasks/ink-grid-box-layout",
+      "benchmark": "deepswe",
+      "title": "Grid layout sizing and placement",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/ink-grid-box-layout/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/ink-grid-box-layout/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Grid tracks, fractional space, gaps, automatic rows, and explicit spans in a terminal UI renderer.",
+      "how_it_tests": "Layout tests compare rendered positions and track sizing across fixed, fractional, automatic, and spanning configurations.",
+      "workflow_tags": [
+        "frontend-ui",
+        "developer-tooling"
+      ],
+      "adaptation_guidance": "For web interfaces use pinned browser/viewport geometry checks; add responsive integration for the hard tier.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/happy-dom-abort-pending-body-reads",
+      "inventory_id": "deepswe/tasks/happy-dom-abort-pending-body-reads",
+      "benchmark": "deepswe",
+      "title": "Abort asynchronous work during teardown",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/happy-dom-abort-pending-body-reads/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/happy-dom-abort-pending-body-reads/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Body reads and multipart parsing interrupted by page/window disposal, plus timer cleanup without breaking completed reads.",
+      "how_it_tests": "Lifecycle tests dispose windows/pages, assert abort failures for interrupted reads, preserve buffered responses, and verify discarded callbacks do not fire.",
+      "workflow_tags": [
+        "frontend-ui",
+        "async-concurrency",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Use the customer's fetch or view lifecycle with deterministic scheduling and stale-result regressions.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/fastapi-implicit-head-options",
+      "inventory_id": "deepswe/tasks/fastapi-implicit-head-options",
+      "benchmark": "deepswe",
+      "title": "Implicit HTTP methods and routing precedence",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/fastapi-implicit-head-options/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/fastapi-implicit-head-options/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "HEAD/OPTIONS behavior, routing overrides, dependencies, headers, validation, and middleware metadata.",
+      "how_it_tests": "Requests exercise constructor/router/route overrides, empty HEAD bodies, explicit method priority, and generated method metadata.",
+      "workflow_tags": [
+        "backend-api",
+        "testing-quality"
+      ],
+      "adaptation_guidance": "Create an analogous API extension with response-contract tests and regressions for existing routes.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/httpx-streaming-json-iteration",
+      "inventory_id": "deepswe/tasks/httpx-streaming-json-iteration",
+      "benchmark": "deepswe",
+      "title": "Incremental JSON response parsing",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/httpx-streaming-json-iteration/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/httpx-streaming-json-iteration/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Streaming JSON arrays, newline-separated values, media types, encodings, and sync/async consumption.",
+      "how_it_tests": "Tests vary media types, BOM placement, line endings, stream boundaries, decoding errors, and the observable iterator results.",
+      "workflow_tags": [
+        "backend-api",
+        "parsing-compilers",
+        "async-concurrency"
+      ],
+      "adaptation_guidance": "Use deterministic in-memory byte streams; scale difficulty from one format to chunk boundaries and cancellation.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/cliffy-config-file-parsing",
+      "inventory_id": "deepswe/tasks/cliffy-config-file-parsing",
+      "benchmark": "deepswe",
+      "title": "Configuration loading and precedence",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/cliffy-config-file-parsing/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/cliffy-config-file-parsing/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Config discovery, JSON/RC parsing, type coercion, merging, caching, and CLI/environment/config precedence.",
+      "how_it_tests": "The held-out test patch exercises command configuration against fixtures and expected parsed options.",
+      "workflow_tags": [
+        "developer-tooling",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Keep configuration loading local and specify precedence explicitly; include invalid configuration and compatibility checks.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/sqlite-utils-safe-import-checkpoints",
+      "inventory_id": "deepswe/tasks/sqlite-utils-safe-import-checkpoints",
+      "benchmark": "deepswe",
+      "title": "Transactional import and rollback",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/sqlite-utils-safe-import-checkpoints/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/sqlite-utils-safe-import-checkpoints/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Import checkpoints, invariant validation, nested operations, and restoring data plus schema after errors.",
+      "how_it_tests": "Database tests create/commit/rollback checkpoints, check invariant failures, and compare post-failure database state.",
+      "workflow_tags": [
+        "database-data",
+        "backend-api",
+        "distributed-systems"
+      ],
+      "adaptation_guidance": "Create a small customer-like import dataset; hard tasks include schema changes, nested failures, and retry behavior.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/vitest-duration-sharding",
+      "inventory_id": "deepswe/tasks/vitest-duration-sharding",
+      "benchmark": "deepswe",
+      "title": "Duration-aware test scheduling",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/vitest-duration-sharding/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/vitest-duration-sharding/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Test partitioning using duration history, deterministic tie breaks, affinity rules, and invalid configuration.",
+      "how_it_tests": "Test fixtures assert shard membership, balancing choices, history handling, and configuration validation.",
+      "workflow_tags": [
+        "testing-quality",
+        "devops-build",
+        "performance"
+      ],
+      "adaptation_guidance": "Use synthetic timing history and assert deterministic scheduling; never depend on wall-clock test jitter for correctness.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/bandit-interprocedural-taint-checks",
+      "inventory_id": "deepswe/tasks/bandit-interprocedural-taint-checks",
+      "benchmark": "deepswe",
+      "title": "Static analysis across assignments and calls",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/bandit-interprocedural-taint-checks/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/bandit-interprocedural-taint-checks/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Tracking untrusted input to unsafe operations while distinguishing safe parameterization and sanitization.",
+      "how_it_tests": "Positive and negative Python fixtures test direct/multi-hop flows, sink aliases, severity, confidence, and safe cases.",
+      "workflow_tags": [
+        "security-hardening",
+        "developer-tooling",
+        "testing-quality"
+      ],
+      "adaptation_guidance": "Build a bounded defensive analyzer on synthetic code; score both missed findings and false positives.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/deepswe/tasks/yjs-map-conflict-detection",
+      "inventory_id": "deepswe/tasks/yjs-map-conflict-detection",
+      "benchmark": "deepswe",
+      "title": "Conflict detection and atomic updates",
+      "source_type": "task",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/yjs-map-conflict-detection/instruction.md",
+      "verifier_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/yjs-map-conflict-detection/tests/test.patch",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Policies for conflicting collaborative-map writes, deterministic reporting, and avoiding partial updates.",
+      "how_it_tests": "Verifier patches exercise conflicting transactions/merged updates, policy behavior, summaries, and atomicity.",
+      "workflow_tags": [
+        "distributed-systems",
+        "async-concurrency",
+        "database-data"
+      ],
+      "adaptation_guidance": "Use an original local collaborative-state model; verify interleavings and invariants without live services.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/cancel-async-tasks",
+      "inventory_id": "terminal-bench/cancel-async-tasks",
+      "benchmark": "terminal-bench",
+      "title": "Bounded concurrency with cancellation cleanup",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/cancel-async-tasks/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/cancel-async-tasks/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Concurrency limits, pending job handling, and cleanup when a process is interrupted.",
+      "how_it_tests": "Subprocess tests send SIGINT and count started jobs and completed cleanup blocks.",
+      "workflow_tags": [
+        "async-concurrency",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Use a deterministic cancellation barrier where possible; test queued versus running work separately.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/kv-store-grpc",
+      "inventory_id": "terminal-bench/kv-store-grpc",
+      "benchmark": "terminal-bench",
+      "title": "Build and exercise a gRPC service",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/kv-store-grpc/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/kv-store-grpc/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Protocol definitions, code generation, server startup, and key-value read/write semantics.",
+      "how_it_tests": "A real gRPC client connects to the service and checks set, get, and overwrite responses.",
+      "workflow_tags": [
+        "backend-api",
+        "distributed-systems",
+        "devops-build"
+      ],
+      "adaptation_guidance": "Preinstall dependencies and choose isolated ports. Extend the hard tier with persistence and recovery requirements.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/multi-source-data-merger",
+      "inventory_id": "terminal-bench/multi-source-data-merger",
+      "benchmark": "terminal-bench",
+      "title": "Merge conflicting records across formats",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/multi-source-data-merger/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/multi-source-data-merger/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Schema normalization, key-based merging, source priority, deterministic output, and conflict reporting.",
+      "how_it_tests": "Tests compare exact merged Parquet values and JSON conflict reports against fixture expectations.",
+      "workflow_tags": [
+        "database-data",
+        "data-science"
+      ],
+      "adaptation_guidance": "Use invented customer-shaped records; vary precedence, missing fields, duplicates, and malformed rows.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/query-optimize",
+      "inventory_id": "terminal-bench/query-optimize",
+      "benchmark": "terminal-bench",
+      "title": "Optimize SQL without changing results",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/query-optimize/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/query-optimize/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Query performance while preserving results and leaving the database unchanged.",
+      "how_it_tests": "Tests compare output with a golden query, check database modifications, and measure execution runtime.",
+      "workflow_tags": [
+        "database-data",
+        "performance"
+      ],
+      "adaptation_guidance": "Use isolated hardware, warmups, repeated timings, a noise margin, and independent result-equivalence checks.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/build-cython-ext",
+      "inventory_id": "terminal-bench/build-cython-ext",
+      "benchmark": "terminal-bench",
+      "title": "Repair native-extension compatibility",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/build-cython-ext/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/build-cython-ext/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Building and importing Cython extensions against a specified NumPy version while preserving functionality.",
+      "how_it_tests": "Tests verify installed versions, extension imports, and actual computational outputs.",
+      "workflow_tags": [
+        "devops-build",
+        "refactoring-migration"
+      ],
+      "adaptation_guidance": "Prestage source and toolchain; compare behavior and package imports under the pinned target runtime.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/modernize-scientific-stack",
+      "inventory_id": "terminal-bench/modernize-scientific-stack",
+      "benchmark": "terminal-bench",
+      "title": "Modernize a scientific Python project",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/modernize-scientific-stack/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/modernize-scientific-stack/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Updating old scientific code and declaring dependencies for the current environment.",
+      "how_it_tests": "Tests execute the modernized program and check that a dependency declaration exists.",
+      "workflow_tags": [
+        "refactoring-migration",
+        "data-science",
+        "devops-build"
+      ],
+      "adaptation_guidance": "Strengthen the customer verifier with numeric output equivalence and dependency constraints; file existence alone is insufficient.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/cobol-modernization",
+      "inventory_id": "terminal-bench/cobol-modernization",
+      "benchmark": "terminal-bench",
+      "title": "Port a legacy file-processing program",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/cobol-modernization/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/cobol-modernization/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Preserving legacy record-processing behavior while rewriting the implementation in Python.",
+      "how_it_tests": "Tests execute the new program against fixed input records and compare output files exactly.",
+      "workflow_tags": [
+        "refactoring-migration",
+        "database-data"
+      ],
+      "adaptation_guidance": "Use fresh record layouts and independent differential cases, including malformed input and transaction order.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/terminal-bench/nginx-request-logging",
+      "inventory_id": "terminal-bench/nginx-request-logging",
+      "benchmark": "terminal-bench",
+      "title": "Configure service behavior and logging",
+      "source_type": "task",
+      "source_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/nginx-request-logging/instruction.md",
+      "verifier_url": "https://github.com/harbor-framework/terminal-bench-2/blob/2fd12b88aafdd04a52c298e3940bcb189f9766d6/nginx-request-logging/tests/test_outputs.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Static serving, custom errors, log fields, rate limits, and valid server configuration.",
+      "how_it_tests": "HTTP and configuration checks verify served pages, log contents, syntax, and rate-limiting settings.",
+      "workflow_tags": [
+        "devops-build",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Run only inside an isolated container; use synthetic requests and avoid modifying the customer's host services.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/cpp/exercises/practice/bank-account",
+      "inventory_id": "aider-polyglot/cpp/exercises/practice/bank-account",
+      "benchmark": "aider-polyglot",
+      "title": "Concurrent account lifecycle",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/cpp/exercises/practice/bank-account/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/cpp/exercises/practice/bank-account/bank_account_test.cpp",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Account open/close state, balance updates, errors, and concurrent access.",
+      "how_it_tests": "Language-native tests exercise lifecycle and balance behavior.",
+      "workflow_tags": [
+        "async-concurrency",
+        "algorithms"
+      ],
+      "adaptation_guidance": "Use a different bounded state machine; add synchronization and invalid-transition tests.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/cpp/exercises/practice/circular-buffer",
+      "inventory_id": "aider-polyglot/cpp/exercises/practice/circular-buffer",
+      "benchmark": "aider-polyglot",
+      "title": "Fixed-capacity queue semantics",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/cpp/exercises/practice/circular-buffer/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/cpp/exercises/practice/circular-buffer/circular_buffer_test.cpp",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "FIFO order, wraparound, full/empty errors, overwrite, and reset.",
+      "how_it_tests": "Exercise tests compare operation sequences and failure behavior.",
+      "workflow_tags": [
+        "algorithms",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Use randomized operation traces against a simple reference model.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/go/exercises/practice/react",
+      "inventory_id": "aider-polyglot/go/exercises/practice/react",
+      "benchmark": "aider-polyglot",
+      "title": "Reactive dependency propagation",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/react/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/react/react_test.go",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Dependent value recomputation and callbacks only after stable changed results.",
+      "how_it_tests": "Tests cover chains, diamonds, trees, callback removal, and no-op updates.",
+      "workflow_tags": [
+        "frontend-ui",
+        "async-concurrency",
+        "algorithms"
+      ],
+      "adaptation_guidance": "Adapt to derived UI state; include event coalescing and subscriber lifecycle checks.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/go/exercises/practice/forth",
+      "inventory_id": "aider-polyglot/go/exercises/practice/forth",
+      "benchmark": "aider-polyglot",
+      "title": "Stack language interpreter",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/forth/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/forth/cases_test.go",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Arithmetic, stack operations, named definitions, and case-insensitive words.",
+      "how_it_tests": "Language-native tests execute programs and compare stacks or expected errors.",
+      "workflow_tags": [
+        "parsing-compilers",
+        "algorithms"
+      ],
+      "adaptation_guidance": "Create a small customer-specific expression language with independent expected outputs.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/go/exercises/practice/markdown",
+      "inventory_id": "aider-polyglot/go/exercises/practice/markdown",
+      "benchmark": "aider-polyglot",
+      "title": "Behavior-preserving parser refactor",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/markdown/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/go/exercises/practice/markdown/cases_test.go",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Restructuring a working parser while preserving Markdown-to-HTML behavior.",
+      "how_it_tests": "Existing exercise tests check output equivalence; they do not independently establish maintainability.",
+      "workflow_tags": [
+        "refactoring-migration",
+        "parsing-compilers"
+      ],
+      "adaptation_guidance": "Add measurable structural constraints only when the customer needs them; do not grade subjective cleanliness as binary.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/aider-polyglot/java/exercises/practice/sgf-parsing",
+      "inventory_id": "aider-polyglot/java/exercises/practice/sgf-parsing",
+      "benchmark": "aider-polyglot",
+      "title": "Parse a structured tree format",
+      "source_type": "task",
+      "source_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/java/exercises/practice/sgf-parsing/.docs/instructions.md",
+      "verifier_url": "https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/java/exercises/practice/sgf-parsing/src/test/java/SgfParsingTest.java",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Nested nodes, properties, escaped content, and format errors.",
+      "how_it_tests": "Unit tests compare parsed trees and malformed-input handling.",
+      "workflow_tags": [
+        "parsing-compilers",
+        "algorithms"
+      ],
+      "adaptation_guidance": "Use an original document format and include round-trip and invalid nesting cases.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+      "inventory_id": "swe-bench-pro/instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+      "benchmark": "swe-bench-pro",
+      "title": "Email verification lifecycle",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L1",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L1",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "Admin-visible verification state, expired confirmation keys, and resend eligibility.",
+      "how_it_tests": "Fail-to-pass selectors cover confirmation helpers and key retrieval, alongside regression tests.",
+      "workflow_tags": [
+        "backend-api",
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+      "inventory_id": "swe-bench-pro/instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+      "benchmark": "swe-bench-pro",
+      "title": "Relocate tests after a module refactor",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L2",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L2",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "Preserving Qt warning-filter behavior after moving implementation and tests.",
+      "how_it_tests": "Parameterized warning-filter tests verify filtered and unfiltered cases in the new module.",
+      "workflow_tags": [
+        "testing-quality",
+        "refactoring-migration"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_NodeBB__NodeBB-51d8f3b195bddb13a13ddc0de110722774d9bb1b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+      "inventory_id": "swe-bench-pro/instance_NodeBB__NodeBB-51d8f3b195bddb13a13ddc0de110722774d9bb1b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+      "benchmark": "swe-bench-pro",
+      "title": "Federated discovery endpoint",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L3",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L3",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "WebFinger response behavior, input validation, and access control.",
+      "how_it_tests": "Controller tests probe missing/malformed resources and permission-restricted requests.",
+      "workflow_tags": [
+        "backend-api",
+        "security-hardening"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "inventory_id": "swe-bench-pro/instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "benchmark": "swe-bench-pro",
+      "title": "Hierarchical host-blocking rules",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L4",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L4",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "Parent-domain blocking, subdomain matching, and whitelist precedence.",
+      "how_it_tests": "Host-blocking and hostname-expansion tests cover positive, negative, and malformed cases.",
+      "workflow_tags": [
+        "security-hardening",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+      "inventory_id": "swe-bench-pro/instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+      "benchmark": "swe-bench-pro",
+      "title": "Validate package collection identifiers",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L5",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L5",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "Rejecting reserved Python words while preserving valid package names.",
+      "how_it_tests": "Parameterized identifier tests distinguish reserved-word combinations from valid identifiers.",
+      "workflow_tags": [
+        "developer-tooling",
+        "testing-quality"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-bench-pro/instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "inventory_id": "swe-bench-pro/instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "benchmark": "swe-bench-pro",
+      "title": "Respect explicit HTTP authorization",
+      "source_type": "task",
+      "source_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L6",
+      "verifier_url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/helper_code/sweap_eval_full_v2.jsonl#L6",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "dataset_problem_and_test_selectors",
+      "what_it_tests": "Authentication precedence between explicit headers and saved netrc credentials.",
+      "how_it_tests": "Request/open-url tests exercise fallback behavior and explicit request parameters.",
+      "workflow_tags": [
+        "backend-api",
+        "security-hardening"
+      ],
+      "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-lancer/17387_1",
+      "inventory_id": "swe-lancer/17387_1",
+      "benchmark": "swe-lancer",
+      "title": "Consistent email validation across screens",
+      "source_type": "task",
+      "source_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/17387_1/issue_data.json",
+      "verifier_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/17387_1/test.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Multiple UI entry points should reject the same invalid email consistently.",
+      "how_it_tests": "Browser tests exercise several screens and inspect their validation error messages.",
+      "workflow_tags": [
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-lancer/32236_652",
+      "inventory_id": "swe-lancer/32236_652",
+      "benchmark": "swe-lancer",
+      "title": "Offline deleted-message thread behavior",
+      "source_type": "task",
+      "source_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/32236_652/issue_data.json",
+      "verifier_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/32236_652/test.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Preventing invalid thread behavior after deletion while offline.",
+      "how_it_tests": "Browser interactions check messaging state and the absence of the disallowed thread control.",
+      "workflow_tags": [
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-lancer/18641_837",
+      "inventory_id": "swe-lancer/18641_837",
+      "benchmark": "swe-lancer",
+      "title": "Bounded participant-avatar display",
+      "source_type": "task",
+      "source_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/18641_837/issue_data.json",
+      "verifier_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/18641_837/test.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Correct rendering of participant avatars in a bill-split preview.",
+      "how_it_tests": "A browser test locates the avatar stack and checks visible elements.",
+      "workflow_tags": [
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/swe-lancer/49298_510",
+      "inventory_id": "swe-lancer/49298_510",
+      "benchmark": "swe-lancer",
+      "title": "Scrollable private-notes introduction",
+      "source_type": "task",
+      "source_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/49298_510/issue_data.json",
+      "verifier_url": "https://github.com/openai/preparedness/blob/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer/issues/49298_510/test.py",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_verifier",
+      "what_it_tests": "Text should move with its scroll container instead of remaining incorrectly fixed.",
+      "how_it_tests": "Browser tests compare element position before and after scrolling.",
+      "workflow_tags": [
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/featurebench/full:huggingface__transformers.e2e8dbed/test_chat_template_utils.8c88f8ec.lv1",
+      "inventory_id": "featurebench/full:huggingface__transformers.e2e8dbed/test_chat_template_utils.8c88f8ec.lv1",
+      "benchmark": "featurebench",
+      "title": "Generate a tool schema from a function",
+      "source_type": "task",
+      "source_url": "https://github.com/LiberCoders/FeatureBench/blob/aa464e99aa61c5c47ad1c595671fa6ec7c499232/tasks/data/v1.1/full/huggingface__transformers.e2e8dbed/test_chat_template_utils.8c88f8ec.lv1/problem_statement.md",
+      "verifier_url": "https://github.com/LiberCoders/FeatureBench/tree/8d4e347ec57546685c5a87e8676bf575db022ea6/featurebench",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_benchmark_methodology",
+      "what_it_tests": "Type hints and docstrings become a function schema with required parameters, returns, and enum choices.",
+      "how_it_tests": "The statement specifies pytest against exposed interfaces; the benchmark uses fail-to-pass and pass-to-pass tests.",
+      "workflow_tags": [
+        "backend-api",
+        "developer-tooling",
+        "parsing-compilers"
+      ],
+      "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/featurebench/full:pypa__hatch.ff4b4040/test_config.38d2ef18.lv1",
+      "inventory_id": "featurebench/full:pypa__hatch.ff4b4040/test_config.38d2ef18.lv1",
+      "benchmark": "featurebench",
+      "title": "Resolve project dependencies",
+      "source_type": "task",
+      "source_url": "https://github.com/LiberCoders/FeatureBench/blob/aa464e99aa61c5c47ad1c595671fa6ec7c499232/tasks/data/v1.1/full/pypa__hatch.ff4b4040/test_config.38d2ef18.lv1/problem_statement.md",
+      "verifier_url": "https://github.com/LiberCoders/FeatureBench/tree/8d4e347ec57546685c5a87e8676bf575db022ea6/featurebench",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_benchmark_methodology",
+      "what_it_tests": "Core and optional dependency retrieval from static or generated project metadata.",
+      "how_it_tests": "The task specifies interface-level pytest checks in a prepared Hatch repository.",
+      "workflow_tags": [
+        "devops-build",
+        "developer-tooling"
+      ],
+      "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/featurebench/full:sphinx-doc__sphinx.e347e59c/test_build_linkcheck.20428c8f.lv1",
+      "inventory_id": "featurebench/full:sphinx-doc__sphinx.e347e59c/test_build_linkcheck.20428c8f.lv1",
+      "benchmark": "featurebench",
+      "title": "Link checker retry scheduling",
+      "source_type": "task",
+      "source_url": "https://github.com/LiberCoders/FeatureBench/blob/aa464e99aa61c5c47ad1c595671fa6ec7c499232/tasks/data/v1.1/full/sphinx-doc__sphinx.e347e59c/test_build_linkcheck.20428c8f.lv1/problem_statement.md",
+      "verifier_url": "https://github.com/LiberCoders/FeatureBench/tree/8d4e347ec57546685c5a87e8676bf575db022ea6/featurebench",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "task_instruction_and_benchmark_methodology",
+      "what_it_tests": "Anchor initialization and Retry-After/default backoff calculations.",
+      "how_it_tests": "The task specifies pytest against two exposed Sphinx interfaces; clock and header cases define the behavior.",
+      "workflow_tags": [
+        "developer-tooling",
+        "backend-api",
+        "async-concurrency"
+      ],
+      "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/gso/huggingface__datasets-5994036",
+      "inventory_id": "gso/huggingface__datasets-5994036",
+      "benchmark": "gso",
+      "title": "Optimize contiguous dataset selection",
+      "source_type": "task",
+      "source_url": "https://github.com/gso-bench/gso-bench.github.io/blob/4907255406d698753efec71c0c8c427608e8683a/assets/gso-dataset.json",
+      "verifier_url": "https://github.com/gso-bench/gso-bench.github.io/blob/4907255406d698753efec71c0c8c427608e8683a/assets/gso-dataset.json",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "performance_script_and_methodology",
+      "what_it_tests": "Accelerate contiguous row selection while preserving selected records and aggregate values.",
+      "how_it_tests": "The public performance script runs a workload, serializes its result, and checks equivalence; the harness measures speedup against a reference.",
+      "workflow_tags": [
+        "performance",
+        "data-science"
+      ],
+      "adaptation_guidance": "Use varied held-out inputs and controlled repeated timing. Ban output hardcoding and grade correctness before speed.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "example/gso/numpy__numpy-7ff7ec7",
+      "inventory_id": "gso/numpy__numpy-7ff7ec7",
+      "benchmark": "gso",
+      "title": "Optimize array equivalence",
+      "source_type": "task",
+      "source_url": "https://github.com/gso-bench/gso-bench.github.io/blob/4907255406d698753efec71c0c8c427608e8683a/assets/gso-dataset.json",
+      "verifier_url": "https://github.com/gso-bench/gso-bench.github.io/blob/4907255406d698753efec71c0c8c427608e8683a/assets/gso-dataset.json",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "performance_script_and_methodology",
+      "what_it_tests": "Improve array comparison speed while retaining the required boolean result across input cases.",
+      "how_it_tests": "The public performance script runs a workload, serializes its result, and checks equivalence; the harness measures speedup against a reference.",
+      "workflow_tags": [
+        "performance",
+        "data-science"
+      ],
+      "adaptation_guidance": "Use varied held-out inputs and controlled repeated timing. Ban output hardcoding and grade correctness before speed.",
+      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+    },
+    {
+      "id": "method/swe-bench/fail-to-pass-regression",
+      "benchmark": "swe-bench",
+      "title": "Issue repair with regression preservation",
+      "source_type": "methodology",
+      "source_url": "https://www.swebench.com/SWE-bench/guides/evaluation/",
+      "verifier_url": "https://www.swebench.com/SWE-bench/guides/evaluation/",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Repair a repository defect while retaining already working behavior.",
+      "how_it_tests": "Run designated failing tests after the patch plus tests that passed before the change.",
+      "workflow_tags": [
+        "backend-api",
+        "testing-quality",
+        "refactoring-migration"
+      ],
+      "adaptation_guidance": "Fresh bugs need independent tests, pinned repository state, and a held-out verifier.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/swe-bench-multimodal/visual-interface-repair",
+      "benchmark": "swe-bench-multimodal",
+      "title": "Visual JavaScript library repair",
+      "source_type": "methodology",
+      "source_url": "https://arxiv.org/abs/2410.03859",
+      "verifier_url": "https://arxiv.org/abs/2410.03859",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Issues involving web interfaces, diagrams, mappings, and visual library behavior.",
+      "how_it_tests": "The benchmark extends issue repair to visual contexts; customer tasks need independently executable acceptance criteria.",
+      "workflow_tags": [
+        "frontend-ui"
+      ],
+      "adaptation_guidance": "Translate visual requirements into fixed-viewport geometry, semantic DOM, and interaction checks. Do not use an aesthetic judge as the completion oracle.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/testgeneval/full-file",
+      "benchmark": "testgeneval",
+      "title": "Write a useful test suite",
+      "source_type": "methodology",
+      "source_url": "https://github.com/facebookresearch/testgeneval/blob/67ea3ff37643b3078413d6e4fadaae00ce8d9e5d/README.md",
+      "verifier_url": "https://github.com/facebookresearch/testgeneval/blob/67ea3ff37643b3078413d6e4fadaae00ce8d9e5d/README.md",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Generate tests for a real module rather than merely producing passing test files.",
+      "how_it_tests": "Measure execution success, coverage, and mutation score.",
+      "workflow_tags": [
+        "testing-quality"
+      ],
+      "adaptation_guidance": "Set explicit coverage and killed-mutant thresholds on an original module; check that tests also pass on the correct implementation.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/testgeneval/extra-test",
+      "benchmark": "testgeneval",
+      "title": "Add a test that closes a coverage gap",
+      "source_type": "methodology",
+      "source_url": "https://testgeneval.github.io/",
+      "verifier_url": "https://testgeneval.github.io/",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Extend an existing suite with a behavior it does not yet test.",
+      "how_it_tests": "Measure whether the added test passes and improves coverage or mutation detection.",
+      "workflow_tags": [
+        "testing-quality"
+      ],
+      "adaptation_guidance": "Prepare known missed defects and reject vacuous assertions or disabled tests.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/bigcodebench/library-composition",
+      "benchmark": "bigcodebench",
+      "title": "Compose library calls into a working utility",
+      "source_type": "methodology",
+      "source_url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/README.md",
+      "verifier_url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/README.md",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Implement multi-step Python utilities requiring multiple real libraries.",
+      "how_it_tests": "Execute unit tests against the function contract in a defined dependency environment.",
+      "workflow_tags": [
+        "data-science",
+        "database-data",
+        "backend-api"
+      ],
+      "adaptation_guidance": "Bundle fixtures and packages; replace external APIs with deterministic local fixtures.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/livecodebench/algorithmic-correctness",
+      "benchmark": "livecodebench",
+      "title": "Algorithmic input/output correctness",
+      "source_type": "methodology",
+      "source_url": "https://github.com/LiveCodeBench/LiveCodeBench/blob/28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24/README.md",
+      "verifier_url": "https://github.com/LiveCodeBench/LiveCodeBench/blob/28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24/README.md",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Solve algorithmic problems across ordinary and difficult boundary inputs.",
+      "how_it_tests": "Execute generated programs against problem test cases under resource limits.",
+      "workflow_tags": [
+        "algorithms"
+      ],
+      "adaptation_guidance": "Use small customer-relevant algorithms and hidden generated cases. Contest difficulty is not repository-engineering difficulty.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    },
+    {
+      "id": "method/evalplus/expanded-tests",
+      "benchmark": "evalplus",
+      "title": "Strengthen a weak functional verifier",
+      "source_type": "methodology",
+      "source_url": "https://github.com/evalplus/evalplus/blob/26d6d00bb1fd0fa37f39c99d5290da67891d1c5e/README.md",
+      "verifier_url": "https://github.com/evalplus/evalplus/blob/26d6d00bb1fd0fa37f39c99d5290da67891d1c5e/README.md",
+      "inspection": "reviewed_design_card",
+      "evidence_scope": "benchmark_methodology_only_not_an_individual_task",
+      "what_it_tests": "Distinguish plausible implementations using many more edge and adversarial cases.",
+      "how_it_tests": "Expanded test suites probe implementations beyond the small original examples.",
+      "workflow_tags": [
+        "testing-quality",
+        "algorithms"
+      ],
+      "adaptation_guidance": "Generate deterministic edge cases and mutants; keep expected outputs independent of candidate code.",
+      "difficulty_policy": "These are methodology patterns, not downloaded task instances or official difficulty assignments."
+    }
+  ]
+}

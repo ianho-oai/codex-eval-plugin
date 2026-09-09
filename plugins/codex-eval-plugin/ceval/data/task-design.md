@@ -4,7 +4,7 @@ Read when converting approved workflows into runnable tasks. See `benchmarks.jso
 
 ## Portfolio
 
-Record workflow frequency, languages/frameworks, pain points, deliverable, source provenance, difficulty, and testable success criteria in `discovery.json`. Aim for a meaningful spread across workflows and difficulties. Avoid over-weighting many small tasks merely because they are cheap. Use repeated trials (default 3) and document any sampling choices. A task should have enough context for a headless agent to finish without clarification.
+Record workflow frequency, languages/frameworks, pain points, deliverable, source provenance, difficulty, and testable success criteria in `discovery.json`. New customer suites require at least one easy, medium, and hard task for **each** declared workflow. Declare workflows in discovery.json, then use `portfolio DISCOVERY --suite SUITE` to register them. Suite schema 2 enforces this at validation, planning, approval, and execution; legacy schema 1 and explicit developer smoke suites remain supported. Avoid over-weighting many small tasks merely because they are cheap. Use repeated trials (default 3) and document any sampling choices. A task should have enough context for a headless agent to finish without clarification.
 
 | Difficulty | Design | Example frontend workflow |
 | --- | --- | --- |
@@ -13,6 +13,39 @@ Record workflow frequency, languages/frameworks, pain points, deliverable, sourc
 | Hard | Multi-stage or cross-module behavior | Async search with cancellation, stale results, keyboard navigation, disposal, and backward compatibility |
 
 Hard customer tasks should include repository-scale integration where the workflow warrants it. Merely adding more edge cases to a small function is not equivalent to DeepSWE's long-horizon scope. The included async controller is a compact validation example.
+
+## Finding task inspiration
+
+The bundled `task-inventory.json` contains 1,658 metadata records from seven pinned public dataset sources. `task-examples.json` contains 46 original design cards across 13 benchmark families. This is a scoped reference library, not an exhaustive ranking or a claim that every verifier was audited. See [catalog coverage](catalog.md).
+
+Search with `examples --query "workflow terms"`; expand to the mechanical inventory with `--inventory`. Explain how you adapt behavior, context, and verification to the customer. Keep benchmark URLs in metadata, outside the evaluated agent's prompt. Methodology-only cards do not identify an upstream task.
+
+Example task metadata additions:
+
+```json
+{
+  "workflow_id": "frontend",
+  "provenance": {
+    "kind": "benchmark-inspired",
+    "rationale": "Exercise editor focus across interacting components.",
+    "sources": [{
+      "example_id": "example/deepswe/tasks/quill-shared-toolbar-focus",
+      "source_url": "https://github.com/datacurve-ai/deep-swe/blob/0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea/tasks/quill-shared-toolbar-focus/instruction.md",
+      "adaptation": "Use the customer's synthetic two-pane editor and independently verify focus and selection preservation."
+    }]
+  }
+}
+```
+
+An original task uses `{"kind":"original","rationale":"Why no catalog example fits and what this task exercises","sources":[]}`. Source URLs are validated against the catalog. Difficulty describes customer scope, not an upstream rating.
+
+| Workflow | Easy | Medium | Hard |
+| --- | --- | --- | --- |
+| API/backend | Repair one validation contract | Integrate pagination, errors, and compatibility | Add streaming/cancellation across service lifecycle and recovery |
+| CLI/tooling | Fix flag parsing | Compose config-file and environment precedence | Multi-command migration with rollback and compatibility |
+| Data/performance | Correct one transformation | Join heterogeneous inputs and preserve schema | Optimize an integrated pipeline with output equivalence and fixed workload thresholds |
+| Test authoring | Catch a focused regression | Cover state transitions and error paths | Kill a defined set of realistic cross-module mutants while preserving valid behavior |
+| Frontend | Semantic DOM/empty-state repair | Filter and navigation state integration | Async interaction lifecycle, accessibility, recovery, and regressions |
 
 ## Layout
 

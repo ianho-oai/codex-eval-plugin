@@ -34,13 +34,22 @@
     },
     "benchmark_refs": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "items": {
         "enum": [
           "deepswe",
           "swe-bench",
           "terminal-bench",
-          "aider-polyglot"
+          "aider-polyglot",
+          "swe-bench-pro",
+          "swe-lancer",
+          "featurebench",
+          "gso",
+          "testgeneval",
+          "bigcodebench",
+          "livecodebench",
+          "evalplus",
+          "swe-bench-multimodal"
         ]
       }
     },
@@ -56,6 +65,56 @@
       "minItems": 1,
       "items": {
         "type": "string"
+      }
+    },
+    "workflow_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "rationale",
+        "sources"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "benchmark-inspired",
+            "original"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "example_id",
+              "source_url",
+              "adaptation"
+            ],
+            "properties": {
+              "example_id": {
+                "type": "string"
+              },
+              "source_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "adaptation": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
       }
     }
   }

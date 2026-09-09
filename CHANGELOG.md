@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 2026-09-09
+
+- Bundle 1,658 pinned public task references and 46 detailed design examples across 13 benchmark families.
+- Add offline `examples` search and `portfolio` scaffolding.
+- Require three difficulty tiers per discovered workflow in new customer suites, with validated benchmark inspiration or original-design rationale.
+- Preserve legacy suites and explicit developer smoke tests.
+
 ## 0.1.1 — 2026-09-09
 
 - Automatically combine all live runs under the evaluation workspace, refresh every 15 seconds, and preserve original result integrity and source provenance. Use a Codex-inspired charcoal/white theme with orange Claude points.

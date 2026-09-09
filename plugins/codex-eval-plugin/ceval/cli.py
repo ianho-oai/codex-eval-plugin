@@ -19,6 +19,7 @@ from .core import DATA, EvalError, digest, load_suite, now, read_json, require, 
 from .discovery import history, repo_evidence, snapshot
 from .report import report, serve
 from .runner import clean_env, execute, preflight, run, schedule, validate_graders
+from .catalog import examples, portfolio
 
 
 def load_local_keys():
@@ -39,14 +40,14 @@ def load_local_keys():
             os.environ[match[1]] = values[0]
 
 
-def initialize(destination, mode, image):
+def initialize(destination, mode, image, purpose='customer'):
     dest = Path(destination).resolve()
     require(not dest.exists(), 'Destination exists; choose a new evaluation directory')
     dest.mkdir(parents=True)
     shutil.copytree(DATA / 'examples', dest / 'tasks')
     shutil.copy2(DATA / 'rates.json', dest / 'rates.json')
     catalog = read_json(DATA / 'models.json')
-    s = {'schema_version': 1, 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
+    s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
          'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': [m['default_effort']]} for m in catalog['models'] if m.get('default')],
          'repeats': 3, 'seed': 42, 'pricing': 'rates.json',
          'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': 20, 'claude_max_turns': 50},
@@ -124,7 +125,7 @@ def self_check():
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         p = Path(td)/'example'
-        initialize(p, 'local', None)
+        initialize(p, 'local', None, purpose='smoke')
         _, s, tasks, _, seal = load_suite(p/'suite.json')
     return {'version': __version__, 'task_examples': len(tasks), 'scheduled_example_cells': len(schedule(s, tasks)),
             'status': 'passed', 'note': 'Structure validation only. Run validate --check-graders and unit/integration tests for behavior.'}
@@ -142,7 +143,7 @@ def smoke(provider, output, model=None, binary=None):
     import re
     match = re.search(r'\b\d+\.\d+\.\d+\b', v['stdout'])
     require(v['exit_code'] == 0 and match is not None, 'Cannot resolve native CLI version; pass --binary with the installed executable path')
-    initialize(destination/'suite', 'local', None)
+    initialize(destination/'suite', 'local', None, purpose='smoke')
     path = destination/'suite/suite.json'
     s = read_json(path)
     selected_model = model or ('gpt-5.6-luna' if provider == 'codex' else 'claude-sonnet-5')
@@ -205,6 +206,8 @@ def parser():
     a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true')
     a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
+    a = sub.add_parser('examples'); a.add_argument('--query', default=''); a.add_argument('--workflow'); a.add_argument('--limit', type=int, default=10); a.add_argument('--inventory', action='store_true')
+    a = sub.add_parser('portfolio'); a.add_argument('discovery'); a.add_argument('--suite'); a.add_argument('--output')
     a = sub.add_parser('history'); a.add_argument('--provider', required=True, choices=['codex', 'claude']); a.add_argument('--root'); a.add_argument('--days', type=int, default=30); a.add_argument('--consent', action='store_true'); a.add_argument('--output', required=True)
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
@@ -240,6 +243,10 @@ def main(argv=None):
         elif c == 'run': result = run(a.suite, a.output, a.resume)
         elif c == 'models': result = models(a.provider, a.refresh)
         elif c == 'benchmarks': result = read_json(DATA/'benchmarks.json')
+        elif c == 'examples':
+            require(1 <= a.limit <= 100, '--limit must be 1..100')
+            result = examples(a.query, a.workflow, a.limit, a.inventory)
+        elif c == 'portfolio': result = portfolio(a.discovery, a.suite, a.output)
         elif c == 'history': result = history(a.provider, a.root or ('~/.codex/sessions' if a.provider == 'codex' else '~/.claude/projects'), a.days, a.consent, a.output)
         elif c == 'repo':
             result = repo_evidence(a.path, a.provider, a.repo, a.days, a.host)

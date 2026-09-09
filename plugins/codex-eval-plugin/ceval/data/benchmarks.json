@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "checked_at": "2026-09-09",
-  "scope": "Concise public methodology index. Original summaries only; task imports require per-source licensing review. No private material or copied benchmark datasets.",
+  "scope": "Major public development benchmark families, not an exhaustive ranking of all benchmarks. See task-inventory.json for exact indexed splits and task-examples.json for source-reviewed design cards. No leaderboard-score comparability is implied.",
   "benchmarks": [
     {
       "id": "deepswe",
@@ -73,6 +73,132 @@
       ],
       "application": "Useful inspiration for small/medium coding tasks with explicit language/runtime constraints. This runner uses one attempt per repeat, without automated repair retries.",
       "licensing": "Original examples only. Exercise collections have separate upstream licenses."
+    },
+    {
+      "id": "swe-bench-pro",
+      "name": "SWE-bench Pro",
+      "url": "https://github.com/scaleapi/SWE-bench_Pro-os",
+      "task_types": [
+        "repository repair",
+        "multi-file changes"
+      ],
+      "design_principles": [
+        "Reconstruct the issue contract and pair fail-to-pass with regression checks. Review requirements and verifiers independently; historical tests are not automatically sufficient."
+      ],
+      "application": "Reconstruct the issue contract and pair fail-to-pass with regression checks. Review requirements and verifiers independently; historical tests are not automatically sufficient.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "swe-lancer",
+      "name": "SWE-Lancer implementation tasks",
+      "url": "https://github.com/openai/preparedness/tree/51052cede8cc608f95bb00346635e03759013e5a/project/swelancer",
+      "task_types": [
+        "frontend bug fixes",
+        "user-facing feature work"
+      ],
+      "design_principles": [
+        "Replay user interactions in an isolated app and inspect observable outcomes. Managerial proposal-selection tasks are excluded from the coding-task inventory."
+      ],
+      "application": "Replay user interactions in an isolated app and inspect observable outcomes. Managerial proposal-selection tasks are excluded from the coding-task inventory.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "featurebench",
+      "name": "FeatureBench v1.1",
+      "url": "https://libercoders.github.io/FeatureBench/tasks/",
+      "task_types": [
+        "feature development",
+        "repository integration"
+      ],
+      "design_principles": [
+        "Implement explicit feature interfaces and require new behavior plus existing tests to pass. Full split indexed; lite/fast duplicates are excluded."
+      ],
+      "application": "Implement explicit feature interfaces and require new behavior plus existing tests to pass. Full split indexed; lite/fast duplicates are excluded.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "gso",
+      "name": "GSO",
+      "url": "https://gso-bench.github.io/",
+      "task_types": [
+        "performance optimization",
+        "scientific library optimization"
+      ],
+      "design_principles": [
+        "Check output equivalence before performance. Use repeated controlled measurements and adversarial inputs to avoid hardcoded or timing-noise wins."
+      ],
+      "application": "Check output equivalence before performance. Use repeated controlled measurements and adversarial inputs to avoid hardcoded or timing-noise wins.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "testgeneval",
+      "name": "TestGenEval",
+      "url": "https://github.com/facebookresearch/testgeneval",
+      "task_types": [
+        "test generation",
+        "test completion"
+      ],
+      "design_principles": [
+        "Passing generated tests is insufficient. Check coverage gain and mutant detection against an independent correct implementation. Methodology cards only; full dataset is not bundled."
+      ],
+      "application": "Passing generated tests is insufficient. Check coverage gain and mutant detection against an independent correct implementation. Methodology cards only; full dataset is not bundled.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "bigcodebench",
+      "name": "BigCodeBench",
+      "url": "https://github.com/bigcode-project/bigcodebench",
+      "task_types": [
+        "library composition",
+        "data utilities"
+      ],
+      "design_principles": [
+        "Grade functional outputs across real dependencies with prepared local fixtures. Methodology coverage; no claim to index all upstream tasks."
+      ],
+      "application": "Grade functional outputs across real dependencies with prepared local fixtures. Methodology coverage; no claim to index all upstream tasks.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "livecodebench",
+      "name": "LiveCodeBench",
+      "url": "https://github.com/LiveCodeBench/LiveCodeBench",
+      "task_types": [
+        "algorithmic coding",
+        "program execution"
+      ],
+      "design_principles": [
+        "Use executable hidden input/output cases and resource limits. Contest tasks are supplementary, not a substitute for repository workflows. Methodology coverage only."
+      ],
+      "application": "Use executable hidden input/output cases and resource limits. Contest tasks are supplementary, not a substitute for repository workflows. Methodology coverage only.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "evalplus",
+      "name": "EvalPlus / HumanEval+ / MBPP+",
+      "url": "https://github.com/evalplus/evalplus",
+      "task_types": [
+        "functional correctness",
+        "verifier strengthening"
+      ],
+      "design_principles": [
+        "Expand weak unit tests with deterministic boundary and adversarial cases. Methodology coverage only."
+      ],
+      "application": "Expand weak unit tests with deterministic boundary and adversarial cases. Methodology coverage only.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
+    },
+    {
+      "id": "swe-bench-multimodal",
+      "name": "SWE-bench Multimodal",
+      "url": "https://arxiv.org/abs/2410.03859",
+      "task_types": [
+        "visual JavaScript library repair",
+        "frontend interaction"
+      ],
+      "design_principles": [
+        "Convert visual requirements into deterministic browser/DOM/geometry checks where feasible. Methodology coverage only; do not claim a native multimodal benchmark reproduction."
+      ],
+      "application": "Convert visual requirements into deterministic browser/DOM/geometry checks where feasible. Methodology coverage only; do not claim a native multimodal benchmark reproduction.",
+      "licensing": "Original summaries and source metadata only. Inspect each upstream license before copying task code, tests, assets, or datasets."
     }
   ]
 }
