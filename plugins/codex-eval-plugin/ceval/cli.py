@@ -4,6 +4,8 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -17,6 +19,24 @@ from .core import DATA, EvalError, digest, load_suite, now, read_json, require, 
 from .discovery import history, repo_evidence, snapshot
 from .report import report, serve
 from .runner import clean_env, execute, preflight, run, schedule, validate_graders
+
+
+def load_local_keys():
+    """Read API keys from the invoking directory without executing shell code."""
+    path = Path.cwd() / '.env.local'
+    if not path.is_file():
+        return
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        match = re.match(r'^\s*(?:export\s+)?(OPENAI_API_KEY|ANTHROPIC_API_KEY)\s*=\s*(.*)$', line)
+        if not match or match[1] in os.environ:
+            continue
+        try:
+            values = shlex.split(match[2], comments=True)
+        except ValueError:
+            raise EvalError(f'Invalid API key assignment in .env.local line {number}') from None
+        require(len(values) <= 1, f'Invalid API key assignment in .env.local line {number}')
+        if values:
+            os.environ[match[1]] = values[0]
 
 
 def initialize(destination, mode, image):
@@ -200,6 +220,7 @@ def parser():
 def main(argv=None):
     a = parser().parse_args(argv)
     try:
+        load_local_keys()
         c = a.command
         if c == 'init': result = initialize(a.directory, a.mode, a.image)
         elif c in ('plan', 'validate', 'approve', 'doctor'):

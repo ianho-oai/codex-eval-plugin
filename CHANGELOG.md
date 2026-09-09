@@ -5,5 +5,6 @@
 - Created the standalone single-skill plugin, native headless CLI adapters, discovery helpers, explicit suite approval, seeded matrix execution, checkpoints, grading, native telemetry normalization, dated pricing, CSV reporting, and reusable dark dashboard.
 - Added public-source methodology references for Datacurve DeepSWE, SWE-bench, Terminal-Bench/Harbor, and Aider Polyglot. Added three original easy/medium/hard harness examples.
 - Added reproducible ZIP export, source installation metadata, lightweight CI, project guidance, and focused offline tests. No customer history, credentials, raw runs, or internal sources are distributed.
-- Validation: baseline/oracle checks and 25 focused tests passed; real Codex API smoke test passed; Claude Code live execution remains unavailable on the development host. See VALIDATION.md for current coverage.
-- Follow-up: run the one-command Claude smoke test on a host with an Anthropic key and permitted egress. Validate a pinned Docker environment before interpreting production comparisons. Roll back by checking out the previous approved release; use new run directories after task/protocol changes.
+- Load API keys from the current directory's ignored `.env.local`, preserving exported environment variables without executing shell code.
+- Validation: baseline/oracle checks and 27 focused tests passed; real Codex smoke tests and a user-run Claude Code smoke test passed. See VALIDATION.md for current coverage.
+- Follow-up: validate a pinned Docker environment before interpreting production comparisons. Roll back by checking out the previous approved release; use new run directories after task/protocol changes.

@@ -15,4 +15,4 @@ Scores are binary. Infrastructure errors and interrupted attempts score zero in 
 
 The spend threshold is checked between sequential calls. A single call can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback, retries, or silent model substitution.
 
-Current official sources expose OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra. Model IDs and pricing are dated snapshots; account access must be probed and reviewed before use. Claude Code availability on the development host is unverified: its API endpoint is blocked by host policy. Keep this limitation explicit until an approved host completes validation.
+Current official sources expose OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra. Model IDs and pricing are dated snapshots; account access must be probed and reviewed before use. A user-run Claude Sonnet 5 smoke test passed and its saved results were verified locally. The agent session's Anthropic endpoint remains restricted; user-terminal success does not establish agent-session access. See VALIDATION.md for measured coverage.

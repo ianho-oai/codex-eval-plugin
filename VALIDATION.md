@@ -4,11 +4,11 @@ As of 2026-09-09. This is a functional first release; no comparative model-perfo
 
 | Surface | Evidence |
 | --- | --- |
-| Core CLI | 25 focused offline tests pass in approximately 7 seconds |
+| Core CLI | 27 focused offline tests pass in approximately 6 seconds, including local API-key loading and environment precedence |
 | Example graders | All three baselines fail; all three known-good solutions pass; behavioral shortcut mutants fail |
 | Native adapters | Both adapters exercise subprocess execution, workspace reset, external grading, telemetry normalization, result integrity, and resume using offline protocol emulators |
 | Real Codex | GPT-5.6 Luna and GPT-5.6 Sol each completed the original slug-normalization task through Codex CLI 0.153.4, using API-key billing, and passed the independent grader; Sol used the one-command smoke workflow |
-| Real Claude Code | Not run: no Anthropic key was found in the development process or project environment files; host policy blocks the Anthropic API endpoint |
+| Real Claude Code | User-run Claude Sonnet 5 smoke test through Claude Code 2.1.220 passed the independent slug-normalization grader; saved results were inspected locally |
 | Dark dashboard | Browser inspection verified rendering, task selection, axis changes, failure labels, synthetic-data warning, and missing metrics |
 | Export and installation | ZIP bytes and checksum reproduce; the extracted plugin runs independently; Codex successfully installed the plugin from the repository marketplace into a temporary validation profile |
 | Docker execution | Implemented with an immutable image requirement and separate agent/grader containers; live Docker execution has not been validated on the restricted development host |
@@ -19,9 +19,11 @@ The subsequent GPT-5.6 Sol one-command smoke test also passed: 97.75 seconds, 13
 
 An earlier attempt was interrupted while the CLI could not use the host-managed network proxy. The environment allowlist was fixed to preserve managed proxy and certificate settings. No alternate endpoint or auth fallback was introduced.
 
+The user-run Claude Sonnet 5 smoke test passed in 14.99 seconds with 4 native turns, 8,926 total input tokens (including 6,340 cache-read and 2,579 cache-write tokens), 649 output tokens, and $0.02208425 reported by Claude Code. This was a separate trusted-local smoke run, not a controlled comparison with the Codex runs. The agent session still has restricted Anthropic egress; successful user-terminal execution does not change that restriction.
+
 ## Run Claude validation
 
-In a permitted terminal with Claude Code and `ANTHROPIC_API_KEY` already configured:
+In a permitted terminal with Claude Code and `ANTHROPIC_API_KEY` configured in the environment or current directory's ignored `.env.local` (choose a fresh output directory for subsequent runs):
 
 ```sh
 ./eval smoke --provider claude --output evaluations/claude-smoke

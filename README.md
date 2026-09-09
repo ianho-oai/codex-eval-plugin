@@ -32,7 +32,7 @@ Python 3.11+ is required. The three original example graders also use Node.js 18
 docker build -t codex-eval:0.1.0 plugins/codex-eval-plugin
 ./eval image-pin evaluations/customer/suite.json --image codex-eval:0.1.0
 
-# Set OPENAI_API_KEY and ANTHROPIC_API_KEY securely in your terminal/secret manager.
+# Set OPENAI_API_KEY and ANTHROPIC_API_KEY in your environment or ignored .env.local.
 # Keys are read only from the invoking process; never put them in the suite or chat.
 ./eval models
 ./eval doctor evaluations/customer/suite.json
@@ -103,6 +103,8 @@ python3 codex-eval-plugin/bin/codex-eval self-check
 Source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin). Repository and plugin use the same semantic version. See [CHANGELOG](CHANGELOG.md).
 
 ### One-command provider smoke test
+
+The CLI loads `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` from `.env.local` in the current directory. Exported environment variables take precedence. Quoted values and `export KEY=...` are supported; shell commands and variable expansion are never executed.
 
 After securely setting the provider's key in the same terminal:
 

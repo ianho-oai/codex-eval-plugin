@@ -12,12 +12,41 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'plugins/codex-eval-plugin'))
-from ceval.cli import initialize, main, export_plugin, demo
+from ceval.cli import initialize, main, export_plugin, demo, load_local_keys
 from ceval.core import DATA, EvalError, child, digest, load_suite, read_json, tree, write_json, allowed_changes
 from ceval.telemetry import normalize
 from ceval.runner import schedule, validate_graders, execute, clean_env, run, native_argv
 from ceval.discovery import history, user_text, timestamp
 from ceval.report import dataset, summarize, csv_text
+
+
+class LocalKeyTests(unittest.TestCase):
+    def test_cli_loads_local_key_and_preserves_exported_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'.env.local').write_text('export ANTHROPIC_API_KEY="test-local-key" # comment\nOPENAI_API_KEY=local-openai\nUNRELATED=ignored\n')
+            def smoke_stub(*args):
+                self.assertEqual(os.environ['ANTHROPIC_API_KEY'], 'test-local-key')
+                self.assertEqual(os.environ['OPENAI_API_KEY'], 'exported-key')
+                self.assertNotIn('UNRELATED', os.environ)
+                return {'rows': [{'completion': 1}]}
+            with patch('ceval.cli.Path.cwd', return_value=root), patch.dict(os.environ, {'OPENAI_API_KEY': 'exported-key'}, clear=True), patch('ceval.cli.smoke', side_effect=smoke_stub), contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(main(['smoke', '--provider', 'claude', '--output', 'unused']), 0)
+                self.assertNotIn('test-local-key', output.getvalue())
+
+    def test_no_shell_execution_or_secret_in_parse_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root/'executed'
+            with patch('ceval.cli.Path.cwd', return_value=root), patch.dict(os.environ, {}, clear=True):
+                (root/'.env.local').write_text(f'ANTHROPIC_API_KEY="$(touch {marker})"\n')
+                load_local_keys()
+                self.assertFalse(marker.exists())
+                self.assertEqual(os.environ.pop('ANTHROPIC_API_KEY'), f'$(touch {marker})')
+                (root/'.env.local').write_text('ANTHROPIC_API_KEY="secret-unclosed\n')
+                with self.assertRaises(EvalError) as error:
+                    load_local_keys()
+                self.assertNotIn('secret-unclosed', str(error.exception))
 
 
 class Workspace(unittest.TestCase):
