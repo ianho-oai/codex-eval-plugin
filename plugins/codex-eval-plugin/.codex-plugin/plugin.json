@@ -1,6 +1,6 @@
 {
   "name": "codex-eval-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "End-to-end customer-owned headless Codex versus Claude Code evaluation.",
   "author": {
     "name": "Ian Ho"

@@ -17,7 +17,7 @@ from ceval.core import DATA, EvalError, child, digest, load_suite, read_json, tr
 from ceval.telemetry import normalize
 from ceval.runner import schedule, validate_graders, execute, clean_env, run, native_argv
 from ceval.discovery import history, user_text, timestamp
-from ceval.report import dataset, summarize, csv_text
+from ceval.report import dataset, dashboard_dataset, summarize, csv_text
 
 
 class LocalKeyTests(unittest.TestCase):
@@ -276,6 +276,58 @@ class RunnerTests(Workspace):
 
 
 class DiscoveryAndReportTests(Workspace):
+    def test_combined_dashboard_retains_sources_and_deduplicates_directories(self):
+        one, two = self.root/'one', self.root/'two'
+        demo(one); demo(two)
+        before = (one/'results.json').read_bytes()
+        combined = dashboard_dataset([one, two, one])
+        self.assertEqual(len(combined['rows']), 36)
+        self.assertEqual(combined['summary']['scheduled'], 36)
+        self.assertEqual({row['source_run'] for row in combined['rows']}, {str(one.resolve()), str(two.resolve())})
+        self.assertEqual(len(combined['run']['sources']), 2)
+        self.assertIn('Separate runs', combined['run']['comparison_note'])
+        self.assertEqual((one/'results.json').read_bytes(), before)
+        self.assertEqual(dashboard_dataset([one]), dataset(one))
+        self.assertIn('source_run', csv_text(combined['rows']).splitlines()[0])
+
+    def test_combined_dashboard_checks_every_source_integrity(self):
+        one, two = self.root/'one', self.root/'two'
+        demo(one); demo(two)
+        row = read_json(two/'results.json')['rows'][0]
+        attempt = two/'attempts'/row['cell_id']
+        write_json(attempt/'result.json', row)
+        write_json(attempt/'result.sha256.json', {'sha256': 'tampered'})
+        with self.assertRaises(EvalError):
+            dashboard_dataset([one, two])
+
+    def test_workspace_dashboard_discovers_new_live_runs_and_excludes_demo(self):
+        workspace = self.root/'evaluations'
+        demo(workspace/'demo')
+        def live(name):
+            root = workspace/name
+            demo(root)
+            run = read_json(root/'run.json'); run['simulation'] = False
+            write_json(root/'run.json', run)
+            results = read_json(root/'results.json')
+            for row in results['rows']:
+                row['simulation'] = False
+                attempt = root/'attempts'/row['cell_id']
+                write_json(attempt/'result.json', row)
+                write_json(attempt/'result.sha256.json', {'sha256': digest(row)})
+            write_json(root/'results.json', results)
+            return root
+        first = live('first')
+        write_json(first/'candidate-data/run.json', read_json(first/'run.json'))
+        write_json(first/'candidate-data/results.json', {'rows': []})
+        self.assertEqual(len(dashboard_dataset(workspace)['rows']), 18)
+        live('second')
+        combined = dashboard_dataset(first)
+        self.assertEqual(len(combined['rows']), 36)
+        self.assertEqual(combined['summary']['scheduled'], 36)
+        self.assertFalse(any(row['simulation'] for row in combined['rows']))
+        expected_failures = 2 * sum(row['completion'] == 0 for row in read_json(first/'results.json')['rows'])
+        self.assertEqual(sum(row['completion'] == 0 for row in combined['rows']), expected_failures)
+
     def test_history_requires_consent_and_extracts_only_user_text(self):
         from datetime import datetime,timezone,timedelta
         root=self.root/'history';root.mkdir()

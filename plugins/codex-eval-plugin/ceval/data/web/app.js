@@ -17,7 +17,7 @@ $('x').value='cost_usd';$('y').value='latency_seconds';
 function filtered(){return data.rows.filter(r=>(!$('task').value||r.task_id===$('task').value)&&(!$('provider').value||r.provider===$('provider').value)&&(!$('difficulty').value||r.difficulty===$('difficulty').value)&&(!$('outcome').value||($('outcome').value==='pass'?r.completion===1:$('outcome').value==='invalid'?!r.valid:r.completion===0)));}
 function details(r){
   const tokens=`Input ${num(r.input_tokens)} · Output ${num(r.output_tokens)} · Cache read ${num(r.cache_read_tokens)} · Cache write ${num(r.cache_write_tokens)} · Reasoning ${num(r.reasoning_tokens)}`;
-  $('detail').textContent=`${r.task_id} / ${r.model} / ${r.effort} / repeat ${r.repeat}: ${r.completion?'PASS':'FAIL'} (${r.status}). ${num(r.latency_seconds)}s end to end; ${money(r.cost_usd)} — ${r.cost_source||'unavailable'}. Cost envelope ${money(r.cost_lower_usd)}–${money(r.cost_upper_usd)}. ${tokens}. Turns ${num(r.turns)} (${r.turn_unit||'unknown unit'}). ${r.cost_note||''} ${r.diagnostic||''}`;
+  $('detail').textContent=`${r.task_id} / ${r.model} / ${r.effort} / repeat ${r.repeat}: ${r.completion?'PASS':'FAIL'} (${r.status}). ${num(r.latency_seconds)}s end to end; ${money(r.cost_usd)} — ${r.cost_source||'unavailable'}. Cost envelope ${money(r.cost_lower_usd)}–${money(r.cost_upper_usd)}. ${tokens}. Turns ${num(r.turns)} (${r.turn_unit||'unknown unit'}). ${r.cost_note||''} ${r.diagnostic||''}${r.source_run?' Source run: '+r.source_run:''}`;
 }
 function svg(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
 function plot(rows){
@@ -38,7 +38,7 @@ function plot(rows){
   root.append(svg('text',{x:520,y:426,'text-anchor':'middle',class:'axis-label'},metrics[x]));
   root.append(svg('text',{transform:'translate(18 210) rotate(-90)','text-anchor':'middle',class:'axis-label'},metrics[y]));
   points.forEach(r=>{
-    const px=left+r[x]/maxX*(right-left),py=bottom-r[y]/maxY*(bottom-top),color=r.provider==='codex'?'#6ccb9d':'#eaa582';
+    const px=left+r[x]/maxX*(right-left),py=bottom-r[y]/maxY*(bottom-top),color=r.provider==='codex'?'#ececec':'#eaa582';
     const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${r.model} ${r.task_id} repeat ${r.repeat} ${r.completion?'PASS':'FAIL'}`});
     dot.append(svg('title',{},`${r.model} / ${r.effort} / ${r.task_id}: ${r.status}`));
     dot.addEventListener('click',()=>details(r));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r);}});
@@ -52,6 +52,7 @@ function table(rows){
     const tr=el('tr');tr.tabIndex=0;tr.addEventListener('click',()=>details(r));tr.addEventListener('keydown',e=>{if(e.key==='Enter')details(r);});
     const t=el('td',r.task_id);t.append(el('small',r.difficulty||'—'));
     const m=el('td',r.model);m.append(el('small',`${r.provider} / ${r.effort}`));
+    if(r.source_run)m.append(el('small',r.source_run));
     const out=el('td');out.append(el('span',r.completion?'PASS':'FAIL','badge'+(r.valid?(r.completion?'':' fail'):' invalid')),el('small',r.status));
     const cost=el('td',money(r.cost_usd));cost.append(el('small',r.cost_source||'unavailable'));
     const turns=el('td',num(r.turns));turns.append(el('small',r.turn_unit==='codex_conversation_turn'?'conversation':'native'));
@@ -79,10 +80,12 @@ async function load(){
     $('banner').textContent=simulated?'DEMO DATA — These points are synthetic interface fixtures. They are not model benchmark results.':`Run stopped: ${data.run.stop_reason}. Pending cells have not been evaluated.`;
     const ex=data.run.suite.execution;
     $('environment').textContent=ex?`Environment: ${ex.mode}. ${ex.mode==='local'?'Trusted local development; host and grader isolation are not guaranteed.':`Image ${ex.image}.`} Codex ${ex.codex_version}; Claude Code ${ex.claude_version}.`:'Synthetic preview; no provider calls were made.';
+    if(data.run.sources)$('environment').textContent=data.run.sources.map(s=>`${s.name}: ${s.execution?`${s.execution.mode}; Codex ${s.execution.codex_version}; Claude Code ${s.execution.claude_version}`:'synthetic preview'}`).join(' · ');
     const providers=new Set(data.rows.filter(r=>!r.not_started&&r.provider_success).map(r=>r.provider));
-    $('coverage').textContent=providers.size<2&&!simulated?'Live validation does not cover both providers. These results cannot establish a Codex-versus-Claude comparison.':'';
+    $('coverage').textContent=[data.run.comparison_note,providers.size<2&&!simulated?'Live validation does not cover both providers. These results cannot establish a Codex-versus-Claude comparison.':''].filter(Boolean).join(' ');
     render();
   }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;$('subtitle').textContent='Results could not be loaded.';}
 }
 for(const id of ['task','provider','difficulty','outcome','x','y'])$(id).addEventListener('change',render);
 $('refresh').addEventListener('click',load);load();
+setInterval(load, 15000);

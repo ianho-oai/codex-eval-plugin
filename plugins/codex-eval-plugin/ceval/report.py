@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import math
+import os
 import statistics
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,6 +24,56 @@ def dataset(root):
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
     return {'schema_version': 1, 'run': run, 'rows': rows, 'summary': summarize(rows, len(run.get('schedule', [])))}
+
+
+def dashboard_dataset(roots):
+    if isinstance(roots, (str, Path)):
+        roots = [roots]
+    discovered = []
+    for value in roots:
+        root = Path(value).resolve()
+        if (root/'run.json').is_file():
+            # Existing per-run commands also show the whole evaluation workspace.
+            workspace = next((p for p in root.parents if p.name == 'evaluations'), None)
+            if workspace and not read_json(root/'run.json').get('simulation'):
+                root = workspace
+            else:
+                discovered.append(root)
+                continue
+        require(root.is_dir(), f'Dashboard directory does not exist: {root}')
+        for directory, directories, files in os.walk(root, followlinks=False):
+            directories[:] = sorted(d for d in directories if d not in {'.git', 'node_modules', '.venv', '__pycache__'})
+            if 'run.json' not in files:
+                continue
+            manifest = Path(directory)/'run.json'
+            if not manifest.resolve().is_relative_to(root):
+                continue
+            run = read_json(manifest)
+            if not isinstance(run, dict) or not isinstance(run.get('schedule'), list) or not isinstance(run.get('suite'), dict):
+                continue
+            directories[:] = []  # Candidate workspaces can contain their own run.json files.
+            if not run.get('simulation'):
+                discovered.append(manifest.parent)
+    roots = list(dict.fromkeys(discovered))
+    require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
+    if len(roots) == 1:
+        return dataset(roots[0])
+    rows, sources, stopped = [], [], []
+    scheduled = 0
+    for root in roots:
+        data = dataset(root)  # Verify every original artifact before combining views.
+        run = data['run']
+        source = str(root)
+        sources.append({'id': source, 'name': run['suite']['name'],
+                        'state': run.get('state'), 'execution': run['suite'].get('execution')})
+        rows.extend(dict(row, source_run=source) for row in data['rows'])
+        scheduled += data['summary']['scheduled']
+        if run.get('stop_reason'):
+            stopped.append(f"{run['suite']['name']}: {run['stop_reason']}")
+    return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
+            'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
+            'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
+            'rows': rows, 'summary': summarize(rows, scheduled)}
 
 
 def summarize(rows, scheduled):
@@ -53,7 +104,7 @@ def summarize(rows, scheduled):
     return {'scheduled': scheduled, 'attempted': len(rows), 'pending': max(0, scheduled-len(rows)), 'groups': summary}
 
 
-CSV_FIELDS = ['task_id', 'difficulty', 'provider', 'model', 'effort', 'repeat', 'completion', 'status',
+CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effort', 'repeat', 'completion', 'status',
               'valid', 'simulation', 'execution_mode', 'latency_seconds', 'agent_seconds', 'grader_seconds',
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
@@ -93,9 +144,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             if path == '/api/results':
-                data, mime = json.dumps(dataset(self.root)).encode(), 'application/json'
+                data, mime = json.dumps(dashboard_dataset(self.root)).encode(), 'application/json'
             elif path == '/results.csv':
-                data, mime = csv_text(dataset(self.root)['rows']).encode(), 'text/csv'
+                data, mime = csv_text(dashboard_dataset(self.root)['rows']).encode(), 'text/csv'
             elif path in ('/', '/app.js', '/style.css'):
                 p = DATA / 'web' / {'/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css'}[path]
                 data, mime = p.read_bytes(), {'/': 'text/html', '/app.js': 'text/javascript', '/style.css': 'text/css'}[path]
@@ -116,8 +167,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(root, port):
-    dataset(root)
-    server = ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, root=Path(root).resolve()))
+    roots = [root] if isinstance(root, (str, Path)) else root
+    roots = [Path(p).resolve() for p in roots]
+    dashboard_dataset(roots)
+    server = ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, root=roots))
     print(f'Dashboard: http://127.0.0.1:{server.server_port}', flush=True)
     try:
         server.serve_forever()

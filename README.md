@@ -33,7 +33,7 @@ docker build -t codex-eval:0.1.0 plugins/codex-eval-plugin
 ./eval image-pin evaluations/customer/suite.json --image codex-eval:0.1.0
 
 # Set OPENAI_API_KEY and ANTHROPIC_API_KEY in your environment or ignored .env.local.
-# Keys are read only from the invoking process; never put them in the suite or chat.
+# Never put keys in the suite or chat; exported values take precedence over .env.local.
 ./eval models
 ./eval doctor evaluations/customer/suite.json
 ./eval validate evaluations/customer/suite.json --check-graders
@@ -103,6 +103,14 @@ python3 codex-eval-plugin/bin/codex-eval self-check
 Source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin). Repository and plugin use the same semantic version. See [CHANGELOG](CHANGELOG.md).
 
 ### One-command provider smoke test
+
+The dashboard automatically combines every saved live run under `evaluations/` and refreshes every 15 seconds:
+
+```sh
+./eval dashboard
+```
+
+You can also pass another evaluation workspace. Existing commands that point to a live run within `evaluations/` expand to the whole evaluation workspace. Synthetic demos stay separate and can be opened explicitly. The combined view retains failures, pending counts, source provenance, and checks of the original result artifacts. It does not rerun models or modify saved results. Separate smoke runs may use different environments and settings.
 
 The CLI loads `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` from `.env.local` in the current directory. Exported environment variables take precedence. Quoted values and `export KEY=...` are supported; shell commands and variable expansion are never executed.
 

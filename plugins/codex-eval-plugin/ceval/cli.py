@@ -209,7 +209,7 @@ def parser():
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')
-    a = sub.add_parser('dashboard'); a.add_argument('run_dir'); a.add_argument('--port', type=int, default=8765)
+    a = sub.add_parser('dashboard'); a.add_argument('run_dir', nargs='*', default=['evaluations'], help='Evaluation workspace(s); defaults to all live runs under evaluations/'); a.add_argument('--port', type=int, default=8765)
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
     a = sub.add_parser('image-pin'); a.add_argument('suite'); a.add_argument('--image', required=True)
