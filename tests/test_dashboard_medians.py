@@ -25,3 +25,24 @@ const zeros=modelMedians([row(0,4),row(4,0)],'cost_usd','latency_seconds');
 assert.equal(zeros[0].cost_usd,2);assert.equal(zeros[0].latency_seconds,2);
 '''
         subprocess.run(['node', '-e', script], cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True)
+
+    def test_comparison_pairs_and_direction_follow_visible_medians(self):
+        script = r'''
+const assert = require('node:assert/strict');
+const {modelPairings,visibleModelComparisons,comparisonArrow} = require('./plugins/codex-eval-plugin/ceval/data/web/pairings.js');
+const points=[...new Set(modelPairings.map(p=>p.claude))].map(model=>({provider:'claude',model})).concat([...new Set(modelPairings.map(p=>p.codex))].map(model=>({provider:'codex',model})));
+assert.equal(visibleModelComparisons(points,false).length,0);
+const pairs=visibleModelComparisons(points,true);
+assert.equal(pairs.length,5);
+assert(pairs.every(p=>p.from.provider==='claude'&&p.to.provider==='codex'&&p.sources.every(s=>s.startsWith('https://'))));
+assert.equal(visibleModelComparisons(points.filter(p=>p.model!=='claude-fable-5-1'),true).length,3);
+assert.equal(visibleModelComparisons(points.filter(p=>p.model!=='gpt-5.6-sol'),true).length,3);
+assert.deepEqual(visibleModelComparisons([{provider:'codex',model:'claude-fable-5-1'},{provider:'codex',model:'gpt-5.6-sol'}],true),[]);
+assert.deepEqual(visibleModelComparisons([{provider:'claude',model:'claude-fable-new'},{provider:'codex',model:'gpt-5.6-sol'}],true),[]);
+assert.deepEqual(comparisonArrow({x:0,y:0},{x:100,y:0}),{x1:18,y1:0,x2:82,y2:0});
+assert.deepEqual(comparisonArrow({x:0,y:100},{x:0,y:0}),{x1:0,y1:82,x2:0,y2:18});
+assert.equal(comparisonArrow({x:1,y:1},{x:1,y:1}),null);
+const close=comparisonArrow({x:0,y:0},{x:2,y:2});
+assert(close.x1<close.x2&&close.y1<close.y2);
+'''
+        subprocess.run(['node', '-e', script], cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True)

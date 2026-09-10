@@ -19,5 +19,7 @@
 #plot .median-label{font-weight:650}
 #plot.median-focus .median-point{stroke-width:3;filter:drop-shadow(0 0 6px #0009)}
 #plot.median-focus .median-label{font-size:14px}
+.comparison-arrow{stroke:#a9bfd4;stroke-width:2;stroke-dasharray:2 6;stroke-linecap:round;opacity:.85}
+#comparison-legend[hidden]{display:none}
 @media(max-width:650px){.heading-toggles{justify-content:flex-start;gap:16px}.legend{flex-wrap:wrap;gap:16px}}
 @media(prefers-reduced-motion:reduce){#plot .task-point-layer,#plot .task-label-layer{transition:none}}

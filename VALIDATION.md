@@ -149,3 +149,10 @@ The command checks the installed version and capabilities, runs one original tru
 - Chrome verification on the conversation dashboard shows seven median diamonds, a working top-right Median focus switch, task-point opacity of 0.16 when enabled and 1 when disabled, and median opacity of 1. The Fable tooltip reports sample size, task count, efforts, median cost, and median latency.
 - Filtering out hard tasks changed the Fable sample from 15 to 11 plotted averages. After restoring all tasks, switching both axes to log kept the same median cost ($0.2619) and latency (63.2 seconds). Full-page visual review passed; all four live servers serve the new median asset.
 - Medians summarize selected displayed averages with equal weight per point, pooling effort levels and runs for the same model. They are descriptive, not raw-attempt medians or matched-task comparisons. The change does not alter evaluation scores or rerun provider calls.
+
+## 0.8.5 median comparison arrows — 2026-09-10
+
+- All 65 tests pass. Added coverage for focus-only pair selection, exact provider/model matching, absent models, no version substitution, directional endpoints, and coincident/nearby medians. JavaScript syntax checks, CLI self-check, plugin export, and extracted standalone entrypoint self-check pass.
+- Chrome review on the conversation dashboard: no arrows outside focus; four arrows in focus with the seven measured models; removing Fable reduces the count to two; restoring it restores four. Both logarithmic axes preserve arrow connections. Median labels show model names only. Screenshot review passed with faded task points, clear median diamonds, and dotted arrowheads.
+- All four dashboard servers (8879, 8881–8883) restarted and return the bundled pairing asset with JavaScript content type. No paid runs or historical evaluation data changed.
+- Pairing provenance and descriptive-median limitations are documented in docs/MODEL_COMPARISONS.md and the exported plugin README. The test of the extracted archive uses its standalone bin/codex-eval entrypoint; this host's Python configuration excludes the current directory from implicit imports.

@@ -45,6 +45,7 @@ function plot(rows){
   const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
   const medians=modelMedians(rows,x,y);
   const focus=$('median-focus').checked;root.classList.toggle('median-focus',focus);
+  $('comparison-legend').hidden=!focus;
   const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const omitted=measured.length-points.length;
@@ -84,10 +85,22 @@ function plot(rows){
     root.append(svg('line',{x1:left,x2:right,y1:b,y2:b,class:'grid'}),svg('text',{x:left-14,y:b+6,'text-anchor':'end',class:'tick'},tick(y,value,sy.step)));
   }
   root.append(svg('text',{x:630,y:545,'text-anchor':'middle',class:'axis-label'},'Average '+metrics[x].toLowerCase()+(logX?' · log':'')),svg('text',{transform:'translate(20 260) rotate(-90)','text-anchor':'middle',class:'axis-label'},'Average '+metrics[y].toLowerCase()+(logY?' · log':'')));
-  const labelLayer=svg('g',{class:'task-label-layer'}),pointLayer=svg('g',{class:'task-point-layer'}),medianLayer=svg('g',{class:'median-layer'});root.append(labelLayer,pointLayer,medianLayer);
+  const labelLayer=svg('g',{class:'task-label-layer'}),pointLayer=svg('g',{class:'task-point-layer'}),comparisonLayer=svg('g',{class:'comparison-layer'}),medianLayer=svg('g',{class:'median-layer'});root.append(labelLayer,pointLayer,comparisonLayer,medianLayer);
+  const position=r=>({x:left+sx.position(r[x])*(right-left),y:bottom-sy.position(r[y])*(bottom-top)});
+  const comparisons=visibleModelComparisons(medianPoints,focus);
+  if(comparisons.length){
+    const defs=svg('defs'),marker=svg('marker',{id:'comparison-tip',viewBox:'0 0 10 10',refX:10,refY:5,markerWidth:7,markerHeight:7,orient:'auto',markerUnits:'userSpaceOnUse'});
+    marker.append(svg('path',{d:'M 0 0 L 10 5 L 0 10 Z',fill:'#a9bfd4'}));defs.append(marker);comparisonLayer.append(defs);
+    for(const pair of comparisons){
+      const endpoints=comparisonArrow(position(pair.from),position(pair.to));if(!endpoints)continue;
+      const description=`${pair.claude} → ${pair.codex}. ${pair.basis}: ${pair.reason} Descriptive medians; task and effort coverage may differ. Arrow direction does not indicate a winner.`;
+      const arrow=svg('line',{...endpoints,class:'comparison-arrow','marker-end':'url(#comparison-tip)',role:'img','aria-label':description});
+      arrow.append(svg('title',{},description));comparisonLayer.append(arrow);
+    }
+  }
   for(const r of [...points,...medianPoints]){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
-    const label=r.median?`${r.model} · median`:modelLabel(r),size=focus?13:9;
+    const label=r.median?r.model:modelLabel(r),size=focus?13:9;
     if($('labels').checked)(r.median?medianLayer:labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
     const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
     const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${r.model}, median of ${r.point_count} task/configuration averages`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});

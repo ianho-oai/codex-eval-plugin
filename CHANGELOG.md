@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.5 — 2026-09-10
+
+- Add source-backed Claude-to-Codex dotted comparison arrows in Median focus only, with exact model pairings, filter/log-axis handling, and documented comparison limitations.
+
+- Simplify median marker labels to model names only; retain median context in the legend, tooltip, and accessible description.
+
 ## 0.8.4 — 2026-09-10
 
 - Add one median diamond per provider/model across the selected task/configuration averages, updating with filters and axes. Tooltip discloses coverage and selected-axis values.

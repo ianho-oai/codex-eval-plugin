@@ -13,7 +13,7 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 1. **Discover your workflows.** Choose a conversation, selected local Codex/Claude Code history from the last 90 days, selected repositories/PRs/MRs, or a combination. You can stop discovery and request the proposal at any point.
 2. **Approve representative tasks.** Review easy, medium, and hard tasks for each workflow, short descriptions, objective checks, and benchmark inspiration links or an original-design rationale.
 3. **Review the execution plan.** The skill builds self-contained fixtures and validates the starting code and known-good solutions. Review the exact models, efforts, repeats, CLI versions, pricing, and limits before paid calls.
-4. **Run and compare.** The fixed CLI executes, grades, and records every attempt. The prebuilt dashboard combines both providers, with cost/latency/token plots, filters, independent log axes, model median diamonds with a focus toggle, and task summaries.
+4. **Run and compare.** The fixed CLI executes, grades, and records every attempt. The prebuilt dashboard combines both providers, with cost/latency/token plots, filters, independent log axes, model median diamonds with a focus toggle and [comparison arrows](docs/MODEL_COMPARISONS.md), and task summaries.
 
 Tasks use existing lightweight test runners such as unittest, pytest, or Node tests. Difficulty comes from coding work; ordinary tasks do not require Docker, iOS simulators, desktop-app integrations, or external services. The aim is achievable, correct results whose time and cost can be compared. Actual failures remain recorded.
 
