@@ -37,6 +37,12 @@ Mythos is excluded from new default suites. Add it only on explicit request afte
 
 Confirm the exact ID and availability for the same key used by the runner. If the model remains unavailable, retain that finding and choose whether to wait for access or approve a narrower matrix. Do not silently replace it with another model or classify it as a failed coding task.
 
+## Native editing works in a terminal but fails inside an agent
+
+A nested native agent can encounter filesystem or namespace restrictions inherited from its parent. A passing version check or model listing does not verify native editing in that context. Check actual edit events, file changes, test-command exits, and helper stderr using a small approved task in the intended launch environment.
+
+If nested execution is unsupported, keep the configured sandbox intact and hand the exact approved evaluation command to an authorized ordinary terminal, or to the customer. Do not disable sandboxing or redirect protected runtime files. Record the execution-context change and retain any interrupted or timing-affected run separately; a clean terminal check does not establish that nested execution works.
+
 ## Recover without losing evidence
 
 1. Stop new dispatch for an affected active run by creating `RUN_DIR/stop-requested.json`; active attempts drain and are saved.

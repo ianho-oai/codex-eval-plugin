@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.2 — 2026-09-11
+
+- Make task quality an adaptive design, challenge, observe, diagnose, and repair loop. Use contract-driven counterexamples, sustained run observation, and bounded fair reruns under explicit repair scope. Keep initial authoring lightweight and preserve genuine failures.
+- Clarify supported execution-context checks and terminal handoff when nested native sandboxing is unavailable; preserve sandbox policy and separate affected timing evidence.
+- Accept valid dataclass-based Python candidates in the bundled slug grader by using normal import registration, with a regression test. Add targeted grader-design examples without treating them as exhaustive rules.
+
 ## 0.9.1 — 2026-09-11
 
 - Keep local candidate and private agent-home directories beneath each attempt, preserve installed toolchain paths in Codex shells, and disable login-shell initialization without inheriting credentials.

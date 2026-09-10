@@ -18,7 +18,7 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 | 2. Propose | Suggests easy, medium, and hard tasks for each workflow, with short descriptions, acceptance checks, and benchmark inspiration. | Approve the task list or ask for changes. |
 | 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
-| 5. Execute and review | Runs tasks, records metrics, updates progress, and investigates early failure clusters. Repairs defective tests in a fresh revision while preserving original results. | Usually nothing. Approve changed tests before reruns; handle a blocked provider command if needed. |
+| 5. Execute and adapt | Monitors results, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
 | 6. Compare | Opens the prebuilt local dashboard combining both providers. | Explore task/model filters, cost, latency, tokens, and model × effort medians; inspect failures and export results. |
 
 ### Have these ready
@@ -42,7 +42,7 @@ The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats =
 
 ## Requirements and results
 
-The agent aims for achievable tests, then reviews actual failures. The lightweight `reflect` CLI flags any infrastructure error or at least 50% failures after three scorable attempts on a task. The agent checks whether the cause is setup, an unclear requirement, an overstrict grader, unrealistic scope, or a genuine coding mistake. Defective tests get a new validated, approved revision; genuine failures stay failures. See [task-quality review](plugins/codex-eval-plugin/skills/evaluate/references/task-review.md). The CLI supplies deterministic evidence; the host agent performs the diagnosis.
+The agent follows an adaptive loop: design observable requirements, challenge its grader with correct and incorrect alternatives, monitor execution, diagnose anomalies, and repair demonstrated defects. It chooses checks for the customer's tasks rather than relying on a fixed edge-case list. The lightweight `reflect` CLI flags infrastructure errors and frequent task failures; the host agent also investigates unexpected evidence below those thresholds. Repairs use fresh validated, approved revisions and fair reruns under the agreed scope. Genuine coding failures stay failures. See [task-quality review](plugins/codex-eval-plugin/skills/evaluate/references/task-review.md). Deterministic CLI evidence supports the agent's diagnosis; it does not certify a test as error-free.
 
 Python 3.11+, native Codex and Claude Code CLIs, provider API keys, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
 

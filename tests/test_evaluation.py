@@ -74,6 +74,28 @@ class Workspace(unittest.TestCase):
 
 
 class SuiteTests(Workspace):
+    def test_example_grader_accepts_dataclass_based_candidate(self):
+        candidate = self.root / 'dataclass-candidate'
+        candidate.mkdir()
+        (candidate / 'slug.py').write_text('''from __future__ import annotations
+from dataclasses import dataclass
+import re
+import unicodedata
+
+@dataclass(frozen=True)
+class Slug:
+    value: str
+
+def slugify(text):
+    if not isinstance(text, str):
+        raise TypeError('Expected text')
+    normalized = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode().lower()
+    return Slug('-'.join(re.findall('[a-z0-9]+', normalized))).value
+''')
+        verifier = DATA / 'examples/slug-normalization/grader/verify.py'
+        result = execute([sys.executable, str(verifier), str(candidate)], self.root, clean_env(), 30)
+        self.assertEqual(result['exit_code'], 0, result['stderr'] + result['stdout'])
+
     def test_all_baselines_fail_all_oracles_pass(self):
         checks = validate_graders(self.path)
         self.assertEqual(len(checks),3)

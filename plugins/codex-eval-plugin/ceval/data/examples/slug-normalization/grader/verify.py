@@ -7,6 +7,7 @@ import unicodedata
 
 spec = importlib.util.spec_from_file_location('candidate_slug', pathlib.Path(sys.argv[1])/'slug.py')
 module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 try:
     cases = [('Hello World', 'hello-world'), ('  Crème brûlée! ', 'creme-brulee'),
