@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 — 2026-09-10
+
+- Add deterministic `reflect` triage for per-task failure clusters and infrastructure errors, with optional graceful review pauses and an audited `review-clear` command. Preserve results, original user stops, and fixed grading.
+- Add host-agent task-quality reflection: check visible contracts against independent valid alternatives, investigate early failures, and repair defective tasks through bounded, newly approved revisions with every affected lane rerun. Update the starter prompt and customer documentation.
+- Keep active evaluation engines frozen and document feature-branch/PR releases for the protected default branch.
+
 ## 0.8.9 — 2026-09-10
 
 - Make the customer flow and required inputs explicit in the README. Add a pull-request template, owner routing, and a lightweight description-format check.

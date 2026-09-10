@@ -24,6 +24,8 @@
 
 The objective is achievable tasks with verified correctness, followed by comparison of time, cost, and tokens. Genuine failures are retained; graders are not weakened to force success.
 
+The agent audits grader requirements and checks an independent valid alternative before paid execution. While running, `reflect` flags infrastructure errors and per-task failure clusters for host-agent diagnosis. A defective task is repaired in a separate validated, approved revision with all affected configurations rerun; the old evidence and costs remain. Genuine coding failures stay recorded. Review pauses drain active work, and `review-clear` records the decision before resuming unchanged inputs. See [task-quality review](plugins/codex-eval-plugin/skills/evaluate/references/task-review.md).
+
 ## What is deterministic
 
 Task snapshots, settings, seeded schedule, orchestration code, and behavioral checks are fixed. Concurrent completion order, model outputs, cache behavior, and observed timing can vary. Codex and Claude Code have different native harnesses, prompts, and tokenizers, so this compares product/model configurations.

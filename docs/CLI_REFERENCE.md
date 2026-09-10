@@ -199,6 +199,20 @@ Each model × reasoning-effort combination has a separate diamond marker showing
 
 Each displayed task/configuration point gets equal weight, pooling selected tasks and saved runs within the same provider/model/effort only. This is a descriptive median of the plotted averages, not a median of raw attempts or a matched-task leaderboard. The tooltip shows the number of contributing points/tasks, the reasoning effort, and both selected-axis values. Only points with both axis measurements contribute; genuine zeros and failures remain included. Log toggles change placement, not the calculation; nonpositive medians cannot be plotted on log axes and are counted in the plot note.
 
+### Task-quality reflection
+
+```sh
+./eval reflect evaluations/customer/run
+./eval reflect evaluations/customer/codex/run evaluations/customer/claude/run --pause-on-review
+./eval review-clear evaluations/customer/run --by 'Reviewer' --reason 'Contract and alternative implementation checked; retain coding failures'
+```
+
+`reflect` reads verified checkpoints without calling providers, running candidate code, editing tasks, or changing scores. Defaults flag any infrastructure-invalid result, or at least 50% failures after three scorable attempts for a task. `--min-attempts` and `--failure-rate` customize those triage thresholds. Counts are per task **within each run**, with model/effort status breakdowns and up to three evidence paths. Missing cost alone is not a trigger. A racing checkpoint returns `awaiting_checkpoint`; retry inspection later.
+
+By default it is read-only. `--pause-on-review` writes an exclusive graceful stop request for each flagged, recorded-running real run. Existing stops are preserved; unflagged lanes and synthetic runs are not paused. Active calls drain, and dispatch can continue until the runner observes the marker. This is not a background monitor: the host agent invokes it during observation and investigates new evidence. Historical flags remain visible after review; record reviewed attempt IDs to avoid repeated pauses for the same evidence.
+
+`review-clear` requires a stopped run with zero active cells and no runner lock. It only clears a matching task-quality pause, archives the request and review reason, and never executes work. After a sound-task decision, use the original `run SUITE --output RUN --resume` options. It refuses unrelated user stops and wrong seals. For defective tasks, keep the original run and create a fresh validated, approved revision, then rerun every affected lane. See the [review workflow](../plugins/codex-eval-plugin/skills/evaluate/references/task-review.md).
+
 ### In-Codex evaluation progress
 
 ```bash

@@ -1,4 +1,4 @@
-# Codex Eval · 0.8.9
+# Codex Eval · 0.9.0
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -43,6 +43,8 @@ Keep one suite per directory: `validation.json` and `approval.json` belong to th
 The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.
 
 ## Concurrent execution
+
+Before paid execution, the skill audits acceptance checks against visible requirements and tests an independent valid implementation. During execution, `python3 bin/codex-eval reflect RUN_DIR` flags per-task failure clusters and infrastructure errors for host-agent review. Add `--pause-on-review` to request a graceful pause. After review, `review-clear RUN_DIR --by NAME --reason TEXT` can clear only a drained review-owned pause; it never starts work. Defective tests need a new validated, approved revision and fair reruns; original outcomes stay intact. See [task-quality review](skills/evaluate/references/task-review.md).
 
 `python3 bin/codex-eval run SUITE --output RUN_DIR --workers 5` keeps up to five attempts active and starts the next queued attempt as soon as a slot opens. The default is five; use `--workers 1` for sequential timing. Add `--resume` for an existing identical sealed run. Completed attempts are verified and skipped.
 
