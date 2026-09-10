@@ -94,3 +94,8 @@ The command checks the installed version and capabilities, runs one original tru
 - A queue test completes all six attempts despite high and missing costs with no spend stop; existing finite-budget and unknown-cost stop tests still pass. Missing costs remain null.
 - Self-check, skill validation, reproducible export, and self-check from the extracted standalone ZIP pass. Default sample schedule now contains 369 cells (three tasks, 41 model/effort configurations, three repeats).
 - Preflight and plan expose the selected matrix, repeats, spend policy, and override instructions. No new paid calls were needed to validate these configuration changes. Previously frozen paid simulations retain their approved inputs and runner.
+
+## 0.7.1 dashboard stop notices — 2026-09-10
+
+- All 55 tests, self-check, and plugin export pass.
+- Refreshed all four Chrome dashboards and confirmed the run-stop banner is hidden and empty while plotted results remain visible. Saved run state and CLI diagnostics are unchanged.

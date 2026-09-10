@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 — 2026-09-10
+
+- Remove run-stop banners from the dashboard. Preserve stop reasons in CLI reports and saved run data; retain synthetic-data and data-loading error notices.
+
 ## 0.7.0 — 2026-09-10
 
 - Default to all cataloged GPT-5.6 / GPT-6 Astra and Claude models, including limited-access Claude lanes, with all supported single-agent efforts. Preflight displays the exact selected matrix and override guidance.

@@ -159,8 +159,8 @@ async function load(){
     const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);
     const next=await r.json(),unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
     const simulated=data.run.simulation||data.rows.some(r=>r.simulation);
-    $('banner').hidden=!simulated&&!data.run.stop_reason;
-    $('banner').textContent=simulated?'Demo data — synthetic interface fixtures.':`Run stopped: ${data.run.stop_reason}.`;
+    $('banner').hidden=!simulated;
+    $('banner').textContent=simulated?'Demo data — synthetic interface fixtures.':'';
     if(unchanged)return;
     buildModels();buildTasks();
     render();
