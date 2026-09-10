@@ -1,6 +1,32 @@
 # Customer starter prompt
 
-With **Codex Eval** installed, open your project in Codex and paste the prompt below. Select the plugin's **evaluate** skill if Codex asks you to resolve `$evaluate`.
+## 1. Install the plugin from GitHub
+
+The [repository](https://github.com/ianho-oai/codex-eval-plugin) includes the complete plugin in [`plugins/codex-eval-plugin/`](https://github.com/ianho-oai/codex-eval-plugin/tree/master/plugins/codex-eval-plugin): its skill, evaluation CLI, benchmark catalog, and local dashboard.
+
+Run these commands in your terminal with the Codex CLI installed:
+
+```sh
+codex plugin marketplace add ianho-oai/codex-eval-plugin --ref master
+codex plugin add codex-eval-plugin@codex-eval
+```
+
+The first command adds this GitHub repository as a plugin source; the second installs **Codex Eval** from it. You do not need to clone the repository separately. If `codex plugin --help` is unavailable, update your Codex CLI before continuing.
+
+You can also ask Codex to perform that setup by pasting:
+
+```text
+Install the Codex Eval plugin from https://github.com/ianho-oai/codex-eval-plugin using:
+codex plugin marketplace add ianho-oai/codex-eval-plugin --ref master
+codex plugin add codex-eval-plugin@codex-eval
+Confirm whether installation succeeded. Do not start paid evaluations yet.
+```
+
+## 2. Start your evaluation
+
+After installation, open your own project in a new Codex task and paste the prompt below. Select the plugin's **evaluate** skill if Codex asks you to resolve `$evaluate`. If it is not visible, restart Codex and try again.
+
+The evaluation needs Python 3.11+, the native Codex and Claude Code CLIs, and provider API keys. The plugin will help you check the task-specific toolchain and execution environment before paid runs; do not paste API keys into chat.
 
 ```text
 $evaluate
