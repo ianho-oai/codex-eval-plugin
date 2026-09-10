@@ -107,3 +107,8 @@ The command checks the installed version and capabilities, runs one original tru
 - Existing report/dashboard views now derive corrected cache-write estimates from native logs and original per-run rates, after checking signed result integrity and matching input/output/cache-read totals. Corrections retain the recorded cost, evidence hashes, and missing retry costs. Original run files and scores are untouched.
 - All 57 tests, self-check, and export pass, including real-field cache-write arithmetic, impossible token partitions, historical corrections, and unknown-cost retry preservation. All four dashboard APIs serve corrected estimates.
 - Costs remain Standard global estimates. Native turn totals do not reveal each request's context tier; long-context/cache-write uncertainty is retained as an upper estimate. Fast-mode/regional pricing is outside this fixed rate-card scope.
+
+## 0.7.3 permanent Fable/Mythos defaults — 2026-09-10
+
+- All 57 tests, self-check, and export pass. The default-suite regression explicitly requires Fable 5.1 and Mythos 5.1 with low/medium/high/xhigh/max effort.
+- Three additional local simulation suites are prepared with one repeat and no spend stop (90 attempts total), preserving existing suites. Baseline/oracle checks pass and local Claude CLI/key preflight passes. Live execution requires the user's permitted terminal; it has not been launched by this agent session.

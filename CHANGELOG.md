@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3 — 2026-09-10
+
+- Make permanent Fable 5.1 and Mythos 5.1 defaults explicit in the customer starter prompt and repository/plugin documentation, with all five supported efforts. Add a regression assertion for both default lanes.
+
 ## 0.7.2 — 2026-09-10
 
 - Verify the four Codex model rate cards against official Standard global API pricing; record source dates and Sol promotional-price timing.

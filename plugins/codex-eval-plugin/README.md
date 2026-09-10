@@ -1,4 +1,4 @@
-# Codex Eval · 0.7.2
+# Codex Eval · 0.7.3
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -70,3 +70,5 @@ New suites include all catalog-supported single-agent effort levels per model. B
 New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, across every supported single-agent effort level. Preflight lists the exact matrix and repeats, announces **no spend stop**, and tells the customer to specify otherwise before approval. Limited-access models are included; unavailable lanes remain visible.
 
 `configure SUITE --all-models --all-efforts --no-spend-stop` restores these defaults. Select alternatives with repeated `--model PROVIDER:MODEL` / `--effort LEVEL` flags. Set an optional stop with `--spend-stop-usd AMOUNT`. A null `limits.spend_stop_usd` disables both the scheduler spend stop and Claude's native budget flag; missing costs remain null and do not stop dispatch in this mode. Time limits, turn limits, bounded rate-limit retries, and explicit pause requests still apply. Existing approved suites retain their frozen settings.
+
+Fable 5.1 (`claude-fable-5-1`) and Mythos 5.1 (`claude-mythos-5-1`) are permanent default model selections, each with `low`, `medium`, `high`, `xhigh`, and `max` effort. These selections apply to all new customer suites and `configure --all-models --all-efforts`. Preflight lists both models and their effort levels. Customers can narrow the matrix before approval.
