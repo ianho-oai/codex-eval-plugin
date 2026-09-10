@@ -18,6 +18,8 @@ Python 3.11+ is required. The three original example graders also use Node.js 18
 
 ## Customer workflow
 
+Share the [customer starter prompt](CUSTOMER_STARTER_PROMPT.md) with customers who have the plugin installed.
+
 1. Invoke the plugin's **evaluate** skill. Combine an interview, explicitly selected local session history, and selected GitHub/GitLab repository/PR/MR evidence. Stop discovery whenever there is enough to propose tasks.
 2. Review easy/medium/hard tasks for every discovered workflow, each with benchmark source links or an original-design rationale. Approve the portfolio.
 3. The skill builds frozen task snapshots, behavioral graders, and known-good solutions. Review the concrete matrix, limits, environment, and pricing; approve once.
