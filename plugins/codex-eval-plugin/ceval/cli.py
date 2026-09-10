@@ -248,7 +248,7 @@ def parser():
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
     a = sub.add_parser('examples'); a.add_argument('--query', default=''); a.add_argument('--workflow'); a.add_argument('--limit', type=int, default=10); a.add_argument('--inventory', action='store_true')
     a = sub.add_parser('portfolio'); a.add_argument('discovery'); a.add_argument('--suite'); a.add_argument('--output')
-    a = sub.add_parser('history'); a.add_argument('--provider', required=True, choices=['codex', 'claude']); a.add_argument('--root'); a.add_argument('--days', type=int, default=30); a.add_argument('--consent', action='store_true'); a.add_argument('--output', required=True)
+    a = sub.add_parser('history'); a.add_argument('--provider', required=True, choices=['codex', 'claude']); a.add_argument('--root'); a.add_argument('--days', type=int, default=90, help='Session history lookback in days (default: 90, about three months)'); a.add_argument('--consent', action='store_true'); a.add_argument('--output', required=True)
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')

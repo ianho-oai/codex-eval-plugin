@@ -37,7 +37,7 @@ Reference https://github.com/ianho-oai/codex-eval-plugin for setup, usage, and t
 
 Start by asking which discovery methods I want to combine:
 1. Describe my workflows in conversation.
-2. Review selected local Codex or Claude Code sessions, usually from the last 30 days.
+2. Review selected local Codex or Claude Code sessions, usually from the last three months (90 days).
 3. Review repositories and selected GitHub pull requests or GitLab merge requests.
 
 Ask concise follow-up questions. Get my permission for specific history or repository sources before reading them. Let me say “build the proposal now” whenever I want to end discovery.

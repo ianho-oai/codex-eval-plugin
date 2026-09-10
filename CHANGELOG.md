@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 — 2026-09-10
+
+- Default Codex and Claude Code session discovery to three months (90 days), with matching CLI help, skill instructions, and customer starter prompt. Explicit `--days` values remain supported.
+
 ## 0.4.0 — 2026-09-10
 
 - Run up to five attempts concurrently by default with immediate slot refill, configurable using `run --workers`.

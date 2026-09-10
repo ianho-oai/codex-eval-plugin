@@ -58,7 +58,7 @@ For trusted-code development without Docker, use `init ... --mode local`, pin lo
 | Command | Purpose |
 | --- | --- |
 | `init DIRECTORY` | Create a customer-owned suite and discovery record |
-| `history --provider ... --consent --output FILE` | Read approved JSONL user-message history, default last 30 days |
+| `history --provider ... --consent --output FILE` | Read approved JSONL user-message history, default last three months (90 days) |
 | `repo --path PATH --output FILE` | Read local Git workflow evidence |
 | `repo --provider github --repo OWNER/REPO --output FILE` | Read merged PR metadata through `gh` |
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
