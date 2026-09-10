@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 — 2026-09-10
+
+- Frame task design around achievable, verified completion and comparing time, tokens, and cost. Keep environment provisioning outside measured tasks; scale difficulty through coding work with clear requirements and reasonable time limits.
+
 ## 0.8.0 — 2026-09-10
 
 - Default new suites to local execution and self-contained tasks using existing lightweight test runners. Remove Docker/image setup from the default customer flow.

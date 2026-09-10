@@ -2,6 +2,12 @@
 
 Read when converting approved workflows into runnable tasks. See `benchmarks.json` for the dated public source index, and `examples/` for three small original harness-validation tasks. They demonstrate easy/medium/hard mechanics; they are not substitutes for a customer's representative portfolio or an official benchmark score.
 
+## Evaluation objective
+
+Design for successful completion by the selected models. The primary comparison is the time, tokens, and cost needed to produce a verified correct result. Use realistic, bounded engineering tasks with clear requirements, sufficient context, supplied fixtures, and reasonable time limits. Easy/medium/hard should increase coding effort and behavioral complexity while retaining the same simple setup. Avoid ambiguous requirements, surprise acceptance criteria, intentionally unsolvable tasks, and tight timing thresholds that turn host load into a coding failure. Verify feasibility with a known-good solution before freezing. Keep genuine failures visible and apply the same fixed checks to every model; expected completion is a design target, not an assumed score.
+
+Environment provisioning belongs outside the measured task. If an explicitly selected environment uses Docker, the container should already be ready before the agent starts; implementing Docker integration is not part of success unless the customer's workflow specifically calls for it. Default local execution remains unchanged.
+
 ## Self-contained task contract
 
 Default to small, trusted local fixtures that run with one ordinary test command using an existing runtime. Prefer `python3 -m unittest`, already-installed `pytest`, `node --test`, or the language's available lightweight runner. Include all task data; use temporary directories, in-memory storage, injected clocks, fixed seeds, and in-process service fakes. No network access is needed by the task or grader. Provider API calls belong to the evaluation harness.

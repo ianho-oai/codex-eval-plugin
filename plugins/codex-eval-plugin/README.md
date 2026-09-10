@@ -1,4 +1,4 @@
-# Codex Eval · 0.8.0
+# Codex Eval · 0.8.1
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -72,3 +72,5 @@ New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus al
 `configure SUITE --all-models --all-efforts --no-spend-stop` restores these defaults. Select alternatives with repeated `--model PROVIDER:MODEL` / `--effort LEVEL` flags. Set an optional stop with `--spend-stop-usd AMOUNT`. A null `limits.spend_stop_usd` disables both the scheduler spend stop and Claude's native budget flag; missing costs remain null and do not stop dispatch in this mode. Time limits, turn limits, bounded rate-limit retries, and explicit pause requests still apply. Existing approved suites retain their frozen settings.
 
 Fable 5.1 (`claude-fable-5-1`) and Mythos 5.1 (`claude-mythos-5-1`) are permanent default model selections, each with `low`, `medium`, `high`, `xhigh`, and `max` effort. These selections apply to all new customer suites and `configure --all-models --all-efforts`. Preflight lists both models and their effort levels. Customers can narrow the matrix before approval.
+
+Evaluation tasks should be achievable by the selected models, with cost, latency, and token use as the primary comparison after verifying correctness. Keep requirements explicit, provide enough context, and allow reasonable execution time. Difficulty increases coding work within a simple prepared environment; provisioning is outside the timed task. Expected success is a design target, while actual pass/fail remains determined by the same fixed checks for every model.

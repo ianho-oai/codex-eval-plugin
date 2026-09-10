@@ -119,3 +119,9 @@ The command checks the installed version and capabilities, runs one original tru
 - Extracted the release ZIP independently and verified that `init` creates a local suite with no image requirement.
 - Updated task design, the single skill, portfolio scaffold guidance, preflight output, customer prompt, and repository/plugin documentation to prefer existing simple test runners and bundled fixtures. Native-app workflows are adapted to testable logic with disclosed coverage limits; Docker/platform integrations require an explicit request.
 - No new paid runs were required for this policy/default change. Previously frozen suites and recorded outcomes remain intact; this change does not establish that an existing external iOS task's failures were caused by setup.
+
+## 0.8.1 achievable-task evaluation objective — 2026-09-10
+
+- All 57 tests, self-check, skill validation, and export pass.
+- Skill, task design, portfolio guidance, and customer-facing documentation now emphasize achievable tasks, verified completion, and cost/latency/token comparisons. Environment preparation precedes measured tasks; shared objective checks and actual failures remain visible.
+- This instruction update does not rerun or relabel existing results.
