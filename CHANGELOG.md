@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 — 2026-09-10
+
+- Color averaged dashboard points blue for Codex or orange for Claude when at least one repeat passes; keep points grey when no repeats pass. Preserve exact pass counts and averaged measurements.
+
 ## 0.3.0 — 2026-09-09
 
 - Add independent logarithmic axis toggles with explicit zero-value handling and clearer nested, provider-colored checkboxes.

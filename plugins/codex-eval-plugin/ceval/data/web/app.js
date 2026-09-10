@@ -17,7 +17,7 @@ for(const [key,label] of Object.entries(metrics)){option($('x'),key,label);optio
 $('x').value='cost_usd';$('y').value='latency_seconds';
 function filtered(rows=data.averages||data.rows){return rows.filter(r=>taskSelections.get(taskKey(r))&&modelSelections.get(modelKey(r)));}
 const colors={codex:'#339cff',claude:'#eaa582'};
-const pointColor=r=>r.completion===1?(colors[r.provider]||'#ccc'):'#a3a3a3';
+const pointColor=r=>(r.successes??r.completion)>0?(colors[r.provider]||'#ccc'):'#a3a3a3';
 const resultLabel=r=>r.attempts!==undefined?`${r.status==='pending'?'Pending':r.completion===1?'Pass':'Fail'} · ${r.successes}/${r.attempts} passed${r.attempts<r.expected_attempts?`, ${r.attempts}/${r.expected_attempts} run`:''}`:(r.completion===1?'Pass':'Fail');
 function hideDetails(){ $('tooltip').hidden=true; }
 function details(r,dot){
