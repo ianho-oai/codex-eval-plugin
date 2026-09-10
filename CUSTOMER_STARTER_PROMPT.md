@@ -33,6 +33,8 @@ $evaluate
 
 I want to run evaluation tests comparing Codex against Claude Code on tasks that represent my team's actual software development workflows. Use the Codex Eval plugin to guide me from discovery through to a local results dashboard.
 
+Reference https://github.com/ianho-oai/codex-eval-plugin for setup, usage, and troubleshooting guidance. The plugin lives in plugins/codex-eval-plugin/ within that repository. Follow the installed plugin's evaluate skill and use its bundled CLI, benchmark catalog, and dashboard rather than rebuilding the evaluation system. If the repository documentation differs from my installed version, resolve that before preparing the evaluation.
+
 Start by asking which discovery methods I want to combine:
 1. Describe my workflows in conversation.
 2. Review selected local Codex or Claude Code sessions, usually from the last 30 days.
