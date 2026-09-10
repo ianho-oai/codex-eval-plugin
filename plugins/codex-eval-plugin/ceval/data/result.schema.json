@@ -15,6 +15,11 @@
     "simulation"
   ],
   "properties": {
+    "runtime_diagnostics": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Native runtime diagnostic codes for host review, independent of completion and validity."
+    },
     "completion": {
       "enum": [
         0,

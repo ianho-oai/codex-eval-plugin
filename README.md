@@ -10,15 +10,15 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 
 ## The flow at a glance
 
-**Install → describe your work → approve tasks → approve the run plan → follow progress → compare results.**
+**Install → describe your work → approve tasks → approve the run plan → run and review → compare results.**
 
 | Step | What the agent does | What you provide or decide |
 | --- | --- | --- |
 | 1. Discover | Learns the development workflows you want to evaluate. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
 | 2. Propose | Suggests easy, medium, and hard tasks for each workflow, with short descriptions, acceptance checks, and benchmark inspiration. | Approve the task list or ask for changes. |
-| 3. Prepare | Builds self-contained fixtures and checks that starting code fails and known-good solutions pass the grader. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
+| 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
-| 5. Execute | Runs the approved tasks headlessly, grades them, records metrics, and updates progress inside Codex when visualization is available. | Usually nothing. If a provider or host blocks a call, run the specific command the agent supplies. |
+| 5. Execute and review | Runs tasks, records metrics, updates progress, and investigates early failure clusters. Repairs defective tests in a fresh revision while preserving original results. | Usually nothing. Approve changed tests before reruns; handle a blocked provider command if needed. |
 | 6. Compare | Opens the prebuilt local dashboard combining both providers. | Explore task/model filters, cost, latency, tokens, and model × effort medians; inspect failures and export results. |
 
 ### Have these ready
@@ -41,6 +41,8 @@ The main checkpoints for you are **task approval** and **run-plan approval**. Af
 The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats = 324 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks the selected IDs against account-visible models. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
 ## Requirements and results
+
+The agent aims for achievable tests, then reviews actual failures. The lightweight `reflect` CLI flags any infrastructure error or at least 50% failures after three scorable attempts on a task. The agent checks whether the cause is setup, an unclear requirement, an overstrict grader, unrealistic scope, or a genuine coding mistake. Defective tests get a new validated, approved revision; genuine failures stay failures. See [task-quality review](plugins/codex-eval-plugin/skills/evaluate/references/task-review.md). The CLI supplies deterministic evidence; the host agent performs the diagnosis.
 
 Python 3.11+, native Codex and Claude Code CLIs, provider API keys, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
 

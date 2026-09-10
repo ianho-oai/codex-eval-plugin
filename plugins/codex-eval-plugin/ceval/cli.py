@@ -22,6 +22,7 @@ from .report import report, serve
 from .runner import clean_env, execute, preflight, execution_summary, run, schedule, validate_graders
 from .catalog import examples, portfolio
 from .progress import progress
+from .reflection import reflect, clear_review_pause
 
 
 def load_local_keys():
@@ -291,6 +292,12 @@ def parser():
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')
     a = sub.add_parser('progress', help='Read saved run checkpoints for Codex progress views'); a.add_argument('run_dir', nargs='+')
+    a = sub.add_parser('reflect', help='Review failure patterns without changing grades'); a.add_argument('run_dir', nargs='+')
+    a.add_argument('--min-attempts', type=int, default=3, help='Scorable attempts per task before a failure-rate trigger (default: 3)')
+    a.add_argument('--failure-rate', type=float, default=0.5, help='Per-task failure fraction triggering review (default: 0.5)')
+    a.add_argument('--pause-on-review', action='store_true', help='Request graceful pause of active runs with review signals')
+    a = sub.add_parser('review-clear', help='Record review and clear only a drained task-quality pause')
+    a.add_argument('run_dir'); a.add_argument('--by', required=True); a.add_argument('--reason', required=True)
     a = sub.add_parser('dashboard'); a.add_argument('run_dir', nargs='*', default=['evaluations'], help='Evaluation workspace(s); defaults to all live runs under evaluations/'); a.add_argument('--port', type=int, default=8765); a.add_argument('--scope', action='store_true', help='Show only the supplied run(s) or directory tree; do not expand to the entire evaluation workspace')
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
@@ -337,6 +344,8 @@ def main(argv=None):
         elif c == 'snapshot': result = snapshot(a.repo, a.commit, a.output)
         elif c == 'report': result = report(a.run_dir)
         elif c == 'progress': result = progress(a.run_dir)
+        elif c == 'reflect': result = reflect(a.run_dir, a.min_attempts, a.failure_rate, a.pause_on_review)
+        elif c == 'review-clear': result = clear_review_pause(a.run_dir, a.by, a.reason)
         elif c == 'dashboard': serve(a.run_dir, a.port, scope=a.scope); return 0
         elif c == 'export': result = export_plugin(a.output)
         elif c == 'self-check': result = self_check()

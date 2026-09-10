@@ -85,12 +85,18 @@ tasks/my-task/
 State ordering and precedence explicitly, with a conflicting-input example. For example: “lowest to highest: defaults, config, environment, flags; later values override earlier ones. With config=10, environment=20, flags=30, return30.” Avoid relying on a list whose direction can be interpreted differently. Distinguish missing, empty, whitespace, zero, and false when those cases affect success.
 
 - Prove the starting snapshot fails and the oracle passes. The CLI checks both, but this alone is not sufficient proof of grader quality.
+- Map every acceptance check to a visible requirement. Test an independently written valid alternative, including different permitted error wording and implementation structure. Exact prose, ordering, exception classes, private helpers, or temporary filenames must not become hidden requirements.
+- Inject faults before candidate imports where import-by-name could bypass a later patch. Verify cleanup and rollback through public behavior and filesystem state, not private implementation choices. Ensure targeted broken alternatives still fail after any correction.
 - Add mutants/adversarial candidates: no-op, hardcoded example output, deny-all, ignored filter, unsafe path, removed regression test, stale async response. Check public behavior, not implementation symbols.
 - Use an independent verifier process against a fresh candidate directory; keep grader files outside the candidate workspace. Local execution does not enforce isolation. Do not run candidate-supplied tests as the sole acceptance criterion. Test-authoring tasks need mutation/coverage goals plus independent behavioral checks; a new test file alone is not completion.
 - Pin clocks, random seeds, data, and the existing dependency/runtime versions. Prefer synchronization events to wall-clock races. Reuse available tooling; do not download dependencies inside timed tasks. If Docker was explicitly requested, pin its image digest separately.
 - Use observable state/output assertions for frontend tasks. Browser or platform integration tests require an explicit customer request and an already working setup; screenshot aesthetics are outside the default grading scope.
 - Freeze before all lanes. Never repair a task after seeing which provider failed without versioning and rerunning all affected lanes under a newly approved suite.
 - A historical PR can leak the answer through commit history. `snapshot` strips Git history. Do not put solutions, grader paths, benchmark answer keys, or private discovery transcripts in the agent workspace.
+
+## Reviewing early failures
+
+For early-run failure patterns, use `reflect` and the [task-quality review workflow](../../skills/evaluate/references/task-review.md). It separates setup problems, contract/grader defects, unrealistic scope, and genuine implementation failures. Correct defects through a new approved revision; preserve original outcomes and rerun all affected configurations fairly. Never optimize a grader merely to make an observed candidate pass.
 
 ## Repositories
 

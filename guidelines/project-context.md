@@ -7,6 +7,8 @@
 
 Customer discovery combines interview, opt-in local history, and selected repository/PR/MR evidence. The single skill designs customer-specific tasks; the CLI freezes, validates, approves, executes, grades, normalizes, resumes, and displays them. No AI is used to construct dashboards or to decide scores after approval.
 
+Host-side task-quality reflection uses deterministic `reflect` evidence to investigate early failures. Require visible-contract audits and independent valid alternatives before paid runs. Diagnose setup, grader/contract defects, scope, or genuine coding failures; never change sealed grades. Repairs require a new validated revision, approval for changed inputs, and fair reruns of all affected lanes. Preserve old evidence and costs; cap corrective revisions at two per task. `review-clear` only clears a drained review-owned pause and records the reviewer decision; it never starts work or clears user cancellations.
+
 Compare native Codex and Claude Code agents using API-key authentication. Their built-in prompts and tool implementations differ; this is a product-and-model comparison, not a controlled model-only experiment. Deterministic orchestration does not imply deterministic inference. Use repeated trials and retain every scheduled cell.
 
 Default execution is local, using self-contained trusted task fixtures, clean candidate directories, a separate verifier process, and existing lightweight test runners. Do not add Docker, platform SDKs/simulators, SwiftUI/UIKit UI tests, desktop integrations, browser downloads, or external services during ordinary discovery/task design. For native-app workflows, extract representative logic and disclose the narrower coverage and any language adaptation. Difficulty comes from behavior and interacting modules. Local execution cannot enforce held-out-test secrecy or host isolation; do not label it hermetic. Docker remains an explicitly requested advanced option, with pinned images and separate verifier containers.
@@ -15,7 +17,7 @@ Scores are binary. Infrastructure errors and interrupted attempts score zero in 
 
 The spend threshold is checked before queue dispatch. In-flight calls can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback or silent model substitution. Explicit rate-limit failures have bounded automatic retries; other failures do not.
 
-Current official sources expose OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra. Model IDs and pricing are dated snapshots; account access must be probed and reviewed before use. A user-run Claude Sonnet 5 smoke test passed and its saved results were verified locally. The agent session's Anthropic endpoint remains restricted; user-terminal success does not establish agent-session access. See VALIDATION.md for measured coverage.
+Model IDs, pricing, and CLI compatibility in the bundled catalog are versioned snapshots; verify account access and configuration support before use. Access from one terminal does not establish access from another host or agent session. See [the validation guide](../VALIDATION.md) for offline and live-provider checks.
 
 New customer suites use schema 2: declare workflows and cover every workflow at easy/medium/hard difficulty. Task provenance names a catalog source and adaptation or explains an original design. Offline catalog scope and refresh instructions live in `ceval/data/catalog.md`. Schema 1 remains readable for historical runs; smoke suites are explicitly exempt from customer portfolio coverage.
 
@@ -26,7 +28,7 @@ The dashboard is chart-first: “Workflow evaluation,” X-axis/Y-axis selectors
 
 New runs default to three repeats (including smoke). Chart points are arithmetic means within a run/task/provider/model/effort; failures remain included, missing values remain null, and mixed/partial outcomes disclose pass/repeat counts. Never average separate runs or effort configurations. Task tables use authored `human_summary` text, with a concise metadata fallback for older runs. Select-all toggles operate globally and by difficulty/provider.
 
-`configure` selects models, task IDs, and repeats before validation/approval; optional suite `selection.task_ids` narrows execution while keeping the complete designed portfolio. `dashboard --scope` stays within the supplied simulation directory or run, combining both providers there. Default unscoped dashboards still discover all live evaluation runs.
+`configure` selects models, task IDs, and repeats before validation/approval; optional suite `selection.task_ids` narrows execution while keeping the complete designed portfolio. `dashboard --scope` stays within the supplied evaluation directory or run, combining both providers there. Default unscoped dashboards still discover all live evaluation runs.
 
 Each axis has an independent logarithmic toggle. Nonpositive measurements are explicitly counted as unplottable on log axes; values are never shifted or silently changed. Provider checkbox groups use the same blue/orange palette as successful points.
 
@@ -42,7 +44,7 @@ New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus ca
 
 Evaluation tasks should be achievable by the selected models, with cost, latency, and token use as the primary comparison after verifying correctness. Keep requirements explicit, provide enough context, and allow reasonable execution time. Difficulty increases coding work within a simple prepared environment; provisioning is outside the timed task. Expected success is a design target, while actual pass/fail remains determined by the same fixed checks for every model.
 
-The customer entry point is `CUSTOMER_STARTER_PROMPT.md`: installation followed by a copy-ready Codex kickoff prompt. README and OVERVIEW route there; detailed operator commands are in `docs/CLI_REFERENCE.md`. Doctor validates known per-model CLI minimums and marks account access as unprobed. Fable requires Claude Code 2.1.251 or newer, based on a native error observed 2026-09-10. Updating CLI pins requires fresh validated/approved inputs; historical frozen runs are preserved.
+The customer entry point is `CUSTOMER_STARTER_PROMPT.md`: installation followed by a copy-ready Codex kickoff prompt. README and OVERVIEW route there; detailed operator commands are in `docs/CLI_REFERENCE.md`. Doctor validates known per-model CLI minimums and marks account access as unprobed. The bundled catalog records per-model minimum CLI versions, which preflight enforces. Updating CLI pins requires fresh validated/approved inputs; historical frozen runs are preserved.
 
 Mythos is excluded from default selections. The evaluation skill runs authenticated `doctor --check-model-access` before final approval, verifies upgraded executable paths, and asks the customer to upgrade when required. User-requested setup-error resets/model exclusions are view receipts with preserved original evidence; replacements use newly approved suites.
 

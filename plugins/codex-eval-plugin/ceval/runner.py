@@ -140,16 +140,20 @@ def schedule(s, tasks):
 
 def native_argv(provider, binary, model, effort, seconds, max_turns, budget, docker=False):
     if provider == 'codex':
+        # JSON strings use TOML-compatible quoting for ordinary environment paths.
+        # Keep the shell allowlist narrow while preserving installed toolchains.
+        path = '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin' if docker else clean_env().get('PATH', os.defpath)
+        shell_path = json.dumps(path, ensure_ascii=False)
         return [binary, '-a', 'never', 'exec', '--json', '--ephemeral', '--ignore-user-config',
                 '--skip-git-repo-check', '--color', 'never', '--model', model,
                 '--sandbox', 'danger-full-access' if docker else 'workspace-write',
                 '-c', f'model_reasoning_effort="{effort}"', '-c', 'model_provider="openai"',
                 '-c', 'forced_login_method="api"', '-c', 'web_search="disabled"',
-                '-c', 'project_doc_max_bytes=0', '-c', 'features.multi_agent=false',
+                '-c', 'project_doc_max_bytes=0', '-c', 'allow_login_shell=false', '-c', 'features.multi_agent=false',
                 '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.skills=false',
                 '-c', 'shell_environment_policy.inherit="none"',
                 '-c', 'shell_environment_policy.exclude=["*KEY*","*TOKEN*","*SECRET*"]',
-                '-c', 'shell_environment_policy.set={PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin"}', '-']
+                '-c', f'shell_environment_policy.set={{PATH={shell_path}}}', '-']
     return [binary, '-p', '--bare', '--no-session-persistence', '--output-format', 'stream-json',
             '--verbose', '--model', model, *(['--effort', effort] if effort != 'default' else []), '--max-turns', str(max_turns),
             *(['--max-budget-usd', str(budget)] if budget is not None else []), '--setting-sources', '', '--settings', '{}',
@@ -226,13 +230,25 @@ def preflight(s):
     return result
 
 
+def runtime_diagnostics(stderr):
+    """Recognize native runtime failures without deciding candidate validity."""
+    signals = []
+    if 'could not create PATH aliases: Refusing to create helper binaries under temporary dir' in stderr:
+        signals.append('helper_binaries_refused_in_temp')
+    if re.search(r'fs sandbox helper failed with status exit status: \d+', stderr):
+        signals.append('filesystem_sandbox_helper_failed')
+    if 'failed to open synthetic bubblewrap mount registry lock ' in stderr:
+        signals.append('bubblewrap_registry_lock_failed')
+    return signals
+
+
 def attempt(cell, task, s, pricing, directory, preflight_result):
     started = time.monotonic()
     row = {**cell, 'difficulty': task['spec']['difficulty'], 'use_case': task['spec']['use_case'],
            'started_at': now(), 'completion': 0, 'status': 'infrastructure_error', 'valid': False,
            'simulation': False, 'execution_mode': s['execution']['mode'], 'changed_files': [],
            'agent_seconds': None, 'grader_seconds': None, 'latency_seconds': None,
-           'exit_code': None, 'grader_exit_code': None,
+           'exit_code': None, 'grader_exit_code': None, 'runtime_diagnostics': [],
            **normalize(cell['provider'], '', cell['model'], pricing)}
     directory.mkdir(parents=True, exist_ok=True)
     model_check = preflight_result.get('models', {}).get(cell['model'], {})
@@ -243,7 +259,10 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
         return row
     ex = s['execution']
     name = 'ceval-agent-' + uuid.uuid4().hex[:16]
-    with tempfile.TemporaryDirectory(prefix='ceval-cell-') as td:
+    # Local helper executables must live outside the system temp directory on
+    # hosts where Codex rejects PATH helpers installed beneath /tmp.
+    scratch_parent = directory.resolve() if ex['mode'] == 'local' else None
+    with tempfile.TemporaryDirectory(prefix='ceval-cell-', dir=scratch_parent) as td:
         candidate = Path(td) / 'candidate'
         copy_tree(task['root'] / 'baseline', candidate)
         before = tree(candidate)
@@ -251,7 +270,7 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
         key = 'CODEX_API_KEY' if cell['provider'] == 'codex' else 'ANTHROPIC_API_KEY'
         env[key] = os.environ['OPENAI_API_KEY' if cell['provider'] == 'codex' else key]
         config_home = Path(td) / 'agent-home'
-        config_home.mkdir()
+        config_home.mkdir(mode=0o700)
         env['CODEX_HOME' if cell['provider'] == 'codex' else 'CLAUDE_CONFIG_DIR'] = str(config_home)
         env['DISABLE_AUTOUPDATER'] = '1'
         native = native_argv(cell['provider'], ex[cell['provider']+'_bin'], cell['model'], cell['effort'],
@@ -266,7 +285,10 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
             cmd, cwd = native, candidate
         # No oracle or tests in the agent prompt. The same text is used across all lanes.
         prompt = (task['root'] / 'instruction.md').read_text()
-        prompt += '\n\nImplement the requested behavior in this workspace. Allowed changed paths: ' + ', '.join(task['spec']['allowed_paths']) + '. Finish without asking follow-up questions.\n'
+        prompt += ('\n\nImplement the requested behavior in this workspace. Allowed changed paths: '
+                   + ', '.join(task['spec']['allowed_paths'])
+                   + '. Remove any backups or scratch files you create outside those paths, including .orig and .rej files, before finishing.'
+                   + f" Finish within {s['limits']['agent_seconds']} seconds without asking follow-up questions.\n")
         write_json(directory / 'invocation.json', {'argv': cmd, 'prompt_sha256': digest(prompt), 'key_env': key})
         try:
             r = execute(cmd, cwd, env, s['limits']['agent_seconds'], prompt)
@@ -276,7 +298,8 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
         (directory / 'events.jsonl').write_text(r['stdout'])
         (directory / 'stderr.txt').write_text(r['stderr'])
         row.update(normalize(cell['provider'], r['stdout'], cell['model'], pricing))
-        row.update(agent_seconds=r['seconds'], exit_code=r['exit_code'])
+        row.update(agent_seconds=r['seconds'], exit_code=r['exit_code'],
+                   runtime_diagnostics=runtime_diagnostics(r['stderr']))
         try:
             changed, denied = allowed_changes(before, candidate, task['spec']['allowed_paths'])
             row['changed_files'] = changed

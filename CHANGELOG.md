@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.1 — 2026-09-11
+
+- Keep local candidate and private agent-home directories beneath each attempt, preserve installed toolchain paths in Codex shells, and disable login-shell initialization without inheriting credentials.
+- Record native helper/sandbox diagnostics separately from task scores and flag them during reflection, including otherwise passing attempts. Keep timeout, forbidden-file, and behavioral outcomes unchanged.
+- Clarify the shared task deadline and backup-file cleanup requirements. Add regression coverage for environment setup, runtime warnings, and successful grading after agent timeout.
+- Replace private run diaries and machine-specific operating notes with reusable customer and release documentation. Keep historical evidence in ignored evaluation directories.
+
+## 0.9.0 — 2026-09-10
+
+- Add deterministic `reflect` triage for per-task failure clusters and infrastructure errors, with optional graceful review pauses and an audited `review-clear` command. Preserve results, original user stops, and fixed grading.
+- Add host-agent task-quality reflection: check visible contracts against independent valid alternatives, investigate early failures, and repair defective tasks through bounded, newly approved revisions with every affected lane rerun. Update the starter prompt and customer documentation.
+- Keep active evaluation engines frozen and document feature-branch/PR releases for the protected default branch.
+
 ## 0.8.9 — 2026-09-10
 
 - Make the customer flow and required inputs explicit in the README. Add a pull-request template, owner routing, and a lightweight description-format check.
@@ -39,7 +52,7 @@
 
 - Make the customer starter prompt the primary entry point throughout README, plugin documentation, and the rewritten product walkthrough. Move manual commands into a CLI reference and add provider troubleshooting.
 - Detect Fable's minimum Claude Code version (2.1.251) before invoking it, retain an unstarted infrastructure result, and allow compatible model lanes to proceed. Expose account access as unprobed rather than implying doctor verifies entitlement.
-- Update new-suite and optional Docker build Claude version defaults; preserve all frozen simulations. Document observed Fable/Mythos provider failures and recovery using new validated inputs.
+- Update new-suite and optional Docker build Claude version defaults; preserve frozen inputs and document recovery from provider compatibility errors.
 
 ## 0.8.1 — 2026-09-10
 
@@ -124,7 +137,7 @@
 
 - Disable implicit skill invocation; require an explicit request for Codex comparison evaluations.
 - Exclude known automatic approval-review transcripts from local workflow discovery and disclose truncation separately from parser completeness.
-- Clarify suite-directory ownership and task precedence requirements following three customer simulations.
+- Clarify suite-directory ownership and task precedence requirements.
 
 ## 0.2.0 — 2026-09-09
 
@@ -136,7 +149,7 @@
 ## 0.1.1 — 2026-09-09
 
 - Automatically combine all live runs under the evaluation workspace, refresh every 15 seconds, and preserve original result integrity and source provenance. Use a Codex-inspired charcoal/white theme with orange Claude points.
-- Validation: 30 focused tests, self-check, export, and browser checks passed. All three saved provider smoke results are visible together.
+- Add offline, export, browser, and provider-smoke validation procedures.
 
 ## 0.1.0 — 2026-09-09
 
@@ -144,5 +157,5 @@
 - Added public-source methodology references for Datacurve DeepSWE, SWE-bench, Terminal-Bench/Harbor, and Aider Polyglot. Added three original easy/medium/hard harness examples.
 - Added reproducible ZIP export, source installation metadata, lightweight CI, project guidance, and focused offline tests. No customer history, credentials, raw runs, or internal sources are distributed.
 - Load API keys from the current directory's ignored `.env.local`, preserving exported environment variables without executing shell code.
-- Validation: baseline/oracle checks and 27 focused tests passed; real Codex smoke tests and a user-run Claude Code smoke test passed. See VALIDATION.md for current coverage.
-- Follow-up: validate a pinned Docker environment before interpreting production comparisons. Roll back by checking out the previous approved release; use new run directories after task/protocol changes.
+- Document baseline/oracle checks, offline tests, and provider smoke validation separately; see VALIDATION.md for the reusable validation procedure.
+- Use new run directories after task/protocol changes and keep prior approved releases available for reproducibility.
