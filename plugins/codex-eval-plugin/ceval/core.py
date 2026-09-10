@@ -147,6 +147,8 @@ def load_suite(path):
     number(ex['memory_mb'], 'memory_mb', 128)
     require(set(s['limits']) == {'agent_seconds', 'grader_seconds', 'spend_stop_usd', 'claude_max_turns'}, 'Invalid limits')
     for k, v in s['limits'].items():
+        if k == 'spend_stop_usd' and v is None:
+            continue
         number(v, k, 1 if k != 'spend_stop_usd' else 0.01)
     require(type(s['limits']['claude_max_turns']) is int, 'claude_max_turns must be integer')
     require(isinstance(s['matrix'], list) and s['matrix'], 'Empty model matrix')

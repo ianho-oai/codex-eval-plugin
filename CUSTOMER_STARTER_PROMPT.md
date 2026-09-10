@@ -44,7 +44,7 @@ Ask concise follow-up questions. Get my permission for specific history or repos
 
 For each workflow, propose easy, medium, and hard tasks. Include a short, human-readable workflow description, objective pass/fail checks, and relevant inspiration from the plugin's benchmark catalog with original source links. Create original tasks when no suitable example fits. Ask me to approve the task proposal.
 
-Build and validate the approved tasks. Help me choose available models, confirm the execution environment and spend threshold, and configure API keys securely without pasting them into chat. Get my approval of the final execution plan before making paid calls.
+Build and validate the approved tasks. Default to all cataloged GPT-5.6 models and GPT-6 Astra plus all cataloged Claude models, at every supported single-agent effort level, with no spend stop. At preflight, show me the exact matrix and repeat count, tell me these defaults, and ask me to specify otherwise if I want different models, efforts, or a spend limit. Keep unavailable models visible. Confirm the execution environment, and configure API keys securely without pasting them into chat. Get my approval of the final execution plan before making paid calls.
 
 Include all supported reasoning/effort levels for each selected model and show that full matrix in the plan. Use three repeats per task/model/effort (or one if I request a quick sweep) and five concurrent attempts in total, refilling each free slot immediately. Share the slot limit across batches. Explain how concurrency affects latency and how in-flight calls can exceed a spend threshold.
 

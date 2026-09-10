@@ -49,7 +49,7 @@ docker build -t codex-eval:0.2.1 plugins/codex-eval-plugin
 ./eval dashboard evaluations/customer-run
 ```
 
-The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the current Claude Fable/Opus/Sonnet/Haiku lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 8 configurations × 3 repeats = 72 calls**. Do a small smoke run first. Account access and native-agent support are checked separately; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Restricted models are catalogued separately.
+The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku/Mythos lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 41 model/effort configurations × 3 repeats = 369 calls**. There is **no spend stop by default**. Do a small smoke run first. Account access and native-agent support are checked separately; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
 
 For trusted-code development without Docker, use `init ... --mode local`, pin local CLI versions/paths, and follow the same commands. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
@@ -81,7 +81,7 @@ For trusted-code development without Docker, use `init ... --mode local`, pin lo
 - Claude Code's reported cost and OpenAI rate-card estimates with pricing provenance and an uncertainty envelope.
 - Success rates, infrastructure-invalid counts, pending cells, and cost per verified success including failed-attempt spend.
 
-Missing values remain null. Agent assertions and CLI exit 0 alone do not prove completion. Native harnesses and tokenizers differ; this is a **product/model configuration comparison**. Model outputs and provider caches remain nondeterministic. OpenAI CLI aggregates may not identify exact cache-write or context-tier charges; displayed estimates are not invoices. The spend threshold is checked between calls and can overshoot by one invocation.
+Missing values remain null. Agent assertions and CLI exit 0 alone do not prove completion. Native harnesses and tokenizers differ; this is a **product/model configuration comparison**. Model outputs and provider caches remain nondeterministic. OpenAI CLI aggregates may not identify exact cache-write or context-tier charges; displayed estimates are not invoices. An optional spend threshold is checked before dispatch and can overshoot by the cost of all in-flight calls.
 
 Read the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md) and [task-design guide](plugins/codex-eval-plugin/ceval/data/task-design.md).
 
@@ -185,7 +185,7 @@ New task designs include `human_summary`: two or three plain-language sentences 
 
 To cap multiple batches at five attempts **in total**, give each the same `--workers 5 --slot-pool evaluations/shared-workers` arguments. Each attempt has an isolated workspace; only the coordinator writes shared results. Pool leases release automatically if a process exits.
 
-Agree on concurrency before running. Concurrent work can contend for CPU and network, so latency may differ from sequential measurements. The worker count and scheduler hash are recorded in run metadata. Unrelated unknown spend or a spend threshold stops dispatch; already-active calls finish and are saved. A threshold may overshoot by the cost of all in-flight calls.
+Agree on concurrency before running. Concurrent work can contend for CPU and network, so latency may differ from sequential measurements. The worker count and scheduler hash are recorded in run metadata. When an explicit spend stop is configured, unrelated unknown spend or reaching that threshold stops dispatch; already-active calls finish and are saved. A threshold may overshoot by the cost of all in-flight calls.
 
 For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, containing `{}`). The runner drains active attempts; remove that file before resuming.
 
@@ -193,7 +193,7 @@ For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, contain
 
 Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--rate-limit-retries 3 --retry-delay 30`, or disable using `--rate-limit-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
 
-Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage still pauses execution. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
+Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage pauses execution only when a spend stop is configured; otherwise missing costs remain null and execution continues. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
 
 ### Reasoning and effort sweeps
 
@@ -204,3 +204,9 @@ New suites include all catalog-supported effort levels for each model. Refresh c
 ```
 
 Use repeated `--effort low --effort high` to narrow levels; each must be supported by every selected model. Apply `--model` and `--task` selectors in the same command when needed. Changed matrices require validation and approval before execution. Default repeats remain three. Charts keep efforts separate and display the effort beside the model name.
+
+### Default model sweep and spend policy
+
+New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, across every supported single-agent effort level. Preflight lists the exact matrix and repeats, announces **no spend stop**, and tells the customer to specify otherwise before approval. Limited-access models are included; unavailable lanes remain visible.
+
+`configure SUITE --all-models --all-efforts --no-spend-stop` restores these defaults. Select alternatives with repeated `--model PROVIDER:MODEL` / `--effort LEVEL` flags. Set an optional stop with `--spend-stop-usd AMOUNT`. A null `limits.spend_stop_usd` disables both the scheduler spend stop and Claude's native budget flag; missing costs remain null and do not stop dispatch in this mode. Time limits, turn limits, bounded rate-limit retries, and explicit pause requests still apply. Existing approved suites retain their frozen settings.

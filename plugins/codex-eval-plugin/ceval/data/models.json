@@ -122,7 +122,7 @@
     {
       "id": "claude-mythos-5-1",
       "provider": "claude",
-      "default": false,
+      "default": true,
       "default_effort": "medium",
       "efforts": [
         "low",

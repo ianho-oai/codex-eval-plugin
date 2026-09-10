@@ -51,6 +51,7 @@ class ParallelTests(Workspace):
         self.assertEqual(len(read_json(output / 'results.json')['rows']), 9)
 
     def test_unknown_spend_stops_refill_and_drains_active(self):
+        self.s['limits']['spend_stop_usd'] = 20
         self.prepare()
         two_started = threading.Event()
         guard = threading.Lock()
@@ -69,6 +70,18 @@ class ParallelTests(Workspace):
         self.assertEqual(info['stop_reason'], 'unknown_spend')
         self.assertEqual(info['completed_cells'], 2)
         self.assertEqual(info['active_cells'], 0)
+
+    def test_no_spend_stop_finishes_with_high_and_unknown_costs(self):
+        self.prepare(repeats=2)
+        costs = iter([None, 500, None, 500, 500, None])
+        def attempt(cell, *args):
+            return self.row(cell, next(costs))
+        with patch('ceval.runner.preflight', return_value={'codex': {'ok': True}}), patch('ceval.runner.attempt', side_effect=attempt), contextlib.redirect_stdout(io.StringIO()):
+            info = run(self.path, self.root / 'unlimited', workers=1)
+        self.assertEqual(info['state'], 'complete')
+        self.assertEqual(info['completed_cells'], 6)
+        rows = read_json(self.root / 'unlimited/results.json')['rows']
+        self.assertEqual(sum(r['cost_usd'] is None for r in rows), 3)
 
     def test_pool_shared_between_dispatchers_and_releases_slots(self):
         first = Slots(self.root / 'pool', 5)

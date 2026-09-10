@@ -11,7 +11,7 @@ Compare native Codex and Claude Code agents using API-key authentication. Their 
 
 Default execution uses a pinned Docker image shared by both products, clean writable candidate copies, separate verifier containers, no hidden grader/solution mounts in agent containers, and fixed CPU/memory limits. Local execution is an explicitly selected trusted-code development mode; it cannot provide held-out-test secrecy or host isolation. Do not label local runs hermetic.
 
-Scores are binary. Infrastructure errors and interrupted attempts score zero in the all-attempt summary but are separately categorized. Scorable success rates exclude infrastructure-invalid rows and always display their count. Missing usage is null. Unknown spend unrelated to explicitly authorized rate-limit retries pauses execution because a spend threshold cannot be enforced from missing telemetry.
+Scores are binary. Infrastructure errors and interrupted attempts score zero in the all-attempt summary but are separately categorized. Scorable success rates exclude infrastructure-invalid rows and always display their count. Missing usage is null. With an explicit spend stop, unknown spend unrelated to authorized rate-limit retries pauses execution because the threshold cannot be enforced from missing telemetry. By default no spend stop is configured, and missing telemetry is retained without stopping dispatch.
 
 The spend threshold is checked before queue dispatch. In-flight calls can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback or silent model substitution. Explicit rate-limit failures have bounded automatic retries; other failures do not.
 
@@ -33,3 +33,9 @@ Each axis has an independent logarithmic toggle. Nonpositive measurements are ex
 The run CLI defaults to a five-worker queue with immediate refill. `--workers 1` restores sequential execution; shared `--slot-pool` directories enforce a combined limit across batches. Scheduler metadata records workers, implementation hash and concurrency caveat. A single coordinator writes checkpoints; stop requests, unknown spend and budget thresholds drain active work before stopping.
 
 New suites expand every selected model across its catalog-supported efforts. `configure --all-efforts` expands existing suites; repeated `--effort` narrows to levels supported by every selected model. Customer plans disclose capability exclusions, and model labels include effort. One-repeat quick sweeps are supported without changing the three-repeat general default.
+
+### Default model sweep and spend policy
+
+New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, across every supported single-agent effort level. Preflight lists the exact matrix and repeats, announces **no spend stop**, and tells the customer to specify otherwise before approval. Limited-access models are included; unavailable lanes remain visible.
+
+`configure SUITE --all-models --all-efforts --no-spend-stop` restores these defaults. Select alternatives with repeated `--model PROVIDER:MODEL` / `--effort LEVEL` flags. Set an optional stop with `--spend-stop-usd AMOUNT`. A null `limits.spend_stop_usd` disables both the scheduler spend stop and Claude's native budget flag; missing costs remain null and do not stop dispatch in this mode. Time limits, turn limits, bounded rate-limit retries, and explicit pause requests still apply. Existing approved suites retain their frozen settings.

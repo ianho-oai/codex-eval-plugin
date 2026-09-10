@@ -19,7 +19,7 @@ from . import __version__
 from .core import DATA, EvalError, digest, load_suite, now, read_json, require, tree, write_json
 from .discovery import history, repo_evidence, snapshot
 from .report import report, serve
-from .runner import clean_env, execute, preflight, run, schedule, validate_graders
+from .runner import clean_env, execute, preflight, execution_summary, run, schedule, validate_graders
 from .catalog import examples, portfolio
 
 
@@ -51,7 +51,7 @@ def initialize(destination, mode, image, purpose='customer'):
     s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
          'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': m['efforts']} for m in catalog['models'] if m.get('default')],
          'repeats': 3, 'seed': 42, 'pricing': 'rates.json',
-         'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': 20, 'claude_max_turns': 50},
+         'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
                        'codex_version': '0.153.4', 'claude_version': '2.1.220', 'cpus': 2, 'memory_mb': 4096}}
     write_json(dest / 'suite.json', s)
@@ -152,7 +152,7 @@ def smoke(provider, output, model=None, binary=None, repeats=3):
              matrix=[{'provider':provider, 'model':selected_model, 'efforts':['default' if 'haiku' in selected_model else 'medium']}])
     s['execution'][provider+'_bin'] = exe
     s['execution'][provider+'_version'] = match.group()
-    s['limits'].update(agent_seconds=120, spend_stop_usd=5)
+    s['limits'].update(agent_seconds=120)
     write_json(path,s)
     checks = validate_graders(path)
     seal=load_suite(path)[4]
@@ -195,14 +195,15 @@ def demo(output):
     return {'output': str(out.resolve()), 'simulation': True, 'rows': len(rows)}
 
 
-def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False, all_efforts=False, efforts=None):
+def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False, all_efforts=False, efforts=None, spend_stop_usd=None, no_spend_stop=False):
     path, s, _, _, _ = load_suite(suite)
     catalog = read_json(DATA/'models.json')['models']
     if all_models:
         selected_models = [m['provider']+':'+m['id'] for m in catalog if m.get('default')]
     if selected_models is not None:
-        known = {(m['provider'],m['id']):[m['default_effort']] for m in catalog}
-        known.update({(m['provider'],m['model']):m['efforts'] for m in s['matrix']})
+        known = {(m['provider'],m['id']):m['efforts'] for m in catalog}
+        if not all_models:
+            known.update({(m['provider'],m['model']):m['efforts'] for m in s['matrix']})
         matrix = []
         for value in selected_models:
             parts = value.split(':', 1)
@@ -226,6 +227,9 @@ def configure(suite, selected_models=None, task_ids=None, repeats=None, all_mode
         s['selection'] = {'task_ids':task_ids}
     if repeats is not None:
         s['repeats'] = repeats
+    require(not (no_spend_stop and spend_stop_usd is not None), 'Choose a spend stop or no spend stop')
+    if no_spend_stop or spend_stop_usd is not None:
+        s['limits']['spend_stop_usd'] = None if no_spend_stop else spend_stop_usd
     # Validate the complete proposed suite before replacing the customer's file.
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix='.configure-', dir=path.parent, delete=False) as f:
         json.dump(s, f)
@@ -237,7 +241,7 @@ def configure(suite, selected_models=None, task_ids=None, repeats=None, all_mode
     write_json(path, s)
     return {'suite':str(path), 'matrix':s['matrix'],
             'task_ids':s.get('selection', {}).get('task_ids', [t['spec']['id'] for t in tasks]),
-            'repeats':s['repeats'], 'scheduled_cells':len(schedule(s,tasks)), 'seal':seal,
+            'spend_stop_usd':s['limits']['spend_stop_usd'], 'repeats':s['repeats'], 'scheduled_cells':len(schedule(s,tasks)), 'seal':seal,
             'next':'Run validate --check-graders, review plan, then approve before execution. Prior approvals do not authorize changed settings.'}
 
 
@@ -251,6 +255,7 @@ def parser():
         if name == 'validate': a.add_argument('--check-graders', action='store_true')
         if name == 'approve': a.add_argument('--by', required=True)
     a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
+    b = a.add_mutually_exclusive_group(); b.add_argument('--spend-stop-usd', type=float); b.add_argument('--no-spend-stop', action='store_true')
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
     e = a.add_mutually_exclusive_group(); e.add_argument('--all-efforts', action='store_true', help='Use every catalog-supported effort for each selected model'); e.add_argument('--effort', action='append', help='Select an effort supported by every selected model; repeat for more')
     t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
@@ -289,9 +294,9 @@ def main(argv=None):
                 write_json(path.parent / 'approval.json', result)
             else:
                 result = {'seal': seal, 'suite': s, 'tasks': [t['spec'] for t in tasks],
-                          'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
+                          'execution_summary': execution_summary(s), 'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
                           'note': 'Review tasks, limits, CLI versions, exact model IDs, rates, and execution mode before approval. Model support and API access need doctor/live validation.'}
-        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks, a.all_efforts, a.effort)
+        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks, a.all_efforts, a.effort, a.spend_stop_usd, a.no_spend_stop)
         elif c == 'run':
             from .parallel import run as queued_run
             result = queued_run(a.suite, a.output, a.resume, a.workers, a.slot_pool, a.rate_limit_retries, a.retry_delay)

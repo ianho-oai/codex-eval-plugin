@@ -8,6 +8,7 @@ import random
 import shlex
 import shutil
 import signal
+import sys
 import subprocess
 import tempfile
 import time
@@ -150,15 +151,32 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
                 '-c', 'shell_environment_policy.set={PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin"}', '-']
     return [binary, '-p', '--bare', '--no-session-persistence', '--output-format', 'stream-json',
             '--verbose', '--model', model, *(['--effort', effort] if effort != 'default' else []), '--max-turns', str(max_turns),
-            '--max-budget-usd', str(budget), '--setting-sources', '', '--settings', '{}',
+            *(['--max-budget-usd', str(budget)] if budget is not None else []), '--setting-sources', '', '--settings', '{}',
             '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--disable-slash-commands',
             '--tools', 'Bash,Read,Edit,Write,Glob,Grep', '--allowedTools', 'Bash,Read,Edit,Write,Glob,Grep',
             '--permission-mode', 'dontAsk']
 
 
+def execution_summary(s):
+    stop = s['limits']['spend_stop_usd']
+    return {
+        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, at every supported single-agent effort level. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
+        'selected_matrix': s['matrix'],
+        'repeats': s['repeats'],
+        'spend_stop_usd': stop,
+        'spend_policy': 'No spend stop; missing cost remains visible and does not stop dispatch.' if stop is None else f'Stop dispatch at known spend of ${stop:g}; missing cost may pause execution.',
+        'overrides': 'configure SUITE --model PROVIDER:MODEL --effort LEVEL --spend-stop-usd AMOUNT; use --all-models --all-efforts --no-spend-stop to restore defaults.',
+        'availability': 'Catalog membership does not establish account access. Unavailable models remain visible as failures; no silent substitution.'}
+
+
 def preflight(s):
     ex = s['execution']
-    result = {}
+    summary = execution_summary(s)
+    print(summary['message'], file=sys.stderr, flush=True)
+    for lane in s['matrix']:
+        print(f"  {lane['provider']}:{lane['model']} — {', '.join(lane['efforts'])}", file=sys.stderr, flush=True)
+    print(f"Selected: {s['repeats']} repeat(s). {summary['spend_policy']}", file=sys.stderr, flush=True)
+    result = {'execution_summary': summary}
     for provider in sorted({m['provider'] for m in s['matrix']}):
         binary = ex[provider + '_bin']
         def invoke(args):
@@ -315,11 +333,11 @@ def run(path, output, resume=False):
         for c in cells:
             if c['cell_id'] in done:
                 continue
-            if any(r.get('cost_upper_usd') is None and not r.get('not_started') for r in rows):
+            if s['limits']['spend_stop_usd'] is not None and any(r.get('cost_upper_usd') is None and not r.get('not_started') for r in rows):
                 stop_reason = 'unknown_spend'
                 break
             spent = sum(r.get('cost_upper_usd') or 0 for r in rows)
-            if spent >= s['limits']['spend_stop_usd']:
+            if s['limits']['spend_stop_usd'] is not None and spent >= s['limits']['spend_stop_usd']:
                 stop_reason = 'spend_threshold'
                 break
             require(load_suite(path)[4] == seal, 'Sealed inputs changed during execution')

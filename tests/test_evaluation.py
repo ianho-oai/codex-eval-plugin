@@ -81,7 +81,7 @@ class SuiteTests(Workspace):
 
     def test_configure_models_tasks_and_repeats_is_validated_and_sealed(self):
         self.approve()
-        result = configure(self.path, ['codex:gpt-5.6-luna','claude:claude-sonnet-5'], ['slug-normalization'], 3)
+        result = configure(self.path, ['codex:gpt-5.6-luna','claude:claude-sonnet-5'], ['slug-normalization'], 3, efforts=['medium'])
         _, suite, tasks, _, seal = load_suite(self.path)
         self.assertEqual(len(tasks), 3)  # Preserve the full portfolio.
         self.assertEqual(len(schedule(suite, tasks)), 6)
@@ -110,6 +110,30 @@ class SuiteTests(Workspace):
         self.assertEqual(load_suite(self.path)[1]['matrix'][0]['efforts'], ['low','max'])
         args = parser().parse_args(['configure', str(self.path), '--all-efforts', '--repeats', '1'])
         self.assertTrue(args.all_efforts)
+
+    def test_default_sweep_and_optional_budget_are_disclosed_and_sealed(self):
+        from ceval.runner import execution_summary, native_argv
+        dest = self.root/'defaults'
+        initialize(dest, 'local', None, purpose='smoke')
+        _, suite, tasks, _, seal = load_suite(dest/'suite.json')
+        catalog = read_json(DATA/'models.json')['models']
+        self.assertEqual(suite['matrix'], [{'provider':m['provider'], 'model':m['id'], 'efforts':m['efforts']} for m in catalog if m['default']])
+        self.assertIsNone(suite['limits']['spend_stop_usd'])
+        summary = execution_summary(suite)
+        self.assertIn('No spend stop', summary['message'])
+        self.assertEqual(summary['selected_matrix'], suite['matrix'])
+        configure(dest/'suite.json', spend_stop_usd=12.5)
+        self.assertEqual(load_suite(dest/'suite.json')[1]['limits']['spend_stop_usd'], 12.5)
+        self.assertNotEqual(load_suite(dest/'suite.json')[4], seal)
+        configure(dest/'suite.json', no_spend_stop=True)
+        self.assertEqual(load_suite(dest/'suite.json')[4], seal)
+        args = parser().parse_args(['configure', str(self.path), '--no-spend-stop'])
+        self.assertTrue(args.no_spend_stop)
+        self.assertNotIn('--max-budget-usd', native_argv('claude','claude','claude-sonnet-5','high',10,20,None))
+        self.assertIn('--max-budget-usd', native_argv('claude','claude','claude-sonnet-5','high',10,20,12.5))
+        configure(dest/'suite.json', selected_models=['codex:gpt-5.6-sol'], efforts=['low'])
+        configure(dest/'suite.json', all_models=True)
+        self.assertEqual(load_suite(dest/'suite.json')[1]['matrix'], suite['matrix'])
 
     def test_seeded_schedule_covers_cartesian_product(self):
         self.s['repeats']=4

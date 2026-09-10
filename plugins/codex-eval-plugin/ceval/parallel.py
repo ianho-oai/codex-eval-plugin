@@ -134,10 +134,10 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
                         stop_reason = 'paused'
                     elif any(r.get('rate_limit_retries_exhausted') and r['cell_id'] not in retrying for r in rows):
                         stop_reason = 'rate_limit_retries_exhausted'
-                    elif any(r.get('cost_upper_usd') is None and not r.get('not_started') and r['cell_id'] not in retrying
+                    elif suite['limits']['spend_stop_usd'] is not None and any(r.get('cost_upper_usd') is None and not r.get('not_started') and r['cell_id'] not in retrying
                              and not (rate_limit_retries and r.get('rate_limit_cost_incomplete')) for r in rows):
                         stop_reason = 'unknown_spend'
-                    elif sum(r.get('cost_upper_usd') or r.get('known_cost_upper_usd') or 0 for r in rows) >= suite['limits']['spend_stop_usd']:
+                    elif suite['limits']['spend_stop_usd'] is not None and sum(r.get('cost_upper_usd') or r.get('known_cost_upper_usd') or 0 for r in rows) >= suite['limits']['spend_stop_usd']:
                         stop_reason = 'spend_threshold'
                 # Consume every ready result before refilling, so known stop conditions win.
                 ready = [f for f in pending if f.done()]

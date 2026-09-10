@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 — 2026-09-10
+
+- Default to all cataloged GPT-5.6 / GPT-6 Astra and Claude models, including limited-access Claude lanes, with all supported single-agent efforts. Preflight displays the exact selected matrix and override guidance.
+- Default spend stop to null; omit Claude native budget flags and continue through missing cost telemetry when no stop is set. Preserve explicit finite spend stops and add `--spend-stop-usd` / `--no-spend-stop` selectors.
+- Keep existing approved simulation inputs frozen.
+
 ## 0.6.0 — 2026-09-10
 
 - Default new suites to all catalog-supported model efforts; add `configure --all-efforts` and repeatable `--effort` selectors with capability validation.

@@ -87,3 +87,10 @@ The command checks the installed version and capabilities, runs one original tru
 - Six new frozen suites cover three existing discovery simulations, four Codex models and two Claude Code models, five single-agent effort levels each, and one repeat: 180 Codex plus 90 Claude Code scheduled attempts. Every baseline fails and every known-good solution passes for all six suites.
 - The paid Codex sweep has started and its first xhigh attempt passed the independent grader. Full sweep outcomes are pending; Claude effort sweeps require the user's permitted terminal because this session blocks Anthropic egress. These are trusted-local runs with five shared workers, the existing time/budget limits, and bounded rate-limit retries.
 - Installed Codex capability records expose low/medium/high/xhigh/max for these fixed single-agent lanes; ultra changes delegation behavior. Claude Code 2.1.220 advertises the same five effort spellings. Catalog scope notes preserve these limitations rather than assuming raw API controls and native agent modes are interchangeable.
+
+## 0.7.0 defaults and optional spend stop — 2026-09-10
+
+- All 55 offline tests pass. New coverage verifies the complete catalog model/effort default, restoring defaults after narrowing, optional spend limits changing the approval seal, and removing Claude's native budget flag when unlimited.
+- A queue test completes all six attempts despite high and missing costs with no spend stop; existing finite-budget and unknown-cost stop tests still pass. Missing costs remain null.
+- Self-check, skill validation, reproducible export, and self-check from the extracted standalone ZIP pass. Default sample schedule now contains 369 cells (three tasks, 41 model/effort configurations, three repeats).
+- Preflight and plan expose the selected matrix, repeats, spend policy, and override instructions. No new paid calls were needed to validate these configuration changes. Previously frozen paid simulations retain their approved inputs and runner.
