@@ -176,3 +176,13 @@ Give each customer simulation its own directory and dashboard, combining its pro
 ```
 
 New task designs include `human_summary`: two or three plain-language sentences about the development workflow and what the test exercises. This supplies the table; detailed agent requirements remain in `instruction.md`. Older runs use a concise metadata-based fallback when an authored summary is unavailable.
+
+## Concurrent execution
+
+`./eval run SUITE --output RUN_DIR --workers 5` keeps up to five attempts active and starts the next queued attempt as soon as a slot opens. The default is five; use `--workers 1` for sequential timing. Add `--resume` for an existing identical sealed run. Completed attempts are verified and skipped.
+
+To cap multiple batches at five attempts **in total**, give each the same `--workers 5 --slot-pool evaluations/shared-workers` arguments. Each attempt has an isolated workspace; only the coordinator writes shared results. Pool leases release automatically if a process exits.
+
+Agree on concurrency before running. Concurrent work can contend for CPU and network, so latency may differ from sequential measurements. The worker count and scheduler hash are recorded in run metadata. Unknown spend or a spend threshold stops dispatch; already-active calls finish and are saved. A threshold may overshoot by the cost of all in-flight calls.
+
+For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, containing `{}`). The runner drains active attempts; remove that file before resuming.

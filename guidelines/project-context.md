@@ -13,7 +13,7 @@ Default execution uses a pinned Docker image shared by both products, clean writ
 
 Scores are binary. Infrastructure errors and interrupted attempts score zero in the all-attempt summary but are separately categorized. Scorable success rates exclude infrastructure-invalid rows and always display their count. Missing usage is null. Unknown spend pauses execution because a spend threshold cannot be enforced from missing telemetry.
 
-The spend threshold is checked between sequential calls. A single call can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback, retries, or silent model substitution.
+The spend threshold is checked before queue dispatch. In-flight calls can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback, retries, or silent model substitution.
 
 Current official sources expose OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra. Model IDs and pricing are dated snapshots; account access must be probed and reviewed before use. A user-run Claude Sonnet 5 smoke test passed and its saved results were verified locally. The agent session's Anthropic endpoint remains restricted; user-terminal success does not establish agent-session access. See VALIDATION.md for measured coverage.
 
@@ -29,3 +29,5 @@ New runs default to three repeats (including smoke). Chart points are arithmetic
 `configure` selects models, task IDs, and repeats before validation/approval; optional suite `selection.task_ids` narrows execution while keeping the complete designed portfolio. `dashboard --scope` stays within the supplied simulation directory or run, combining both providers there. Default unscoped dashboards still discover all live evaluation runs.
 
 Each axis has an independent logarithmic toggle. Nonpositive measurements are explicitly counted as unplottable on log axes; values are never shifted or silently changed. Provider checkbox groups use the same blue/orange palette as successful points.
+
+The run CLI defaults to a five-worker queue with immediate refill. `--workers 1` restores sequential execution; shared `--slot-pool` directories enforce a combined limit across batches. Scheduler metadata records workers, implementation hash and concurrency caveat. A single coordinator writes checkpoints; stop requests, unknown spend and budget thresholds drain active work before stopping.

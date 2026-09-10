@@ -243,7 +243,7 @@ def parser():
     a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
     t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
-    a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true')
+    a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true'); a.add_argument('--workers', type=int, default=5, help='Concurrent attempts; refill each freed slot (default: 5)'); a.add_argument('--slot-pool', help='Share the worker limit with other batches using this directory')
     a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
     a = sub.add_parser('examples'); a.add_argument('--query', default=''); a.add_argument('--workflow'); a.add_argument('--limit', type=int, default=10); a.add_argument('--inventory', action='store_true')
@@ -281,7 +281,9 @@ def main(argv=None):
                           'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
                           'note': 'Review tasks, limits, CLI versions, exact model IDs, rates, and execution mode before approval. Model support and API access need doctor/live validation.'}
         elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks)
-        elif c == 'run': result = run(a.suite, a.output, a.resume)
+        elif c == 'run':
+            from .parallel import run as queued_run
+            result = queued_run(a.suite, a.output, a.resume, a.workers, a.slot_pool)
         elif c == 'models': result = models(a.provider, a.refresh)
         elif c == 'benchmarks': result = read_json(DATA/'benchmarks.json')
         elif c == 'examples':

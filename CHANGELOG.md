@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 — 2026-09-10
+
+- Run up to five attempts concurrently by default with immediate slot refill, configurable using `run --workers`.
+- Share a bounded worker pool across batches using `--slot-pool`; checkpoint each completed attempt, preserve deterministic dispatch order and verified resume, and drain in-flight work on pause or spend stops.
+- Record scheduler settings and implementation hash with each invocation; retain the exact task and native-agent engine inputs.
+
 ## 0.3.1 — 2026-09-10
 
 - Color averaged dashboard points blue for Codex or orange for Claude when at least one repeat passes; keep points grey when no repeats pass. Preserve exact pass counts and averaged measurements.

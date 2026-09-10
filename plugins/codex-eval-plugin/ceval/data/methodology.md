@@ -44,3 +44,7 @@ Interrupted attempts are not automatically rerun, because a provider call may al
 - [Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing)
 
 Checked 2026-09-09. Refresh exact CLI capability, public model metadata, and account access before customer execution.
+
+## Queue concurrency
+
+The run CLI defaults to five concurrent attempts. Dispatch follows the seeded pending-cell order; completion order depends on latency. Use `--workers 1` for sequential timing, or `--workers 5 --slot-pool evaluations/shared-workers` across batches to share five total slots. Agree on the concurrency before execution. Each invocation records the worker count and scheduler hash. Cost thresholds and unknown spend stop new dispatch; all in-flight attempts finish and are retained, so thresholds can overshoot by all active calls.
