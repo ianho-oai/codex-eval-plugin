@@ -2,7 +2,7 @@
 # Rebuilding can update OS packages; only the recorded image digest is reproducible.
 FROM node:22.16.0-bookworm-slim
 ARG CODEX_VERSION=0.153.4
-ARG CLAUDE_VERSION=2.1.220
+ARG CLAUDE_VERSION=2.1.251
 RUN apt-get update && apt-get install -y --no-install-recommends python3 git ca-certificates ripgrep \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g @openai/codex@${CODEX_VERSION} @anthropic-ai/claude-code@${CLAUDE_VERSION} \

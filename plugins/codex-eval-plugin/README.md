@@ -1,15 +1,12 @@
-# Codex Eval · 0.8.1
+# Codex Eval · 0.8.2
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
-## Install in Codex
+## Start with the customer prompt
 
-```sh
-codex plugin marketplace add ianho-oai/codex-eval-plugin
-codex plugin add codex-eval-plugin@codex-eval
-```
+**Open the [customer setup and starter prompt](https://github.com/ianho-oai/codex-eval-plugin/blob/master/CUSTOMER_STARTER_PROMPT.md).** This is the entry point: follow its GitHub installation instructions, then paste the kickoff prompt into a new Codex task in your project. No separate repository clone is required.
 
-Invoke the **evaluate** skill and choose interview, approved local session history, selected repositories, or a combination. API keys are needed only for live runs; never paste them in chat.
+The prompt invokes the one **evaluate** skill, offers the three discovery methods, and guides task approval, setup, execution, and the combined dashboard. The commands below are a manual reference for installed or extracted plugins. See the [walkthrough](https://github.com/ianho-oai/codex-eval-plugin/blob/master/OVERVIEW.md) and [troubleshooting](https://github.com/ianho-oai/codex-eval-plugin/blob/master/docs/TROUBLESHOOTING.md).
 
 ## Run the bundled CLI
 
@@ -47,7 +44,7 @@ The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invo
 
 ## Concurrent execution
 
-`./eval run SUITE --output RUN_DIR --workers 5` keeps up to five attempts active and starts the next queued attempt as soon as a slot opens. The default is five; use `--workers 1` for sequential timing. Add `--resume` for an existing identical sealed run. Completed attempts are verified and skipped.
+`python3 bin/codex-eval run SUITE --output RUN_DIR --workers 5` keeps up to five attempts active and starts the next queued attempt as soon as a slot opens. The default is five; use `--workers 1` for sequential timing. Add `--resume` for an existing identical sealed run. Completed attempts are verified and skipped.
 
 To cap multiple batches at five attempts **in total**, give each the same `--workers 5 --slot-pool evaluations/shared-workers` arguments. Each attempt has an isolated workspace; only the coordinator writes shared results. Pool leases release automatically if a process exits.
 
@@ -74,3 +71,5 @@ New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus al
 Fable 5.1 (`claude-fable-5-1`) and Mythos 5.1 (`claude-mythos-5-1`) are permanent default model selections, each with `low`, `medium`, `high`, `xhigh`, and `max` effort. These selections apply to all new customer suites and `configure --all-models --all-efforts`. Preflight lists both models and their effort levels. Customers can narrow the matrix before approval.
 
 Evaluation tasks should be achievable by the selected models, with cost, latency, and token use as the primary comparison after verifying correctness. Keep requirements explicit, provide enough context, and allow reasonable execution time. Difficulty increases coding work within a simple prepared environment; provisioning is outside the timed task. Expected success is a design target, while actual pass/fail remains determined by the same fixed checks for every model.
+
+Doctor checks local requirements and known model minimum CLI versions; it does not probe account access. Fable 5.1 requires Claude Code 2.1.251 or newer. Update the CLI and pin the actual version in a newly validated/approved suite before retrying. An unavailable Mythos model ID or account requires a separate access check; there is no automatic model substitution.

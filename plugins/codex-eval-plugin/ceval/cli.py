@@ -53,7 +53,7 @@ def initialize(destination, mode, image, purpose='customer'):
          'repeats': 3, 'seed': 42, 'pricing': 'rates.json',
          'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
-                       'codex_version': '0.153.4', 'claude_version': '2.1.220', 'cpus': 2, 'memory_mb': 4096}}
+                       'codex_version': '0.153.4', 'claude_version': '2.1.251', 'cpus': 2, 'memory_mb': 4096}}
     write_json(dest / 'suite.json', s)
     write_json(dest / 'discovery.json', {'schema_version': 1, 'state': 'awaiting_customer_discovery',
                'source_choices': [], 'history_consents': [], 'repository_scopes': [], 'workflows': [],

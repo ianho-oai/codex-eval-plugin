@@ -125,3 +125,11 @@ The command checks the installed version and capabilities, runs one original tru
 - All 57 tests, self-check, skill validation, and export pass.
 - Skill, task design, portfolio guidance, and customer-facing documentation now emphasize achievable tasks, verified completion, and cost/latency/token comparisons. Environment preparation precedes measured tasks; shared objective checks and actual failures remain visible.
 - This instruction update does not rerun or relabel existing results.
+
+## 0.8.2 starter-prompt entry point and provider diagnostics — 2026-09-10
+
+- All 59 offline tests pass, including an old-CLI Fable rejection that leaves the compatible Sonnet lane runnable, and a minimum-version check that still enforces the suite's exact CLI pin. CLI self-check, export, extracted standalone self-check, and local documentation-link checks pass.
+- README, plugin README, customer prompt, and rewritten OVERVIEW consistently start with the customer starter prompt. Manual commands moved to `docs/CLI_REFERENCE.md`; `docs/TROUBLESHOOTING.md` documents local preflight versus model access and recovery with fresh approved inputs. Corrected stale dashboard-color, environment, spend-stop, and repeat-color documentation.
+- Inspected native errors from the additional Fable/Mythos simulations: Claude Code 2.1.220 rejects Fable and requires 2.1.251 or newer; Mythos reports an unknown/inaccessible selected model. These are provider errors, not evidence of coding-task failure. Local key/version/flag preflight in 0.7.3 did not establish per-model support or account access.
+- This release checks known model minimum CLI versions and explicitly marks account access as unprobed. New suite and optional Docker build defaults use Claude Code 2.1.251. The installed CLI remains 2.1.220; a live retry with a newer version and Mythos access verification is still outstanding. No new paid calls or live Docker build were performed for this release.
+- Existing frozen suites and signed results remain unchanged. Requested a graceful pause for the unfinished affected history batch; its last recorded state remains running, so drain completion is not confirmed.

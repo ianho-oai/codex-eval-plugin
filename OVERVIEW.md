@@ -1,77 +1,56 @@
 # Product walkthrough
 
-Current local version: 0.1.1. This is a functional first version with real provider smoke tests; a full customer evaluation has not yet been validated end to end.
+**Begin with the [customer starter prompt](CUSTOMER_STARTER_PROMPT.md).** It contains installation instructions and the prompt to paste into a new Codex task. The workflow happens in Codex chat; the dashboard is for results.
 
-## The customer experience
+## Customer experience and implementation
 
-| Step | Customer experience | Underlying functionality |
+| Stage | Customer experience | Underlying functionality |
 | --- | --- | --- |
-| Install | Install the plugin in Codex and invoke its one `evaluate` skill. | The plugin bundles instructions, a Python CLI, public methodology references, schemas, starter tasks, and a fixed dashboard. |
-| Discover | Choose an interview, selected local Codex/Claude history, selected repositories/PRs/MRs, or any combination. Stop the interview and request a proposal whenever ready. | The coding agent conducts discovery. CLI helpers extract opted-in user messages and selected Git/GitHub/GitLab evidence; choices and consent are saved in `discovery.json`. |
-| Approve the portfolio | Review a table of workflows, task ideas, easy/medium/hard difficulty, acceptance checks, and benchmark inspiration. | The agent draws on original summaries of DeepSWE, SWE-bench, Terminal-Bench/Harbor, and Aider Polyglot. It designs original tasks; this is not a redistributed official benchmark dataset. |
-| Build the evaluation | The agent writes tasks and concrete verifiers, then presents the runnable plan. | Each task contains an instruction, starting files, allowed-change rules, a grader, and a known-good solution. Validation requires the starting implementation to fail and the known-good solution to pass. |
-| Configure and approve | Supply API keys securely, select models/efforts/repeats, and approve the execution environment and spend threshold. | Keys come from the environment or ignored `.env.local`. `suite.json` specifies the matrix and limits. An approval receipt hashes tasks, settings, pricing, and referenced content so later changes invalidate approval. |
-| Run unattended | After final approval, the agent launches the fixed CLI and reports blockers when required. | The runner executes each task × model × effort × repeat in seeded order, creates a fresh workspace, calls native `codex exec` or Claude Code headlessly, collects events, grades the result, and checkpoints progress. It supports resume of the same sealed suite. |
-| Inspect results | Open one local dashboard for the evaluation workspace. Select tasks/providers/outcomes and chart axes, inspect individual attempts, or export CSV. | The server discovers saved live runs, verifies original result artifacts, aggregates measurements, and refreshes every 15 seconds. Codex points are white; Claude points are orange. Demos remain separate. |
+| Start | Follow the starter prompt to install from this repository and invoke `$evaluate`. | One exportable plugin bundles one skill, the CLI, task references, schemas, and dashboard. No repository clone is required for customer installation. |
+| Discover | Combine a conversation, selected local sessions from the last 90 days, or selected repositories/PRs/MRs. Ask to build the proposal whenever ready. | The agent asks follow-ups; CLI helpers extract consented evidence into ignored customer files. The CLI does not independently infer workflows. |
+| Approve tasks | Review easy/medium/hard coverage per workflow, plain-language summaries, acceptance checks, and source links. | The skill adapts examples from the local benchmark catalog or explains an original design. Tasks are freshly authored, not official benchmark reproductions. |
+| Prepare | Review self-contained tasks using available lightweight test runners. | Each task has instructions, baseline files, allowed changes, a separate grader, and a known-good solution. Validation checks that baseline fails and solution passes. Environment preparation precedes timed execution. |
+| Approve execution | Review exact model/effort combinations, repeats, versions, pricing, and any limits. Configure keys securely. | A sealed approval binds tasks, settings, pricing, and engine inputs. Doctor checks local prerequisites and known model minimum CLI versions; model access still requires live verification. Changed inputs require renewed validation and approval. |
+| Run | Let the CLI complete the approved matrix and report actionable blockers. | A five-worker queue refills immediately. Each attempt gets a fresh workspace, native Codex or Claude Code execution, separate grading, and saved evidence. Explicit rate limits receive bounded retries. |
+| Compare | Explore cost, latency, and tokens for both providers in one dashboard, or scope a dashboard to each workflow. | The dashboard reads saved artifacts and refreshes every 15 seconds. Each point averages repeats within the same run/task/model/effort. Raw attempts remain available. |
 
-The experience starts in Codex chat. There is no separate discovery web wizard. The coding agent authors customer tasks; the CLI does not independently infer workflows or generate tasks. After approval, execution and reporting use fixed code.
+## Current defaults
 
-## What runs underneath
+- All cataloged GPT-5.6 models and GPT-6 Astra, plus Claude Fable/Opus/Sonnet/Haiku/Mythos, at every supported single-agent effort level.
+- Three repeats; one repeat is available for quick sweeps.
+- Five concurrent attempts, with a shared pool available across batches.
+- No spend stop. Optional thresholds stop new dispatch; active calls can overshoot them.
+- Local execution, bundled fixtures, and existing simple frameworks. Docker is an explicitly requested advanced option. Native-app workflows test representative logic without requiring GUI automation or platform simulators.
 
-```text
-One skill: discovery → proposal → task authoring → customer approval
-                                      ↓
-                         Frozen suite and task files
-                                      ↓
-                     Deterministic Python CLI runner
-                       ↙                       ↘
-              Native Codex CLI          Native Claude Code
-                       ↘                       ↙
-                        Independent task verifiers
-                                      ↓
-                Structured results → shared dashboard / CSV
-```
+The objective is achievable tasks with verified correctness, followed by comparison of time, cost, and tokens. Genuine failures are retained; graders are not weakened to force success.
 
-- **Success:** binary 1/0 from provider completion, allowed-change checks, and an external deterministic grader. An agent saying “done” is insufficient.
-- **Timing:** end-to-end, agent, and grader duration.
-- **Usage:** input, output, cache read/write, reasoning, turns, and tool calls where the native product reports them. Missing fields remain unavailable.
-- **Cost:** Claude Code's native reported total; OpenAI estimates from the bundled dated rate card. Estimates are not invoices.
-- **Failures:** retained in results and cost calculations; infrastructure-invalid results are distinguished from scorable task failures. Unattempted cells remain pending.
-- **Determinism:** fixed inputs, orchestration, scheduling, and grading. Model responses, native harness behavior, and provider caches are not deterministic or identical across providers.
-- **Environment:** default execution uses a pinned Docker image with separate agent/grader containers. Trusted-local mode supports development smoke tests without promising isolation.
-- **Budget:** a stop threshold checked between calls, not a hard billing cap; one call can overshoot it. Unknown cost stops subsequent spending.
+## What is deterministic
+
+Task snapshots, settings, seeded schedule, orchestration code, and behavioral checks are fixed. Concurrent completion order, model outputs, cache behavior, and observed timing can vary. Codex and Claude Code have different native harnesses, prompts, and tokenizers, so this compares product/model configurations.
+
+Completion requires successful provider execution, allowed changes, and a passing separate grader. Agent assertions alone never count. Infrastructure errors are distinguished from scorable task failures; missing metrics remain null. Claude cost comes from native telemetry; OpenAI cost is estimated from frozen rates and available usage, with uncertainty retained.
+
+Local mode runs trusted fixtures on the customer's host. It does not enforce grader secrecy or host isolation. Difficulty should come from software behavior and interacting modules, with setup already prepared.
+
+## Dashboard
+
+The chart comes first, with provider/model and difficulty/task checkbox groups, select-all controls, toggleable model labels, and independent logarithmic axes. Hover details show model/effort, task, difficulty, pass count, cost, and end-to-end latency. The task table uses short workflow descriptions.
+
+Codex is blue and Claude orange when at least one repeat passes; groups with no successful repeat are grey. A point averages only its own run/task/model/effort group, including failed attempts. Missing metrics and pending attempts remain explicit. Combining separate runs does not establish that their settings are comparable.
 
 ## Files and ownership
 
 | Location | Purpose |
 | --- | --- |
-| `plugins/codex-eval-plugin/` | Exportable plugin, exactly one skill, native adapters, reference catalogs, and dashboard |
-| `evaluations/<customer>/` | Ignored customer discovery, suites, tasks, and approval receipts |
-| `evaluations/<run>/` | Ignored run schedules, per-attempt artifacts, results, and reports |
-| `.env.local` | Ignored API keys; exported environment values take precedence |
-| `tests/` | Fast offline tests using original fixtures and emulated native CLI protocols |
-| `dist/` | Versioned standalone plugin ZIP and checksum |
+| [Customer starter prompt](CUSTOMER_STARTER_PROMPT.md) | Customer entry point and kickoff instructions |
+| `plugins/codex-eval-plugin/` | Complete standalone plugin |
+| `evaluations/<customer>/` | Ignored discovery, tasks, suites, receipts, and run evidence |
+| `.env.local` | Ignored provider keys; exported values take precedence |
+| `tests/` | Offline tests and native-protocol emulators |
+| `dist/` | Standalone versioned ZIPs and checksums |
 
-## Verified today
+## Validation and limitations
 
-- 30 offline tests, CLI self-check, and standalone export pass.
-- Luna and Sol each passed a real native Codex smoke test.
-- A user-run Claude Sonnet 5 smoke test passed; saved artifacts and the external grader result were inspected locally.
-- The dashboard shows all three results together; provider filtering and axis changes were verified in a browser.
-- Older interrupted runs remain visible through pending counts rather than disappearing.
-- Initial repository publication is verified. Later local changes need the user's next push.
+See [VALIDATION.md](VALIDATION.md) for dated test results and live-provider evidence. Passing offline tests does not establish model availability. Fable/Mythos simulation attempts have exposed CLI compatibility and model-access errors; [troubleshooting](docs/TROUBLESHOOTING.md) explains the findings and recovery. Do not interpret these as failures to implement the software task.
 
-## Still unvalidated or intentionally limited
-
-- A fresh customer's entire install → discovery → task creation → approved matrix journey has not been exercised end to end.
-- Only three provider/model smoke configurations have real execution evidence. The full catalog and default 72-call sample matrix have not been run.
-- Live Docker isolation has not been validated on this restricted development host.
-- The bundled examples are small original fixtures, not yet a portfolio representative of a real customer's repositories.
-- Model and pricing catalogs are dated snapshots. Account model discovery is available, but new model IDs and prices require explicit review; they are not silently added to an approved evaluation.
-- Combining runs is a convenience for exploration. Different suites may use different tasks, environments, and settings, so combined display alone does not prove a fair benchmark.
-
-Start the combined dashboard from the project directory with `./eval dashboard`. See `README.md` for installation and the full CLI sequence, and `VALIDATION.md` for measured smoke-test results.
-
-## Task design library (0.2.0)
-
-Discovery records named workflows. `examples` retrieves relevant original design summaries and optionally upstream task metadata from a bundled, pinned public catalog. `portfolio` creates three proposal slots per workflow; the skill authors fresh runnable tasks. New customer suites enforce easy/medium/hard coverage per workflow and validate inspiration links or original-design rationale before approval. See [catalog scope](plugins/codex-eval-plugin/ceval/data/catalog.md).
+Use the [CLI reference](docs/CLI_REFERENCE.md) for manual operation, selectors, retries, and dashboard commands. Use the [starter prompt](CUSTOMER_STARTER_PROMPT.md) to begin a customer evaluation.

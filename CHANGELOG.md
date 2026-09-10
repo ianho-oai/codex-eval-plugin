@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2 — 2026-09-10
+
+- Make the customer starter prompt the primary entry point throughout README, plugin documentation, and the rewritten product walkthrough. Move manual commands into a CLI reference and add provider troubleshooting.
+- Detect Fable's minimum Claude Code version (2.1.251) before invoking it, retain an unstarted infrastructure result, and allow compatible model lanes to proceed. Expose account access as unprobed rather than implying doctor verifies entitlement.
+- Update new-suite and optional Docker build Claude version defaults; preserve all frozen simulations. Document observed Fable/Mythos provider failures and recovery using new validated inputs.
+
 ## 0.8.1 — 2026-09-10
 
 - Frame task design around achievable, verified completion and comparing time, tokens, and cost. Keep environment provisioning outside measured tasks; scale difficulty through coding work with clear requirements and reasonable time limits.

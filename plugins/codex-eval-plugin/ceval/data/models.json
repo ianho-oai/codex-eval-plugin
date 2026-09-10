@@ -76,7 +76,9 @@
         "max"
       ],
       "availability": "verify on customer account",
-      "source": "https://platform.claude.com/docs/en/models/overview"
+      "source": "https://platform.claude.com/docs/en/models/overview",
+      "minimum_cli_version": "2.1.251",
+      "cli_requirement_evidence": "Native Claude Code API error observed 2026-09-10: version 2.1.251 or newer is required."
     },
     {
       "id": "claude-opus-5",

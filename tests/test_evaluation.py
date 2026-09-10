@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT/'plugins/codex-eval-plugin'))
 from ceval.cli import initialize, main, export_plugin, demo, load_local_keys, parser, configure
 from ceval.core import DATA, EvalError, child, digest, load_suite, read_json, tree, write_json, allowed_changes
 from ceval.telemetry import normalize
-from ceval.runner import schedule, validate_graders, execute, clean_env, run, native_argv
+from ceval.runner import schedule, validate_graders, execute, clean_env, run, native_argv, preflight
 from ceval.discovery import history, user_text, timestamp
 from ceval.report import dataset, dashboard_dataset, summarize, csv_text, average_attempts
 
@@ -295,7 +295,7 @@ class RunnerTests(Workspace):
             events=[{'type':'result','subtype':'success','num_turns':2,'total_cost_usd':.03,
                      'usage':{'input_tokens':50,'cache_read_input_tokens':10,'cache_creation_input_tokens':20,'output_tokens':30}}]
         binary.write_text('#!'+sys.executable+'\nimport sys,json\nfrom pathlib import Path\n'
-            +"if '--version' in sys.argv: print('codex-cli 0.153.4' if "+repr(provider)+"=='codex' else '2.1.220 (Claude Code)');sys.exit(0)\n"
+            +"if '--version' in sys.argv: print('codex-cli 0.153.4' if "+repr(provider)+"=='codex' else '2.1.251 (Claude Code)');sys.exit(0)\n"
             +"if '--help' in sys.argv: print('--json --ephemeral --ignore-user-config --bare --strict-mcp-config --effort');sys.exit(0)\n"
             +"sys.stdin.read()\nPath('slug.py').write_text("+repr(oracle)+")\n"
             +"for e in "+repr(events)+":print(json.dumps(e))\n")
@@ -361,6 +361,34 @@ class RunnerTests(Workspace):
         rows=read_json(self.root/'run/results.json')['rows']
         self.assertEqual(len(rows),2)
         self.assertTrue(all(x['status']=='infrastructure_error' and x['completion']==0 and x['not_started'] for x in rows))
+
+    def test_old_claude_blocks_fable_but_runs_compatible_model(self):
+        self.prep(('claude',))
+        binary = Path(self.s['execution']['claude_bin'])
+        binary.write_text(binary.read_text().replace('2.1.251', '2.1.220'))
+        self.s['execution']['claude_version'] = '2.1.220'
+        self.s['matrix'].append({'provider':'claude','model':'claude-fable-5-1','efforts':['medium']})
+        self.save(); self.approve()
+        with patch.dict(os.environ, {'ANTHROPIC_API_KEY':'test-key'}), contextlib.redirect_stdout(io.StringIO()):
+            run(self.path, self.root/'run')
+        rows = {r['model']:r for r in read_json(self.root/'run/results.json')['rows']}
+        self.assertEqual(rows['claude-sonnet-5']['completion'], 1)
+        fable = rows['claude-fable-5-1']
+        self.assertTrue(fable['not_started'])
+        self.assertIsNone(fable['exit_code'])
+        self.assertIn('2.1.251', fable['diagnostic'])
+        self.assertFalse(read_json(self.root/'run/preflight.json')['claude']['ok'])
+
+    def test_fable_minimum_version_still_requires_matching_pin(self):
+        self.prep(('claude',))
+        self.s['matrix'] = [{'provider':'claude','model':'claude-fable-5-1','efforts':['medium']}]
+        self.s['execution']['claude_version'] = '2.1.220'
+        with patch.dict(os.environ, {'ANTHROPIC_API_KEY':'test-key'}), contextlib.redirect_stderr(io.StringIO()):
+            self.assertFalse(preflight(self.s)['claude']['ok'])
+            self.s['execution']['claude_version'] = '2.1.251'
+            pf = preflight(self.s)['claude']
+        self.assertTrue(pf['ok'])
+        self.assertEqual(pf['models']['claude-fable-5-1']['account_access'], 'not_probed')
 
     def test_timeout_kills_process_and_preserves_output(self):
         r=execute([sys.executable,'-u','-c','import time;print("before");time.sleep(5)'],None,clean_env(),.1)

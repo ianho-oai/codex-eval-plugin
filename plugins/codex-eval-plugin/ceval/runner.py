@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import random
+import re
 import shlex
 import shutil
 import signal
@@ -15,7 +16,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .core import (EvalError, allowed_changes, child, copy_tree, digest, load_suite, now,
+from .core import (DATA, EvalError, allowed_changes, child, copy_tree, digest, load_suite, now,
                    read_json, redact, require, tree, write_json)
 from .telemetry import normalize
 
@@ -202,9 +203,26 @@ def preflight(s):
             ok = capability['exit_code'] == 0 and all(flag in capability['stdout'] for flag in flags)
         key = 'OPENAI_API_KEY' if provider == 'codex' else 'ANTHROPIC_API_KEY'
         ok = ok and bool(os.environ.get(key))
-        result[provider] = {'ok': ok, 'version': ver['stdout'].strip(), 'required_version': expected,
+        catalog = {(m['provider'], m['id']): m for m in read_json(DATA / 'models.json')['models']}
+        version_match = re.search(r'\b(\d+)\.(\d+)\.(\d+)\b', ver['stdout'])
+        version_tuple = tuple(map(int, version_match.groups())) if version_match else ()
+        model_checks = {}
+        for lane in s['matrix']:
+            if lane['provider'] != provider:
+                continue
+            minimum = catalog.get((provider, lane['model']), {}).get('minimum_cli_version')
+            compatible = not minimum or version_tuple >= tuple(map(int, minimum.split('.')))
+            diagnostic = '' if compatible else f"{lane['model']} requires {provider} CLI {minimum} or newer. Update the CLI, then pin its actual version in a newly validated and approved suite."
+            model_checks[lane['model']] = {'ok': compatible, 'minimum_cli_version': minimum,
+                                           'account_access': 'not_probed', 'diagnostic': diagnostic}
+            if diagnostic:
+                print(diagnostic, file=sys.stderr, flush=True)
+        models_ok = all(m['ok'] for m in model_checks.values())
+        result[provider] = {'ok': ok and models_ok, 'runtime_ok': ok, 'models': model_checks,
+                            'version': ver['stdout'].strip(), 'required_version': expected,
                             'key_present': bool(os.environ.get(key)),
-                            'diagnostic': '' if ok else 'Missing key, CLI/version/capability mismatch, or unavailable execution image; run doctor.'}
+                            'diagnostic': ('Missing key, CLI/version/capability mismatch, or unavailable execution image; run doctor.' if not ok
+                                           else '; '.join(m['diagnostic'] for m in model_checks.values() if not m['ok']))}
     return result
 
 
@@ -217,8 +235,9 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
            'exit_code': None, 'grader_exit_code': None,
            **normalize(cell['provider'], '', cell['model'], pricing)}
     directory.mkdir(parents=True, exist_ok=True)
-    if not preflight_result['ok']:
-        row['diagnostic'] = preflight_result['diagnostic']
+    model_check = preflight_result.get('models', {}).get(cell['model'], {})
+    if not preflight_result.get('runtime_ok', preflight_result['ok']) or not model_check.get('ok', True):
+        row['diagnostic'] = model_check.get('diagnostic') or preflight_result['diagnostic']
         row['latency_seconds'] = time.monotonic()-started
         row['not_started'] = True
         return row
