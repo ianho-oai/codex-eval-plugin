@@ -61,6 +61,7 @@ def portfolio(discovery, suite=None, output=None):
                           'original_task_allowed': True})
     result = {'schema_version': 1, 'status': 'proposal_scaffold', 'workflows': workflows,
               'minimum_tasks': len(cells), 'slots': cells,
+              'task_design_policy': 'Self-contained local fixtures and an existing simple test runner. No Docker, GUI apps, simulators, external services, or device integrations by default. Adapt benchmark ideas to portable logic; difficulty comes from behavior and interacting modules, not environment setup.',
               'note': 'Author customer-specific tasks for every slot, explain source adaptations or original rationale, then obtain portfolio and concrete-suite approval.'}
     if suite:
         data = read_json(suite)

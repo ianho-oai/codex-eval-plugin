@@ -32,9 +32,8 @@ Share the [customer setup and starter prompt](CUSTOMER_STARTER_PROMPT.md) for Gi
 # Complete discovery.json.workflows and propose three tiers per workflow:
 ./eval portfolio evaluations/customer/discovery.json --suite evaluations/customer/suite.json --output evaluations/customer/portfolio.json
 # Replace example tasks with approved customer tasks, workflow IDs, and provenance.
-# Build a toolchain image once, including each task's test/build dependencies:
-docker build -t codex-eval:0.2.1 plugins/codex-eval-plugin
-./eval image-pin evaluations/customer/suite.json --image codex-eval:0.2.1
+# Use self-contained fixtures and existing local test runners. No Docker setup.
+# Pin local CLI versions/paths and validate the task grader before paid calls.
 
 # Set OPENAI_API_KEY and ANTHROPIC_API_KEY in your environment or ignored .env.local.
 # Never put keys in the suite or chat; exported values take precedence over .env.local.
@@ -51,7 +50,7 @@ docker build -t codex-eval:0.2.1 plugins/codex-eval-plugin
 
 The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku/Mythos lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 41 model/effort configurations × 3 repeats = 369 calls**. There is **no spend stop by default**. Do a small smoke run first. Account access and native-agent support are checked separately; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
 
-For trusted-code development without Docker, use `init ... --mode local`, pin local CLI versions/paths, and follow the same commands. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
+New suites use local execution by default. Pin existing local CLI versions/paths and use small, self-contained tasks with unittest, already-installed pytest, Node tests, or an equivalent available runner. For iOS workflows, test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI testing. Docker remains available only when explicitly requested with `init ... --mode docker`; it is not part of the default customer flow. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
 ### CLI map
 

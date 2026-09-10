@@ -60,7 +60,7 @@ def initialize(destination, mode, image, purpose='customer'):
                'assumptions': ['Included tasks are original harness examples; replace with approved customer tasks.'],
                'portfolio_approved': False})
     (dest / '.gitignore').write_text('*\n')
-    return {'suite': str(dest/'suite.json'), 'next': 'Complete discovery and replace examples. Pin image and CLI versions, then validate --check-graders, plan, and approve.'}
+    return {'suite': str(dest/'suite.json'), 'next': 'Complete discovery and replace examples with self-contained tasks using existing local test runners. Pin CLI versions, then validate --check-graders, plan, and approve.' if mode == 'local' else 'Complete discovery and replace examples. Pin the explicitly requested Docker image and CLI versions, then validate --check-graders, plan, and approve.'}
 
 
 def models(provider, refresh):
@@ -249,7 +249,7 @@ def parser():
     p = argparse.ArgumentParser(prog='codex-eval', description='Discover, freeze, run, grade, and compare native coding agents.')
     p.add_argument('--version', action='version', version=__version__)
     sub = p.add_subparsers(dest='command', required=True)
-    a = sub.add_parser('init'); a.add_argument('directory'); a.add_argument('--mode', choices=['docker', 'local'], default='docker'); a.add_argument('--image')
+    a = sub.add_parser('init'); a.add_argument('directory'); a.add_argument('--mode', choices=['docker', 'local'], default='local', help='Execution environment (default: local; Docker only when explicitly requested)'); a.add_argument('--image')
     for name in ('plan', 'validate', 'approve', 'doctor'):
         a = sub.add_parser(name); a.add_argument('suite')
         if name == 'validate': a.add_argument('--check-graders', action='store_true')

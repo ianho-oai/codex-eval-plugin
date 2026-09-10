@@ -162,6 +162,8 @@ def execution_summary(s):
     return {
         'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, at every supported single-agent effort level. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
         'selected_matrix': s['matrix'],
+        'execution_mode': s['execution']['mode'],
+        'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',
         'repeats': s['repeats'],
         'spend_stop_usd': stop,
         'spend_policy': 'No spend stop; missing cost remains visible and does not stop dispatch.' if stop is None else f'Stop dispatch at known spend of ${stop:g}; missing cost may pause execution.',
@@ -176,6 +178,7 @@ def preflight(s):
     for lane in s['matrix']:
         print(f"  {lane['provider']}:{lane['model']} — {', '.join(lane['efforts'])}", file=sys.stderr, flush=True)
     print(f"Selected: {s['repeats']} repeat(s). {summary['spend_policy']}", file=sys.stderr, flush=True)
+    print(f"Execution: {summary['execution_mode']}. {summary['task_setup']}", file=sys.stderr, flush=True)
     result = {'execution_summary': summary}
     for provider in sorted({m['provider'] for m in s['matrix']}):
         binary = ex[provider + '_bin']

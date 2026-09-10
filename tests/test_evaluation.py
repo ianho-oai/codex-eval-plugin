@@ -114,7 +114,9 @@ class SuiteTests(Workspace):
     def test_default_sweep_and_optional_budget_are_disclosed_and_sealed(self):
         from ceval.runner import execution_summary, native_argv
         dest = self.root/'defaults'
-        initialize(dest, 'local', None, purpose='smoke')
+        args = parser().parse_args(['init', str(dest)])
+        self.assertEqual(args.mode, 'local')
+        initialize(dest, args.mode, None, purpose='smoke')
         _, suite, tasks, _, seal = load_suite(dest/'suite.json')
         catalog = read_json(DATA/'models.json')['models']
         self.assertEqual(suite['matrix'], [{'provider':m['provider'], 'model':m['id'], 'efforts':m['efforts']} for m in catalog if m['default']])

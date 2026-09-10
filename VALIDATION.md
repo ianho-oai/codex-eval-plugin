@@ -112,3 +112,10 @@ The command checks the installed version and capabilities, runs one original tru
 
 - All 57 tests, self-check, and export pass. The default-suite regression explicitly requires Fable 5.1 and Mythos 5.1 with low/medium/high/xhigh/max effort.
 - Three additional local simulation suites are prepared with one repeat and no spend stop (90 attempts total), preserving existing suites. Baseline/oracle checks pass and local Claude CLI/key preflight passes. Live execution requires the user's permitted terminal; it has not been launched by this agent session.
+
+## 0.8.0 self-contained local task defaults — 2026-09-10
+
+- All 57 tests pass, including the default-init mode assertion and existing local native-adapter, oracle/baseline, queue, and reporting checks. Self-check, skill validation, and standalone export pass.
+- Extracted the release ZIP independently and verified that `init` creates a local suite with no image requirement.
+- Updated task design, the single skill, portfolio scaffold guidance, preflight output, customer prompt, and repository/plugin documentation to prefer existing simple test runners and bundled fixtures. Native-app workflows are adapted to testable logic with disclosed coverage limits; Docker/platform integrations require an explicit request.
+- No new paid runs were required for this policy/default change. Previously frozen suites and recorded outcomes remain intact; this change does not establish that an existing external iOS task's failures were caused by setup.

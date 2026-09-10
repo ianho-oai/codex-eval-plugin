@@ -1,4 +1,4 @@
-# Codex Eval · 0.7.3
+# Codex Eval · 0.8.0
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -19,7 +19,7 @@ python3 bin/codex-eval demo --output ./demo
 python3 bin/codex-eval dashboard ./demo
 ```
 
-Python 3.11+ on macOS/Linux is required; sample graders also use Node.js 18+. Customer comparisons default to a pinned Docker image. See [task design](ceval/data/task-design.md), [methodology](ceval/data/methodology.md), and the [full repository guide](https://github.com/ianho-oai/codex-eval-plugin).
+Python 3.11+ on macOS/Linux is required; sample graders also use Node.js 18+. Customer comparisons default to local execution with self-contained tasks and existing simple test runners. Use unittest, already-installed pytest, Node tests, or an equivalent available runner. iOS workflows should test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI setup. Docker is an explicit advanced option. See [task design](ceval/data/task-design.md), [methodology](ceval/data/methodology.md), and the [full repository guide](https://github.com/ianho-oai/codex-eval-plugin).
 
 After setting a provider key securely in the invoking terminal, run one original trusted-local fixture:
 

@@ -2,6 +2,16 @@
 
 Read when converting approved workflows into runnable tasks. See `benchmarks.json` for the dated public source index, and `examples/` for three small original harness-validation tasks. They demonstrate easy/medium/hard mechanics; they are not substitutes for a customer's representative portfolio or an official benchmark score.
 
+## Self-contained task contract
+
+Default to small, trusted local fixtures that run with one ordinary test command using an existing runtime. Prefer `python3 -m unittest`, already-installed `pytest`, `node --test`, or the language's available lightweight runner. Include all task data; use temporary directories, in-memory storage, injected clocks, fixed seeds, and in-process service fakes. No network access is needed by the task or grader. Provider API calls belong to the evaluation harness.
+
+Do not introduce Docker, Xcode builds, simulators/devices, SwiftUI/UIKit UI testing, macOS app automation or permission dialogs, browser downloads, hosted services, or extra plugins. Do not ask customers to pick one of these setups. An explicit request for platform/integration evaluation can change this scope; ordinary discovery mentioning iOS or frontend work does not.
+
+For iOS work, test extracted validation, formatting, routing state, parsing, or sync logic. Use a pure Swift package only when its compiler/test tooling is already available; otherwise adapt the behavior to an available runtime and disclose the language change. Do not claim extracted logic tests measure UI rendering, platform APIs, or native app builds. For frontend work, prefer state/event/markup logic with existing tools. Replace real service clients with supplied in-process fakes; use local files or SQLite instead of a server database.
+
+Hard tasks can involve several modules, cancellation, recovery, migrations, and compatibility. Keep setup as simple as easy tasks. Adapt benchmark methods and acceptance criteria rather than importing their infrastructure. Before paid execution, the grader must run on this device with the baseline failing for the intended defect and the oracle passing. Missing runtimes/dependencies are setup failures: simplify the task or resolve the small prerequisite before freezing, without escalating into platform installation.
+
 ## Portfolio
 
 Record workflow frequency, languages/frameworks, pain points, deliverable, source provenance, difficulty, and testable success criteria in `discovery.json`. New customer suites require at least one easy, medium, and hard task for **each** declared workflow. Declare workflows in discovery.json, then use `portfolio DISCOVERY --suite SUITE` to register them. Suite schema 2 enforces this at validation, planning, approval, and execution; legacy schema 1 and explicit developer smoke suites remain supported. Avoid over-weighting many small tasks merely because they are cheap. Use repeated trials (default 3) and document any sampling choices. A task should have enough context for a headless agent to finish without clarification.
@@ -12,9 +22,11 @@ Record workflow frequency, languages/frameworks, pain points, deliverable, sourc
 | Medium | Several interacting constraints | Filter/sort/paginate correctly while preserving state and immutability |
 | Hard | Multi-stage or cross-module behavior | Async search with cancellation, stale results, keyboard navigation, disposal, and backward compatibility |
 
-Hard customer tasks should include repository-scale integration where the workflow warrants it. Merely adding more edge cases to a small function is not equivalent to DeepSWE's long-horizon scope. The included async controller is a compact validation example.
+Hard customer tasks should include interactions across a small self-contained repository where the workflow warrants it. Merely adding more edge cases to a small function is not equivalent to DeepSWE's long-horizon scope. The included async controller is a compact validation example.
 
 ## Finding task inspiration
+
+Public benchmark infrastructure is not the default customer setup: [SWE-bench uses Docker to run repository tests](https://www.swebench.com/SWE-bench/guides/evaluation/), and [Harbor tasks define an environment alongside instructions and tests](https://www.harborframework.com/docs/tasks). Adapt their coding behaviors and verification ideas into the local task contract above; do not claim those benchmarks have no environment requirements.
 
 The bundled `task-inventory.json` contains 1,658 metadata records from seven pinned public dataset sources. `task-examples.json` contains 46 original design cards across 13 benchmark families. This is a scoped reference library, not an exhaustive ranking or a claim that every verifier was audited. See [catalog coverage](catalog.md).
 
@@ -68,9 +80,9 @@ State ordering and precedence explicitly, with a conflicting-input example. For 
 
 - Prove the starting snapshot fails and the oracle passes. The CLI checks both, but this alone is not sufficient proof of grader quality.
 - Add mutants/adversarial candidates: no-op, hardcoded example output, deny-all, ignored filter, unsafe path, removed regression test, stale async response. Check public behavior, not implementation symbols.
-- Use a pristine verifier container. Do not run candidate-supplied tests as the sole acceptance criterion. Test-authoring tasks need mutation/coverage goals plus independent behavioral checks; a new test file alone is not completion.
-- Pin clocks, random seeds, data, ports, dependencies, language/runtime, and image digest. Install build/test dependencies into the image before timed trials. Do not download them inside a timed task.
-- For browser tests, bundle the browser and fixed viewport; assert keyboard, accessibility, layout, and observable behavior with deterministic checks. Screenshot aesthetics are outside binary completion unless an explicit measurable criterion is defined.
+- Use an independent verifier process against a fresh candidate directory; keep grader files outside the candidate workspace. Local execution does not enforce isolation. Do not run candidate-supplied tests as the sole acceptance criterion. Test-authoring tasks need mutation/coverage goals plus independent behavioral checks; a new test file alone is not completion.
+- Pin clocks, random seeds, data, and the existing dependency/runtime versions. Prefer synchronization events to wall-clock races. Reuse available tooling; do not download dependencies inside timed tasks. If Docker was explicitly requested, pin its image digest separately.
+- Use observable state/output assertions for frontend tasks. Browser or platform integration tests require an explicit customer request and an already working setup; screenshot aesthetics are outside the default grading scope.
 - Freeze before all lanes. Never repair a task after seeing which provider failed without versioning and rerunning all affected lanes under a newly approved suite.
 - A historical PR can leak the answer through commit history. `snapshot` strips Git history. Do not put solutions, grader paths, benchmark answer keys, or private discovery transcripts in the agent workspace.
 

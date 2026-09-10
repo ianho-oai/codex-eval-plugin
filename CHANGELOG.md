@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 — 2026-09-10
+
+- Default new suites to local execution and self-contained tasks using existing lightweight test runners. Remove Docker/image setup from the default customer flow.
+- Guide iOS/frontend discovery toward testable application logic and bundled fixtures; exclude simulator, desktop-app, browser-installation, and external-service setup unless explicitly requested.
+- Include the task-design policy in portfolio scaffolds and preflight; preserve easy/medium/hard behavior coverage with simple environments.
+
 ## 0.7.3 — 2026-09-10
 
 - Make permanent Fable 5.1 and Mythos 5.1 defaults explicit in the customer starter prompt and repository/plugin documentation, with all five supported efforts. Add a regression assertion for both default lanes.
