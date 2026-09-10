@@ -11,6 +11,27 @@ from ceval.report import dataset
 
 
 class RetryTests(Workspace):
+    def test_recovered_retry_retains_runtime_review_signal(self):
+        from ceval.reflection import reflect
+        self.prepare()
+        calls = []
+        def attempt(cell, task, suite, pricing, directory, pf):
+            calls.append(directory)
+            first = len(calls) == 1
+            row = self.result(cell, directory, rate=first)
+            row['runtime_diagnostics'] = ['filesystem_sandbox_helper_failed'] if first else []
+            return row
+        with patch('ceval.runner.preflight', return_value={'codex': {'ok': True}}), patch('ceval.runner.attempt', side_effect=attempt), contextlib.redirect_stdout(io.StringIO()):
+            run(self.path, self.root / 'run', retry_delay=0)
+        original = (calls[0] / 'result.json').read_bytes()
+        row = read_json(self.root / 'run/results.json')['rows'][0]
+        self.assertEqual((row['status'], row['completion']), ('passed', 1))
+        self.assertEqual(row['runtime_diagnostics'], ['filesystem_sandbox_helper_failed'])
+        review = reflect([self.root / 'run'])
+        self.assertTrue(review['needs_review'])
+        self.assertIn('runtime_diagnostic', review['runs'][0]['tasks'][0]['signals'])
+        self.assertEqual((calls[0] / 'result.json').read_bytes(), original)
+
     def prepare(self):
         self.s['tasks'] = ['tasks/slug-normalization']
         self.save()

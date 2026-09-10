@@ -1,5 +1,9 @@
 # CLI reference
 
+Run directories should live under your project, outside system temporary directories. Local attempts use private scratch beneath their result directory and preserve the installed toolchain PATH. `reflect` also flags native helper/sandbox diagnostic codes independently of pass/fail; investigate those signals before interpreting timings. Missing cost is unknown, including after timeouts, and a known-spend upper estimate does not bound attempts with missing costs.
+
+Codex evaluation shells use `allow_login_shell=false` so login startup scripts do not reactivate unrelated virtual environments or alter task behavior. This uses the supported [Codex configuration](https://developers.openai.com/codex/config-reference/) and preserves managed sandbox requirements. Verify the selected language runtime with the same invocation used by the grader before approving tasks.
+
 Customer entry point: [setup and starter prompt](../CUSTOMER_STARTER_PROMPT.md). The prompt guides discovery and uses these commands after approval. This page is the manual reference for developers and operators. Commands assume the repository root; for an installed or extracted plugin, replace `./eval` with `python3 /path/to/codex-eval-plugin/bin/codex-eval`.
 
 ### Run a real evaluation

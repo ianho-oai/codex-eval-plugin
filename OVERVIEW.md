@@ -53,7 +53,7 @@ Codex is blue and Claude orange when at least one repeat passes; groups with no 
 
 ## Validation and limitations
 
-See [VALIDATION.md](VALIDATION.md) for dated test results and live-provider evidence. Passing offline tests does not establish model availability. Fable/Mythos simulation attempts have exposed CLI compatibility and model-access errors; [troubleshooting](docs/TROUBLESHOOTING.md) explains the findings and recovery. Do not interpret these as failures to implement the software task.
+See [the validation guide](VALIDATION.md) for offline, browser, and live-provider checks. Passing offline tests does not establish model availability. [Provider troubleshooting](docs/TROUBLESHOOTING.md) explains CLI compatibility, model-access errors, and recovery. Setup errors are distinct from failures to implement the software task.
 
 Use the [CLI reference](docs/CLI_REFERENCE.md) for manual operation, selectors, retries, and dashboard commands. Use the [starter prompt](CUSTOMER_STARTER_PROMPT.md) to begin a customer evaluation.
 

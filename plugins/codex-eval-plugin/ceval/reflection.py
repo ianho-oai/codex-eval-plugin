@@ -45,17 +45,22 @@ def _review(root, minimum, failure_rate):
         signals = []
         if errors:
             signals.append('infrastructure_error')
+        if any(r.get('runtime_diagnostics') for r in task_rows):
+            signals.append('runtime_diagnostic')
         if scorable >= minimum and failed and fraction >= failure_rate:
             signals.append('frequent_task_failures')
         lanes = defaultdict(Counter)
         evidence = []
-        for row in task_rows:
+        # Keep runtime evidence visible even when earlier coding failures fill
+        # the bounded evidence list.
+        for row in sorted(task_rows, key=lambda r: not bool(r.get('runtime_diagnostics'))):
             lane = (row['provider'], row['model'], row.get('effort', 'default'))
             lanes[lane][row['status']] += 1
-            if (not row.get('valid') or row.get('completion') != 1) and len(evidence) < 3:
+            if (not row.get('valid') or row.get('completion') != 1 or row.get('runtime_diagnostics')) and len(evidence) < 3:
                 evidence.append({'cell_id': row['cell_id'], 'status': row['status'],
                                  'provider': row['provider'], 'model': row['model'],
                                  'effort': row.get('effort'), 'result_sha256': digest(row),
+                                 'runtime_diagnostics': row.get('runtime_diagnostics', []),
                                  'attempt_dir': None if info.get('simulation') else
                                  str(child(root / 'attempts', row['cell_id']))})
         result['tasks'].append({

@@ -16,6 +16,10 @@ For storage/recovery tasks, inject faults before importing the candidate so impo
 
 Include this review policy in the approved execution plan: inspect checkpoints during the run; investigate any infrastructure-invalid result, or at least 50% task failures after three scorable attempts for that task. These are practical triage defaults, not statistical significance thresholds. A smaller sweep still receives a final qualitative review. Do not add paid calibration repeats automatically.
 
+Also investigate `runtime_diagnostic` signals even when the attempt passes. Native file-editing helper failures can force workarounds and distort latency. Run output should live in an ordinary customer-owned project directory, outside system temporary directories; the runner creates private per-attempt scratch there. Preserve managed sandbox policy, verify any runtime repair with a bounded native edit check, and pin a new executable before approving new runs. Never disable sandboxing or suppress these diagnostics to make the evaluation finish.
+
+Keep timeouts separate from behavioral failures: a candidate may pass the final grader after the agent is terminated, but it still did not finish within the approved deadline. Do not rewrite that outcome. Likewise, unallowed backup files remain file-contract violations; the shared prompt explains cleanup requirements without deleting candidate evidence.
+
 Alongside `progress`, use:
 
 ```sh

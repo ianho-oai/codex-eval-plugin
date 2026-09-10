@@ -54,6 +54,18 @@ class ReflectionTests(unittest.TestCase):
         self.assertEqual(hard['infrastructure_errors'], 1)
         self.assertEqual(hard['signals'], ['infrastructure_error'])
 
+    def test_runtime_diagnostic_on_passing_attempt_triggers_without_changing_score(self):
+        self.rows[3]['runtime_diagnostics'] = ['filesystem_sandbox_helper_failed']
+        self.save()
+        before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+        easy = reflect([self.root])['runs'][0]['tasks'][0]
+        self.assertEqual(easy['signals'], ['runtime_diagnostic'])
+        self.assertEqual((easy['passed'], easy['failed'], easy['infrastructure_errors']), (3, 0, 0))
+        self.assertEqual(easy['evidence'][0]['cell_id'], '3')
+        self.assertEqual(easy['evidence'][0]['status'], 'passed')
+        self.assertEqual(easy['evidence'][0]['runtime_diagnostics'], ['filesystem_sandbox_helper_failed'])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
+
     def test_pause_preserves_user_stop_and_never_pauses_synthetic_or_stopped(self):
         stop = self.root / 'stop-requested.json'
         write_json(stop, {'reason': 'user_cancel'})

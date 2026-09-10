@@ -14,7 +14,7 @@ Check the exact executable path after an upgrade: multiple installations can coe
 
 ## Fable: installed Claude Code is too old
 
-Observed on 2026-09-10: native Claude Code 2.1.220 rejected `claude-fable-5-1`, explicitly requiring **2.1.251 or newer**. This is a provider compatibility error before task execution. The catalog now records that minimum and preflight prevents that lane from launching with an older CLI. Compatible model lanes can still run.
+The bundled catalog sets **Claude Code 2.1.251 or newer** as the minimum for `claude-fable-5-1`. Preflight prevents that lane from launching with an older CLI. A native version rejection is a provider compatibility error before task execution; compatible model lanes can still run.
 
 In your terminal:
 
@@ -27,7 +27,7 @@ New suite templates pin 2.1.251; use the actual installed version and binary pat
 
 ## Mythos: excluded by default
 
-Observed on 2026-09-10: native Claude Code reported that `claude-mythos-5-1` may not exist or the account may lack access. This error does not identify which cause applies. Updating Claude Code is a useful prerequisite, but does not establish or grant Mythos access.
+An unknown or inaccessible model error can mean the ID is incorrect or the account lacks access. The error alone may not distinguish these causes. Updating Claude Code does not establish or grant model access.
 
 Mythos is excluded from new default suites. Add it only on explicit request after verifying access and native support. After updating, list the account-visible models:
 

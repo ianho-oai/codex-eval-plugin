@@ -87,6 +87,8 @@ def records(directory, previous=None):
 def rollup(trials, directory, wait_seconds, exhausted=False, paused=False):
     rows = [r for r, _ in trials]
     final = dict(rows[-1])
+    final['runtime_diagnostics'] = list(dict.fromkeys(
+        code for row in rows for code in row.get('runtime_diagnostics', [])))
     for field in SUM_FIELDS:
         values = [r.get(field) for r in rows]
         final[field] = sum(values) if all(v is not None for v in values) else None
