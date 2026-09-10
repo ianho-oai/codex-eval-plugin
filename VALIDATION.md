@@ -174,3 +174,10 @@ The command checks the installed version and capabilities, runs one original tru
 - All 69 tests pass. Median coverage now verifies distinct low/high/default/none groups, provider separation, zero preservation, paired measurements, and unchanged inputs. JavaScript syntax, CLI self-check, export, and extracted standalone self-check pass.
 - Chrome verification shows separate model/effort median labels and a single effort in each tooltip. Zero and one selected task hide the median toggle/legend/points and remove focus fading; selecting a second task restores the control and medians. Restoring all tasks and both log axes works. The Fable low median tooltip reports three task/configuration averages and effort low.
 - Dashboard assets update on refresh; saved results and evaluation inputs are unchanged.
+
+## 0.8.9 customer flow and contribution requirements — 2026-09-10
+
+- All 72 tests pass. The PR format validator accepts a completed description and rejects missing, placeholder-only, or duplicate sections; a CLI check also rejects the untouched template. CLI self-check, export, and extracted standalone self-check pass.
+- The format workflow uses pull_request_target with read-only contents permission, explicitly checks out the trusted default branch, disables persisted credentials, and reads PR text from the event file. It does not check out or execute contributor branch code.
+- GitHub ruleset 22741531 (Pull requests and owner review) was saved as Disabled pending publication of the new workflow/CODEOWNERS files and the owner's decision about their own PRs. It targets the default branch, requires one approval, code-owner review, dismissal of stale approvals, resolved conversations, and the PR format check sourced from GitHub Actions. Force pushes and deletions are restricted. These requirements are prepared, not yet enforced.
+- Browser confirms the default branch is master. Repository README now explains the customer steps and required inputs. Publishing local changes remains user-operated; no push was performed.

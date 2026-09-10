@@ -8,14 +8,27 @@ Evaluate **Codex against Claude Code** on tasks that represent your software dev
 
 The file contains both installation commands and a copy-ready kickoff prompt. You do not need to clone this repository or assemble CLI commands yourself. The complete plugin is bundled in [`plugins/codex-eval-plugin/`](plugins/codex-eval-plugin/).
 
-### What happens next
+## The flow at a glance
 
-1. **Discover your workflows.** Choose a conversation, selected local Codex/Claude Code history from the last 90 days, selected repositories/PRs/MRs, or a combination. You can stop discovery and request the proposal at any point.
-2. **Approve representative tasks.** Review easy, medium, and hard tasks for each workflow, short descriptions, objective checks, and benchmark inspiration links or an original-design rationale.
-3. **Review the execution plan.** The skill builds self-contained fixtures and validates the starting code and known-good solutions. Review the exact models, efforts, repeats, CLI versions, pricing, and limits before paid calls.
-4. **Run and compare.** The fixed CLI executes, grades, and records every attempt. The prebuilt dashboard combines both providers, with cost/latency/token plots, filters, independent log axes, model × reasoning-effort median diamonds with a focus toggle, and task summaries.
+**Install → describe your work → approve tasks → approve the run plan → follow progress → compare results.**
 
-Tasks use existing lightweight test runners such as unittest, pytest, or Node tests. Difficulty comes from coding work; ordinary tasks do not require Docker, iOS simulators, desktop-app integrations, or external services. The aim is achievable, correct results whose time and cost can be compared. Actual failures remain recorded.
+| Step | What the agent does | What you provide or decide |
+| --- | --- | --- |
+| 1. Discover | Learns the development workflows you want to evaluate. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
+| 2. Propose | Suggests easy, medium, and hard tasks for each workflow, with short descriptions, acceptance checks, and benchmark inspiration. | Approve the task list or ask for changes. |
+| 3. Prepare | Builds self-contained fixtures and checks that starting code fails and known-good solutions pass the grader. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
+| 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
+| 5. Execute | Runs the approved tasks headlessly, grades them, records metrics, and updates progress inside Codex when visualization is available. | Usually nothing. If a provider or host blocks a call, run the specific command the agent supplies. |
+| 6. Compare | Opens the prebuilt local dashboard combining both providers. | Explore task/model filters, cost, latency, tokens, and model × effort medians; inspect failures and export results. |
+
+### Have these ready
+
+- **Codex with the plugin installed:** follow the [starter prompt](CUSTOMER_STARTER_PROMPT.md), then start a task in your own project.
+- **Workflows to evaluate:** a short description is enough to begin. History and repository access are optional and scoped by you.
+- **OpenAI and Anthropic API keys with billing and model access:** keep them in your environment or an ignored `.env.local`; never paste keys into chat or commit them.
+- **Local tools:** Python 3.11+, native Codex and Claude Code CLIs, and the runtime for your tasks. The bundled examples also need Node.js 18+. The agent checks readiness and flags upgrades.
+
+The main checkpoints for you are **task approval** and **run-plan approval**. After that, the CLI handles execution and grading. Tests use lightweight local runners such as unittest, pytest, or Node tests; ordinary evaluations do not require Docker, iOS simulators, or desktop-app integrations. Actual failures remain recorded.
 
 ### Defaults to review before running
 
@@ -25,7 +38,7 @@ Tasks use existing lightweight test runners such as unittest, pytest, or Node te
 - **Concurrency:** five attempts total, starting the next as soon as a slot opens.
 - **Spend:** no spend stop by default. Set an optional threshold or narrow models, tasks, and efforts before approval.
 
-The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats = 324 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and known CLI minimum versions; it does not authenticate model access. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
+The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats = 324 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks the selected IDs against account-visible models. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
 ## Requirements and results
 
@@ -67,6 +80,6 @@ python3 -m unittest discover -s tests -v
 
 The versioned export includes exactly one skill, the CLI, catalogs, examples, schemas, and dashboard. Customer data and results stay in ignored evaluation directories. Repository and plugin versions move together; exported ZIPs include a checksum. Public source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin).
 
-Before final approval, run `./eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.
+## Contributing
 
-During evaluation runs in Codex desktop, the skill uses the available visualize/live skills to show checkpoint progress in the task sidebar. `./eval progress RUN_DIR [RUN_DIR ...]` supplies finished/remaining attempts, active-at-checkpoint slots, and pass/fail/error counts. The host agent refreshes the view while observing the run; CLI/text progress remains available without visualization skills. No extra dependencies enter the evaluated agents.
+Submit changes through a pull request to the default branch (`master`). Complete **Summary**, **Validation**, and **Risks** in the provided template. Explain what changed, how you checked it, and any known risk (or “None”). The PR format check validates these sections; code-owner review routes changes to [@ianho-oai](https://github.com/ianho-oai). New commits require renewed approval under the repository rules.

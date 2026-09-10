@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.9 — 2026-09-10
+
+- Make the customer flow and required inputs explicit in the README. Add a pull-request template, owner routing, and a lightweight description-format check.
+
 ## 0.8.8 — 2026-09-10
 
 - Show the median controls, legend, and points only with two or more selected tasks; single-task views retain normal contrast.

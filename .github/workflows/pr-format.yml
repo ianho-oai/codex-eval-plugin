@@ -1,0 +1,17 @@
+name: Pull request format
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  format:
+    name: PR format
+    runs-on: ubuntu-latest
+    steps:
+      # Only the trusted default branch is checked out; never execute PR code.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - run: python3 .github/scripts/check_pr_format.py

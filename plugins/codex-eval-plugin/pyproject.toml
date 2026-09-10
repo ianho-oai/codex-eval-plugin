@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codex-eval-plugin"
-version = "0.8.8"
+version = "0.8.9"
 description = "Customer-owned headless coding-agent evaluation"
 requires-python = ">=3.11"
 license = "MIT"
