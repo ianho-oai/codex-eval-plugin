@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .core import DATA, EvalError, digest, load_suite, read_json, require, write_json
+from .core import DATA, EvalError, child, digest, load_suite, read_json, require, write_json
 
 
 def legacy_summary(spec):
@@ -62,6 +62,10 @@ def dataset(root):
         f = root / 'attempts' / r['cell_id'] / 'result.json'
         if f.exists():
             require(read_json(f) == r and read_json(f.parent / 'result.sha256.json').get('sha256') == digest(r), 'Result integrity check failed')
+            for trial in r.get('retry_attempts', []):
+                folder = child(f.parent, trial['directory'])
+                original = read_json(folder / 'result.json')
+                require(digest(original) == trial['sha256'] and read_json(folder / 'result.sha256.json').get('sha256') == trial['sha256'], 'Retry result integrity check failed')
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
     return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
@@ -178,7 +182,8 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effor
               'valid', 'simulation', 'execution_mode', 'latency_seconds', 'agent_seconds', 'grader_seconds',
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
-              'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note']
+              'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note',
+              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted']
 
 
 def csv_text(rows):

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-09-10
+
+- Automatically retry explicit native rate-limit failures up to three times, with 30/60/120-second backoff and longer provider retry hints respected. Add `--rate-limit-retries` and `--retry-delay`.
+- Preserve signed raw trials and combine retry cost, tokens, and elapsed/backoff time into the original evaluation repeat; keep unavailable retry costs null and expose known spend separately.
+- Resume eligible rate-limited cells without repeating completed successes; pause after retry exhaustion and keep unrelated unknown-spend stops.
+
 ## 0.4.1 — 2026-09-10
 
 - Default Codex and Claude Code session discovery to three months (90 days), with matching CLI help, skill instructions, and customer starter prompt. Explicit `--days` values remain supported.

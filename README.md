@@ -185,6 +185,12 @@ New task designs include `human_summary`: two or three plain-language sentences 
 
 To cap multiple batches at five attempts **in total**, give each the same `--workers 5 --slot-pool evaluations/shared-workers` arguments. Each attempt has an isolated workspace; only the coordinator writes shared results. Pool leases release automatically if a process exits.
 
-Agree on concurrency before running. Concurrent work can contend for CPU and network, so latency may differ from sequential measurements. The worker count and scheduler hash are recorded in run metadata. Unknown spend or a spend threshold stops dispatch; already-active calls finish and are saved. A threshold may overshoot by the cost of all in-flight calls.
+Agree on concurrency before running. Concurrent work can contend for CPU and network, so latency may differ from sequential measurements. The worker count and scheduler hash are recorded in run metadata. Unrelated unknown spend or a spend threshold stops dispatch; already-active calls finish and are saved. A threshold may overshoot by the cost of all in-flight calls.
 
 For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, containing `{}`). The runner drains active attempts; remove that file before resuming.
+
+### Rate-limit retries
+
+Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--rate-limit-retries 3 --retry-delay 30`, or disable using `--rate-limit-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
+
+Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage still pauses execution. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.

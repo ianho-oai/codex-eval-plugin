@@ -73,3 +73,9 @@ The command checks the installed version and capabilities, runs one original tru
 - Self-check, skill validation, deterministic export, and the extracted-plugin self-check pass.
 - Live round2 queue started additional Codex GitHub/history attempts while reserving one slot for each existing sequential dispatcher. All five slots were occupied; both new lanes produced verified passing results. Native engine/task approvals remain unchanged; the explicitly authorized scheduling upgrade records its own hash and concurrency metadata.
 - Live simulations remain in progress. Some Luna calls hit the account token-per-minute limit; these remain provider errors with measured spend, without automatic retries. Concurrent latency can include shared-host contention. No comparative model-performance conclusion is claimed.
+
+## 0.5.0 rate-limit retries — 2026-09-10
+
+- All 52 offline tests pass, including bounded retry exhaustion, resume without repeating successes, signed trial integrity, cost/time aggregation, incomplete retry costs, native-error-only detection, and exclusion of verifier failures and recovered native errors.
+- Self-check, skill validation and standalone export pass. Each scheduled repeat retains all native trials; retries do not add extra benchmark samples. Known retry spend is retained separately when total usage is unavailable.
+- Stopped round2 Codex runs resumed with the explicitly authorized retry policy around their unchanged frozen native engine. Previously rate-limited Luna tasks returned passing results in interview, GitHub and history lanes. Full runs are still in progress; no overall comparative performance claim is made.

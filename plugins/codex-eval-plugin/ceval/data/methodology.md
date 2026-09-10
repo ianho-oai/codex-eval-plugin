@@ -48,3 +48,7 @@ Checked 2026-09-09. Refresh exact CLI capability, public model metadata, and acc
 ## Queue concurrency
 
 The run CLI defaults to five concurrent attempts. Dispatch follows the seeded pending-cell order; completion order depends on latency. Use `--workers 1` for sequential timing, or `--workers 5 --slot-pool evaluations/shared-workers` across batches to share five total slots. Agree on the concurrency before execution. Each invocation records the worker count and scheduler hash. Cost thresholds and unknown spend stop new dispatch; all in-flight attempts finish and are retained, so thresholds can overshoot by all active calls.
+
+## Rate-limit recovery
+
+Native rate-limit errors may retry up to three times by default, with 30/60/120-second backoff and longer provider hints honored. This is transport recovery within one evaluation repeat, using fresh workspaces and signed trial records. Cost/tokens aggregate across trials; latency includes automatic retry waits. Unavailable trial costs stay null with known spend exposed separately. Known-spend thresholds cannot enforce a hard cap on unreported retry charges. Retry exhaustion and unrelated unknown spend stop dispatch. Verifier failures and auth/quota errors never receive this automatic recovery.
