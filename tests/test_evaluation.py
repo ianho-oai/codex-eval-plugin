@@ -281,6 +281,23 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(r['input_tokens'],20)
         self.assertEqual(r['turns'],2)
 
+    def test_codex_recovered_errors_and_terminal_failure(self):
+        complete = {'type':'turn.completed','usage':{'input_tokens':10,'cached_input_tokens':0,'output_tokens':3}}
+        warning = {'type':'error','message':'Reconnecting after rate limit exceeded'}
+        failed = {'type':'turn.failed','error':{'message':'Retry limit exceeded'}}
+        started = {'type':'turn.started'}
+        for stream, success in [([warning, complete], True),
+                                ([started, warning, warning, complete], True),
+                                ([warning], False), ([warning, failed], False),
+                                ([complete, warning], False), ([complete, started], False),
+                                ([failed, complete], False)]:
+            with self.subTest(stream=stream):
+                row = normalize('codex', '\n'.join(map(json.dumps, stream)), 'gpt-5.6-luna', self.rates)
+                self.assertEqual(row['provider_success'], success)
+                if complete in stream:
+                    self.assertEqual(row['input_tokens'], 10)
+                    self.assertIsNotNone(row['cost_usd'])
+
     def test_claude_input_components_and_reported_cost(self):
         e={'type':'result','subtype':'success','num_turns':12,'total_cost_usd':.77,'duration_ms':12000,
            'usage':{'input_tokens':100,'cache_read_input_tokens':200,'cache_creation_input_tokens':300,'output_tokens':50},
@@ -308,7 +325,7 @@ class TelemetryTests(unittest.TestCase):
 
 
 class RunnerTests(Workspace):
-    def fake_binary(self, provider='codex'):
+    def fake_binary(self, provider='codex', prefix_events=()):
         # Offline native protocol emulator. Every filesystem/grade step still runs.
         binary=self.root/provider
         oracle=(DATA/'examples/slug-normalization/oracle/slug.py').read_text()
@@ -317,6 +334,7 @@ class RunnerTests(Workspace):
         if provider=='claude':
             events=[{'type':'result','subtype':'success','num_turns':2,'total_cost_usd':.03,
                      'usage':{'input_tokens':50,'cache_read_input_tokens':10,'cache_creation_input_tokens':20,'output_tokens':30}}]
+        events = list(prefix_events) + events
         binary.write_text('#!'+sys.executable+'\nimport sys,json\nfrom pathlib import Path\n'
             +"if '--version' in sys.argv: print('codex-cli 0.153.4' if "+repr(provider)+"=='codex' else '2.1.251 (Claude Code)');sys.exit(0)\n"
             +"if '--help' in sys.argv: print('--json --ephemeral --ignore-user-config --bare --strict-mcp-config --effort');sys.exit(0)\n"
@@ -358,6 +376,24 @@ class RunnerTests(Workspace):
         with patch.dict(os.environ,{'OPENAI_API_KEY':'test-key'}),contextlib.redirect_stdout(io.StringIO()):run(self.path,self.root/'run')
         self.s['repeats']=2;self.save()
         with self.assertRaises(EvalError):run(self.path,self.root/'run',resume=True)
+
+    def test_native_reconnect_recovery_keeps_verified_pass(self):
+        from ceval.parallel import run as run_parallel
+        self.prep()
+        self.fake_binary(prefix_events=[{'type':'error','message':'Reconnecting after rate limit exceeded'}])
+        self.approve()
+        out = self.root/'run'
+        with patch.dict(os.environ, {'OPENAI_API_KEY':'test-key'}), contextlib.redirect_stdout(io.StringIO()):
+            run_parallel(self.path, out, retry_delay=0)
+        row = read_json(out/'results.json')['rows'][0]
+        self.assertEqual(row['status'], 'passed')
+        self.assertTrue(row['valid'])
+        self.assertEqual(row['completion'], 1)
+        self.assertEqual(row['grader_exit_code'], 0)
+        self.assertEqual(row['retry_count'], 0)
+        self.assertEqual(len(row['retry_attempts']), 1)
+        trial = out/'attempts'/row['cell_id']/row['retry_attempts'][0]['directory']
+        self.assertIn('Reconnecting', (trial/'events.jsonl').read_text())
 
     def test_modified_result_rejected(self):
         self.prep()

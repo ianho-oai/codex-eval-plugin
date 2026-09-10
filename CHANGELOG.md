@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3 — 2026-09-11
+
+- Treat Codex reconnect notices followed by terminal completion as recovered events. Still require a successful native process and deterministic grader; failed turns, trailing errors, and unfinished turns remain unsuccessful.
+- Preserve original event evidence and usage. Add regression coverage for recovered rate limits, terminal failures, incomplete streams, and a verified pass without duplicate outer retries. Historical signed results and active frozen engines remain unchanged.
+
 ## 0.9.2 — 2026-09-11
 
 - Make task quality an adaptive design, challenge, observe, diagnose, and repair loop. Use contract-driven counterexamples, sustained run observation, and bounded fair reruns under explicit repair scope. Keep initial authoring lightweight and preserve genuine failures.
