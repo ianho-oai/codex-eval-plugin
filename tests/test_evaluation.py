@@ -97,6 +97,20 @@ class SuiteTests(Workspace):
         _, suite, tasks, _, _ = load_suite(self.path)
         self.assertEqual(len(schedule(suite,tasks)), 18)
 
+    def test_effort_sweep_expansion_and_unsupported_selection_are_atomic(self):
+        configure(self.path, ['codex:gpt-5.6-sol', 'claude:claude-haiku-4-5-20251001'], repeats=1, all_efforts=True)
+        _, suite, tasks, _, _ = load_suite(self.path)
+        self.assertEqual(suite['matrix'][0]['efforts'], ['low','medium','high','xhigh','max'])
+        self.assertEqual(suite['matrix'][1]['efforts'], ['default'])
+        self.assertEqual(len(schedule(suite, tasks)), 18)
+        before = self.path.read_bytes()
+        with self.assertRaises(EvalError): configure(self.path, efforts=['high'])
+        self.assertEqual(before, self.path.read_bytes())
+        configure(self.path, ['codex:gpt-5.6-sol'], efforts=['low','max'])
+        self.assertEqual(load_suite(self.path)[1]['matrix'][0]['efforts'], ['low','max'])
+        args = parser().parse_args(['configure', str(self.path), '--all-efforts', '--repeats', '1'])
+        self.assertTrue(args.all_efforts)
+
     def test_seeded_schedule_covers_cartesian_product(self):
         self.s['repeats']=4
         self.s['matrix'].append({'provider':'claude','model':'claude-sonnet-5','efforts':['low','high']})

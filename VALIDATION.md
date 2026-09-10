@@ -79,3 +79,11 @@ The command checks the installed version and capabilities, runs one original tru
 - All 52 offline tests pass, including bounded retry exhaustion, resume without repeating successes, signed trial integrity, cost/time aggregation, incomplete retry costs, native-error-only detection, and exclusion of verifier failures and recovered native errors.
 - Self-check, skill validation and standalone export pass. Each scheduled repeat retains all native trials; retries do not add extra benchmark samples. Known retry spend is retained separately when total usage is unavailable.
 - Stopped round2 Codex runs resumed with the explicitly authorized retry policy around their unchanged frozen native engine. Previously rate-limited Luna tasks returned passing results in interview, GitHub and history lanes. Full runs are still in progress; no overall comparative performance claim is made.
+
+## 0.6.0 effort sweeps — 2026-09-10
+
+- All 53 offline tests pass, including model-specific effort expansion, atomic rejection of unsupported selections, and narrowed effort selection. Self-check, skill validation, and standalone export pass.
+- Chrome review confirms effort appears beside model names in chart labels and six-field point details. All four existing dashboard endpoints respond and retain prior results.
+- Six new frozen suites cover three existing discovery simulations, four Codex models and two Claude Code models, five single-agent effort levels each, and one repeat: 180 Codex plus 90 Claude Code scheduled attempts. Every baseline fails and every known-good solution passes for all six suites.
+- The paid Codex sweep has started and its first xhigh attempt passed the independent grader. Full sweep outcomes are pending; Claude effort sweeps require the user's permitted terminal because this session blocks Anthropic egress. These are trusted-local runs with five shared workers, the existing time/budget limits, and bounded rate-limit retries.
+- Installed Codex capability records expose low/medium/high/xhigh/max for these fixed single-agent lanes; ultra changes delegation behavior. Claude Code 2.1.220 advertises the same five effort spellings. Catalog scope notes preserve these limitations rather than assuming raw API controls and native agent modes are interchangeable.

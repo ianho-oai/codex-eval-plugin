@@ -194,3 +194,13 @@ For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, contain
 Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--rate-limit-retries 3 --retry-delay 30`, or disable using `--rate-limit-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
 
 Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage still pauses execution. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
+
+### Reasoning and effort sweeps
+
+New suites include all catalog-supported effort levels for each model. Refresh capability sources before approval; provider effort labels are not equivalent compute budgets. Use one repeat for a quick sweep:
+
+```bash
+./eval configure evaluations/customer/suite.json --all-efforts --repeats 1
+```
+
+Use repeated `--effort low --effort high` to narrow levels; each must be supported by every selected model. Apply `--model` and `--task` selectors in the same command when needed. Changed matrices require validation and approval before execution. Default repeats remain three. Charts keep efforts separate and display the effort beside the model name.

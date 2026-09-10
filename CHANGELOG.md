@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 — 2026-09-10
+
+- Default new suites to all catalog-supported model efforts; add `configure --all-efforts` and repeatable `--effort` selectors with capability validation.
+- Include effort in chart labels and hover details so reasoning configurations remain distinguishable.
+- Document all-effort evaluation plans and one-repeat quick sweeps; preserve three repeats as the general default.
+
 ## 0.5.0 — 2026-09-10
 
 - Automatically retry explicit native rate-limit failures up to three times, with 30/60/120-second backoff and longer provider retry hints respected. Add `--rate-limit-retries` and `--retry-delay`.

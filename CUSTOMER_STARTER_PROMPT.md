@@ -46,7 +46,7 @@ For each workflow, propose easy, medium, and hard tasks. Include a short, human-
 
 Build and validate the approved tasks. Help me choose available models, confirm the execution environment and spend threshold, and configure API keys securely without pasting them into chat. Get my approval of the final execution plan before making paid calls.
 
-Use three repeats per task/model and five concurrent attempts in total, refilling each free slot immediately. Share the slot limit across batches. Explain how concurrency affects latency and how in-flight calls can exceed a spend threshold.
+Include all supported reasoning/effort levels for each selected model and show that full matrix in the plan. Use three repeats per task/model/effort (or one if I request a quick sweep) and five concurrent attempts in total, refilling each free slot immediately. Share the slot limit across batches. Explain how concurrency affects latency and how in-flight calls can exceed a spend threshold.
 
 After approval, use the bundled CLI to execute and grade the tasks headlessly, then open the prebuilt local dashboard with both providers combined. Show mean cost, latency, and token usage, while retaining individual attempts, pass counts, failures, and missing metrics. Keep my data and credentials out of Git.
 

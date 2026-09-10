@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-09-09",
+  "checked_at": "2026-09-10",
   "note": "Public catalog snapshot, not an account entitlement or a perpetual latest-model selector. Review refresh output, capability support and prices. Different providers have different effort semantics.",
   "models": [
     {
@@ -134,5 +134,11 @@
       "availability": "limited access; verify Claude Code support",
       "source": "https://platform.claude.com/docs/en/models/overview"
     }
+  ],
+  "effort_scope": "Efforts supported by the fixed single-agent native headless harness. Codex model-cache ultra enables automatic delegation and is excluded because this comparison disables multi_agent. API-only none is not listed by these installed Codex model capability records. Review installed CLI capabilities before changing this scope.",
+  "effort_sources": [
+    "Codex 0.153.4 model capability cache",
+    "Claude Code 2.1.220 --help --effort",
+    "https://platform.claude.com/docs/en/build-with-claude/effort"
   ]
 }

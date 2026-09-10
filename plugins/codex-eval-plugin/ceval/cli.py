@@ -49,7 +49,7 @@ def initialize(destination, mode, image, purpose='customer'):
     shutil.copy2(DATA / 'rates.json', dest / 'rates.json')
     catalog = read_json(DATA / 'models.json')
     s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
-         'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': [m['default_effort']]} for m in catalog['models'] if m.get('default')],
+         'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': m['efforts']} for m in catalog['models'] if m.get('default')],
          'repeats': 3, 'seed': 42, 'pricing': 'rates.json',
          'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': 20, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
@@ -195,7 +195,7 @@ def demo(output):
     return {'output': str(out.resolve()), 'simulation': True, 'rows': len(rows)}
 
 
-def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False):
+def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False, all_efforts=False, efforts=None):
     path, s, _, _, _ = load_suite(suite)
     catalog = read_json(DATA/'models.json')['models']
     if all_models:
@@ -210,6 +210,16 @@ def configure(suite, selected_models=None, task_ids=None, repeats=None, all_mode
             provider, model = parts
             matrix.append({'provider':provider,'model':model,'efforts':known[(provider,model)]})
         s['matrix'] = matrix
+    require(not (all_efforts and efforts), 'Choose --all-efforts or --effort, not both')
+    if all_efforts or efforts is not None:
+        supported = {(m['provider'], m['id']): m['efforts'] for m in catalog}
+        for lane in s['matrix']:
+            key = (lane['provider'], lane['model'])
+            require(key in supported, 'Effort capabilities missing from catalog for '+':'.join(key)+'; verify and add them first')
+            chosen = supported[key] if all_efforts else efforts
+            require(bool(chosen) and all(e in supported[key] for e in chosen),
+                    'Unsupported effort for '+':'.join(key)+'; supported: '+', '.join(supported[key]))
+            lane['efforts'] = list(chosen)
     if all_tasks:
         s.pop('selection', None)
     elif task_ids is not None:
@@ -242,6 +252,7 @@ def parser():
         if name == 'approve': a.add_argument('--by', required=True)
     a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
+    e = a.add_mutually_exclusive_group(); e.add_argument('--all-efforts', action='store_true', help='Use every catalog-supported effort for each selected model'); e.add_argument('--effort', action='append', help='Select an effort supported by every selected model; repeat for more')
     t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
     a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true'); a.add_argument('--workers', type=int, default=5, help='Concurrent attempts; refill each freed slot (default: 5)'); a.add_argument('--slot-pool', help='Share the worker limit with other batches using this directory'); a.add_argument('--rate-limit-retries', type=int, default=3, help='Additional attempts after explicit rate-limit failures (default: 3)'); a.add_argument('--retry-delay', type=float, default=30, help='Initial retry delay in seconds, doubled per retry (default: 30)')
     a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
@@ -280,7 +291,7 @@ def main(argv=None):
                 result = {'seal': seal, 'suite': s, 'tasks': [t['spec'] for t in tasks],
                           'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
                           'note': 'Review tasks, limits, CLI versions, exact model IDs, rates, and execution mode before approval. Model support and API access need doctor/live validation.'}
-        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks)
+        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks, a.all_efforts, a.effort)
         elif c == 'run':
             from .parallel import run as queued_run
             result = queued_run(a.suite, a.output, a.resume, a.workers, a.slot_pool, a.rate_limit_retries, a.retry_delay)

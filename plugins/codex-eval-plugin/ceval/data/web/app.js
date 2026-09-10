@@ -7,6 +7,7 @@ const metrics = {
 let data = null;
 const modelSelections=new Map(),taskSelections=new Map();
 const taskKey=r=>JSON.stringify([r.task_id,r.difficulty]);
+const modelLabel=r=>`${r.model} · ${r.effort||'default'}`;
 const modelKey=r=>JSON.stringify([r.provider,r.model]);
 const defined = x => typeof x === 'number' && Number.isFinite(x);
 const money = x => defined(x) ? '$'+x.toFixed(4) : 'Unavailable';
@@ -23,7 +24,7 @@ function hideDetails(){ $('tooltip').hidden=true; }
 function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
-  for(const [label,value] of [['Model',r.model],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']]){
+  for(const [label,value] of [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']]){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
   }
   popup.append(list);popup.hidden=false;
@@ -79,8 +80,8 @@ function plot(rows){
   const labelLayer=svg('g'),pointLayer=svg('g');root.append(labelLayer,pointLayer);
   for(const r of points){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
-    if($('labels').checked)labelLayer.append(svg('text',{x:px+12,y:py+4,fill:color,class:'model-label'},r.model));
-    const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${r.model}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
+    if($('labels').checked)labelLayer.append(svg('text',{x:px+12,y:py+4,fill:color,class:'model-label'},modelLabel(r)));
+    const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});

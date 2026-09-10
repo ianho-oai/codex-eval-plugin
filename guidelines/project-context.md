@@ -31,3 +31,5 @@ New runs default to three repeats (including smoke). Chart points are arithmetic
 Each axis has an independent logarithmic toggle. Nonpositive measurements are explicitly counted as unplottable on log axes; values are never shifted or silently changed. Provider checkbox groups use the same blue/orange palette as successful points.
 
 The run CLI defaults to a five-worker queue with immediate refill. `--workers 1` restores sequential execution; shared `--slot-pool` directories enforce a combined limit across batches. Scheduler metadata records workers, implementation hash and concurrency caveat. A single coordinator writes checkpoints; stop requests, unknown spend and budget thresholds drain active work before stopping.
+
+New suites expand every selected model across its catalog-supported efforts. `configure --all-efforts` expands existing suites; repeated `--effort` narrows to levels supported by every selected model. Customer plans disclose capability exclusions, and model labels include effort. One-repeat quick sweeps are supported without changing the three-repeat general default.
