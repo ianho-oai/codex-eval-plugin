@@ -1,4 +1,4 @@
-# Codex Eval · 0.8.2
+# Codex Eval · 0.8.3
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -64,12 +64,14 @@ New suites include all catalog-supported single-agent effort levels per model. B
 
 ### Default model sweep and spend policy
 
-New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, across every supported single-agent effort level. Preflight lists the exact matrix and repeats, announces **no spend stop**, and tells the customer to specify otherwise before approval. Limited-access models are included; unavailable lanes remain visible.
+New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus cataloged default Claude models, across every supported single-agent effort level. Preflight lists the exact matrix and repeats, announces **no spend stop**, and tells the customer to specify otherwise before approval. Limited-access models are included; unavailable lanes remain visible.
 
 `configure SUITE --all-models --all-efforts --no-spend-stop` restores these defaults. Select alternatives with repeated `--model PROVIDER:MODEL` / `--effort LEVEL` flags. Set an optional stop with `--spend-stop-usd AMOUNT`. A null `limits.spend_stop_usd` disables both the scheduler spend stop and Claude's native budget flag; missing costs remain null and do not stop dispatch in this mode. Time limits, turn limits, bounded rate-limit retries, and explicit pause requests still apply. Existing approved suites retain their frozen settings.
 
-Fable 5.1 (`claude-fable-5-1`) and Mythos 5.1 (`claude-mythos-5-1`) are permanent default model selections, each with `low`, `medium`, `high`, `xhigh`, and `max` effort. These selections apply to all new customer suites and `configure --all-models --all-efforts`. Preflight lists both models and their effort levels. Customers can narrow the matrix before approval.
+Fable 5.1 (`claude-fable-5-1`) is a default model with `low`, `medium`, `high`, `xhigh`, and `max` effort. Mythos is excluded from new suites and `configure --all-models`; it requires explicit selection and verified account/native CLI support. Check available models and CLI versions before approving the matrix.
 
 Evaluation tasks should be achievable by the selected models, with cost, latency, and token use as the primary comparison after verifying correctness. Keep requirements explicit, provide enough context, and allow reasonable execution time. Difficulty increases coding work within a simple prepared environment; provisioning is outside the timed task. Expected success is a design target, while actual pass/fail remains determined by the same fixed checks for every model.
 
-Doctor checks local requirements and known model minimum CLI versions; it does not probe account access. Fable 5.1 requires Claude Code 2.1.251 or newer. Update the CLI and pin the actual version in a newly validated/approved suite before retrying. An unavailable Mythos model ID or account requires a separate access check; there is no automatic model substitution.
+Doctor without `--check-model-access` checks local requirements and known model minimum CLI versions; account checks require that flag. Fable 5.1 requires Claude Code 2.1.251 or newer. Update the CLI and pin the actual version in a newly validated/approved suite before retrying. An unavailable Mythos model ID or account requires a separate access check; there is no automatic model substitution.
+
+Before final approval, run `python3 bin/codex-eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.

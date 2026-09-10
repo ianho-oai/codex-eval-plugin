@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import statistics
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -95,6 +96,47 @@ def correct_codex_cache_cost(row, folder, pricing):
     return result
 
 
+def reset_version_errors(root, run, rows):
+    """Apply explicit reset receipts to views without rewriting original evidence."""
+    receipt = root / 'reset-version-errors.json'
+    if not receipt.exists():
+        return run, rows, []
+    receipt = read_json(receipt)
+    require(receipt.get('reason') == 'cli_version_incompatible' and receipt.get('requested_by'),
+            'Invalid version-error reset receipt')
+    lookup = {r['cell_id']: r for r in rows}
+    removed = []
+    for entry in receipt['attempts']:
+        row = lookup.get(entry['cell_id'])
+        require(row is not None and digest(row) == entry['result_sha256'], 'Reset result identity mismatch')
+        require(row.get('provider') == 'claude' and row.get('status') == 'provider_error'
+                and row.get('completion') == 0 and row.get('valid') is False,
+                'Only confirmed provider version errors can be reset')
+        events = child(root / 'attempts' / row['cell_id'], entry['events_path']).read_bytes()
+        require(hashlib.sha256(events).hexdigest() == entry['events_sha256'], 'Reset evidence changed')
+        messages = [json.loads(line) for line in events.decode().splitlines() if line.strip()]
+        require(any(m.get('type') == 'result' and m.get('is_error') is True and
+                    re.search(r'Claude Code [\d.]+ does not support this model; version [\d.]+ or newer is required', str(m.get('result', '')))
+                    for m in messages), 'Reset requires a native CLI version error')
+        removed.append(dict(row, reset_reason=receipt['reason'], reset_at=receipt.get('reset_at')))
+    ids = {r['cell_id'] for r in removed}
+    require(len(ids) == len(removed), 'Duplicate reset attempt')
+    view = dict(run, schedule=[c for c in run.get('schedule', []) if c['cell_id'] not in ids])
+    return view, [r for r in rows if r['cell_id'] not in ids], removed
+
+
+def exclude_models(root, run, rows):
+    receipt = root / 'excluded-models.json'
+    if not receipt.exists():
+        return run, rows, []
+    receipt = read_json(receipt)
+    require(receipt.get('requested_by') and receipt.get('reason'), 'Model exclusion requires a reason and requester')
+    excluded = {(m['provider'], m['model']) for m in receipt['models']}
+    matches = lambda r: (r.get('provider'), r.get('model')) in excluded
+    view = dict(run, schedule=[c for c in run.get('schedule', []) if not matches(c)])
+    return view, [r for r in rows if not matches(r)], [dict(r, exclusion_reason=receipt['reason']) for r in rows if matches(r)]
+
+
 def dataset(root):
     root = Path(root)
     run = read_json(root / 'run.json')
@@ -109,8 +151,12 @@ def dataset(root):
                 require(digest(original) == trial['sha256'] and read_json(folder / 'result.sha256.json').get('sha256') == trial['sha256'], 'Retry result integrity check failed')
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
+    descriptions = task_summaries(root, run, rows)
+    run, rows, reset_rows = reset_version_errors(root, run, rows)
+    run, rows, excluded_rows = exclude_models(root, run, rows)
     rows = [correct_codex_cache_cost(r, root/'attempts'/r['cell_id'], run.get('pricing', {})) for r in rows]
-    return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
+    return {'schema_version': 1, 'run': run, 'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': descriptions,
+            'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
 
 
 def dashboard_dataset(roots, *, scope=False):
@@ -145,7 +191,7 @@ def dashboard_dataset(roots, *, scope=False):
     require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
     if len(roots) == 1:
         return dataset(roots[0])
-    rows, sources, stopped, tasks, averages = [], [], [], [], []
+    rows, sources, stopped, tasks, averages, reset_rows, excluded_rows = [], [], [], [], [], [], []
     scheduled = 0
     for root in roots:
         data = dataset(root)  # Verify every original artifact before combining views.
@@ -154,6 +200,8 @@ def dashboard_dataset(roots, *, scope=False):
         sources.append({'id': source, 'name': run['suite']['name'],
                         'state': run.get('state'), 'execution': run['suite'].get('execution')})
         rows.extend(dict(row, source_run=source) for row in data['rows'])
+        reset_rows.extend(dict(row, source_run=source) for row in data.get('reset_rows', []))
+        excluded_rows.extend(dict(row, source_run=source) for row in data.get('excluded_rows', []))
         tasks.extend(dict(task, source_run=source) for task in data['tasks'])
         averages.extend(dict(row, source_run=source) for row in data['averages'])
         scheduled += data['summary']['scheduled']
@@ -162,7 +210,7 @@ def dashboard_dataset(roots, *, scope=False):
     return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
             'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
             'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
-            'rows': rows, 'tasks': tasks, 'averages': averages, 'summary': summarize(rows, scheduled)}
+            'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': tasks, 'averages': averages, 'summary': summarize(rows, scheduled)}
 
 
 MEAN_FIELDS = ('cost_usd', 'latency_seconds', 'input_tokens', 'output_tokens', 'cache_read_tokens')

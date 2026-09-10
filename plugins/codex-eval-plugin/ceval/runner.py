@@ -161,7 +161,7 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
 def execution_summary(s):
     stop = s['limits']['spend_stop_usd']
     return {
-        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus all cataloged Claude models, at every supported single-agent effort level. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
+        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus cataloged default Claude models, at every supported single-agent effort level. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
         'selected_matrix': s['matrix'],
         'execution_mode': s['execution']['mode'],
         'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',

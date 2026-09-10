@@ -124,7 +124,7 @@
     {
       "id": "claude-mythos-5-1",
       "provider": "claude",
-      "default": true,
+      "default": false,
       "default_effort": "medium",
       "efforts": [
         "low",
@@ -133,7 +133,7 @@
         "xhigh",
         "max"
       ],
-      "availability": "limited access; verify Claude Code support",
+      "availability": "Explicit opt-in only after verifying account access and native CLI support; excluded from default evaluations.",
       "source": "https://platform.claude.com/docs/en/models/overview"
     }
   ],

@@ -19,13 +19,13 @@ Tasks use existing lightweight test runners such as unittest, pytest, or Node te
 
 ### Defaults to review before running
 
-- **Models:** cataloged GPT-5.6 Sol/Terra/Luna and GPT-6 Astra; Claude Fable 5.1, Opus 5, Sonnet 5, Haiku 4.5, and Mythos 5.1.
+- **Models:** cataloged GPT-5.6 Sol/Terra/Luna and GPT-6 Astra; Claude Fable 5.1, Opus 5, Sonnet 5, and Haiku 4.5.
 - **Effort:** every catalog-supported single-agent level for each model. Provider effort labels are not equivalent compute budgets.
 - **Repeats:** three per task/model/effort; request one for a quick sweep.
 - **Concurrency:** five attempts total, starting the next as soon as a slot opens.
 - **Spend:** no spend stop by default. Set an optional threshold or narrow models, tasks, and efforts before approval.
 
-The example matrix is **3 tasks × 41 model/effort configurations × 3 repeats = 369 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and known CLI minimum versions; it does not authenticate model access. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
+The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats = 324 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and known CLI minimum versions; it does not authenticate model access. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
 ## Requirements and results
 
@@ -66,3 +66,5 @@ python3 -m unittest discover -s tests -v
 ```
 
 The versioned export includes exactly one skill, the CLI, catalogs, examples, schemas, and dashboard. Customer data and results stay in ignored evaluation directories. Repository and plugin versions move together; exported ZIPs include a checksum. Public source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin).
+
+Before final approval, run `./eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.

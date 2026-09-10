@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3 — 2026-09-10
+
+- Exclude Mythos from default model sweeps. Require account-model checks and exact CLI-path/version verification in the evaluation skill, including an upgrade request when needed.
+- Add `doctor --check-model-access`: compare exact IDs with authenticated provider listings, distinguish listed/unlisted/unprobed states, and return nonzero on failed checks without making inference calls.
+- Support explicit, reversible report-view receipts for confirmed CLI-version errors and customer-selected model exclusions. Preserve signed outcomes and native evidence; replacement attempts use new suites and output directories.
+
 ## 0.8.2 — 2026-09-10
 
 - Make the customer starter prompt the primary entry point throughout README, plugin documentation, and the rewritten product walkthrough. Move manual commands into a CLI reference and add provider troubleshooting.

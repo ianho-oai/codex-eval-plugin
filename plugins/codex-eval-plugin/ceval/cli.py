@@ -91,6 +91,26 @@ def models(provider, refresh):
             'note': 'Account-visible IDs, not proof of Codex/Claude Code support. Review exact IDs and published pricing before editing a suite.'}
 
 
+def doctor(suite, check_model_access=False):
+    result = preflight(suite)
+    if check_model_access:
+        for provider in sorted({lane['provider'] for lane in suite['matrix']}):
+            probe = result[provider]
+            try:
+                listing = models(provider, True)
+            except EvalError as error:
+                probe.update(ok=False, model_listing_error=str(error))
+                continue
+            probe['account_models_checked_at'] = listing['checked_at']
+            for model, check in probe['models'].items():
+                check['account_access'] = 'listed' if model in listing['models'] else 'not_listed'
+                if check['account_access'] == 'not_listed':
+                    probe['ok'] = False
+                    check['access_diagnostic'] = 'Exact model ID is absent from the account listing. Verify an alias or access before running, or approve another selection.'
+            probe['account_check_note'] = 'Listing is not an inference probe and does not verify every native effort level.'
+    return result
+
+
 def export_plugin(output):
     root = Path(__file__).resolve().parent.parent
     require((root / '.codex-plugin' / 'plugin.json').exists(), 'Export from the source plugin or extracted plugin ZIP')
@@ -254,6 +274,7 @@ def parser():
         a = sub.add_parser(name); a.add_argument('suite')
         if name == 'validate': a.add_argument('--check-graders', action='store_true')
         if name == 'approve': a.add_argument('--by', required=True)
+        if name == 'doctor': a.add_argument('--check-model-access', action='store_true', help='Also check exact model IDs against authenticated provider listings; no inference calls')
     a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
     b = a.add_mutually_exclusive_group(); b.add_argument('--spend-stop-usd', type=float); b.add_argument('--no-spend-stop', action='store_true')
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
@@ -284,7 +305,7 @@ def main(argv=None):
         if c == 'init': result = initialize(a.directory, a.mode, a.image)
         elif c in ('plan', 'validate', 'approve', 'doctor'):
             path, s, tasks, pricing, seal = load_suite(a.suite)
-            if c == 'doctor': result = preflight(s)
+            if c == 'doctor': result = doctor(s, a.check_model_access)
             elif c == 'validate' and a.check_graders: result = {'checks': validate_graders(a.suite), 'seal': seal}
             elif c == 'approve':
                 receipt = read_json(path.parent / 'validation.json')
@@ -327,6 +348,8 @@ def main(argv=None):
             result = {'image': s['execution']['image'], 'note': 'Image pin changed. Revalidate and approve before running.'}
         else: raise EvalError('Unknown command')
         print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
+        if c == 'doctor' and any(not result[lane['provider']]['ok'] for lane in s['matrix']):
+            return 1
         if c == 'smoke' and (not result['rows'] or any(r['completion'] != 1 for r in result['rows'])):
             return 1
         if c == 'run' and result.get('state') != 'complete':

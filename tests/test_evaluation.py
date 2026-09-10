@@ -120,8 +120,9 @@ class SuiteTests(Workspace):
         _, suite, tasks, _, seal = load_suite(dest/'suite.json')
         catalog = read_json(DATA/'models.json')['models']
         self.assertEqual(suite['matrix'], [{'provider':m['provider'], 'model':m['id'], 'efforts':m['efforts']} for m in catalog if m['default']])
-        for model in ('claude-fable-5-1', 'claude-mythos-5-1'):
+        for model in ('claude-fable-5-1',):
             self.assertIn({'provider':'claude', 'model':model, 'efforts':['low','medium','high','xhigh','max']}, suite['matrix'])
+        self.assertNotIn('claude-mythos-5-1', [lane['model'] for lane in suite['matrix']])
         self.assertIsNone(suite['limits']['spend_stop_usd'])
         summary = execution_summary(suite)
         self.assertIn('No spend stop', summary['message'])
