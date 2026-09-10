@@ -47,5 +47,3 @@ The customer entry point is `CUSTOMER_STARTER_PROMPT.md`: installation followed 
 Mythos is excluded from default selections. The evaluation skill runs authenticated `doctor --check-model-access` before final approval, verifies upgraded executable paths, and asks the customer to upgrade when required. User-requested setup-error resets/model exclusions are view receipts with preserved original evidence; replacements use newly approved suites.
 
 Model median diamonds summarize currently selected task/configuration averages with equal weight per plotted average, pooling efforts and runs per provider/model. Compute paired X/Y medians in raw units before log clipping. The top-right Median focus switch fades task points/labels and enlarges medians; it does not alter inputs or saved results.
-
-Median focus also shows dotted Claude-to-Codex arrows for the exact source-backed pairs in `ceval/data/web/pairings.js`. See `docs/MODEL_COMPARISONS.md`. These connect existing descriptive medians, may have different task/effort coverage, and do not imply a winner or change the approved model matrix. Median labels show model names only.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.6 — 2026-09-10
+
+- Remove the comparison arrows, legend, and pairing assets. Preserve median diamonds, Median focus, and model-only median labels.
+
 ## 0.8.5 — 2026-09-10
 
 - Add source-backed Claude-to-Codex dotted comparison arrows in Median focus only, with exact model pairings, filter/log-axis handling, and documented comparison limitations.

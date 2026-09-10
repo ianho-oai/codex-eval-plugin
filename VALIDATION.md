@@ -156,3 +156,8 @@ The command checks the installed version and capabilities, runs one original tru
 - Chrome review on the conversation dashboard: no arrows outside focus; four arrows in focus with the seven measured models; removing Fable reduces the count to two; restoring it restores four. Both logarithmic axes preserve arrow connections. Median labels show model names only. Screenshot review passed with faded task points, clear median diamonds, and dotted arrowheads.
 - All four dashboard servers (8879, 8881–8883) restarted and return the bundled pairing asset with JavaScript content type. No paid runs or historical evaluation data changed.
 - Pairing provenance and descriptive-median limitations are documented in docs/MODEL_COMPARISONS.md and the exported plugin README. The test of the extracted archive uses its standalone bin/codex-eval entrypoint; this host's Python configuration excludes the current directory from implicit imports.
+
+## 0.8.6 remove comparison arrows — 2026-09-10
+
+- All 64 tests pass; JavaScript syntax, CLI self-check, export, and extracted standalone self-check pass.
+- Chrome verification confirms zero comparison arrows in Median focus and seven remaining median diamonds with model-only labels. All four dashboard servers restarted with the updated UI. Removed the pairing asset, route, legend, arrow-only test, and associated feature documentation.
