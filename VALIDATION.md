@@ -168,3 +168,9 @@ The command checks the installed version and capabilities, runs one original tru
 - CLI self-check, export, extracted standalone self-check/progress command, and the evaluation skill validator pass. The package retains exactly one evaluation skill with a progress reference; visualization remains optional host-side functionality.
 - A read-only check against two saved Fable replacement runs reports 15/15 finished with 13 passes and two genuine failures, and 5/5 with five passes, respectively. No provider calls were made and no saved run was modified.
 - Live sidebar updates are performed by the observing host agent via the installed visualize/live skills and apply_patch. This release provides the checkpoint command and workflow instructions; it does not add a background UI watcher or claim updates after the observing turn ends. Dashboard UI is unchanged from the browser-verified 0.8.6 release.
+
+## 0.8.8 medians by model and reasoning effort — 2026-09-10
+
+- All 69 tests pass. Median coverage now verifies distinct low/high/default/none groups, provider separation, zero preservation, paired measurements, and unchanged inputs. JavaScript syntax, CLI self-check, export, and extracted standalone self-check pass.
+- Chrome verification shows separate model/effort median labels and a single effort in each tooltip. Zero and one selected task hide the median toggle/legend/points and remove focus fading; selecting a second task restores the control and medians. Restoring all tasks and both log axes works. The Fable low median tooltip reports three task/configuration averages and effort low.
+- Dashboard assets update on refresh; saved results and evaluation inputs are unchanged.

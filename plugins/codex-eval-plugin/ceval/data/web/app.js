@@ -25,7 +25,7 @@ function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
   const formatMetric=key=>key==='cost_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
-  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Efforts',r.efforts.join(', ')],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
+  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Reasoning effort',r.effort],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
     [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
   for(const [label,value] of fields){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
@@ -39,12 +39,12 @@ function details(r,dot){
   popup.style.top=Math.max(8,Math.min(top,bounds.height-popup.offsetHeight-8))+'px';
 }
 function svg(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
-function plot(rows){
+function plot(rows,showMedians){
   hideDetails();const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
   const logX=$('log-x').checked,logY=$('log-y').checked;
   const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
-  const medians=modelMedians(rows,x,y);
-  const focus=$('median-focus').checked;root.classList.toggle('median-focus',focus);
+  const medians=showMedians?modelMedians(rows,x,y):[];
+  const focus=showMedians&&$('median-focus').checked;root.classList.toggle('median-focus',focus);
   const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const omitted=measured.length-points.length;
@@ -87,10 +87,10 @@ function plot(rows){
   const labelLayer=svg('g',{class:'task-label-layer'}),pointLayer=svg('g',{class:'task-point-layer'}),medianLayer=svg('g',{class:'median-layer'});root.append(labelLayer,pointLayer,medianLayer);
   for(const r of [...points,...medianPoints]){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
-    const label=r.median?r.model:modelLabel(r),size=focus?13:9;
+    const label=modelLabel(r),size=focus?13:9;
     if($('labels').checked)(r.median?medianLayer:labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
     const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
-    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${r.model}, median of ${r.point_count} task/configuration averages`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
+    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, median of ${r.point_count} task/configuration averages`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});
@@ -162,7 +162,12 @@ function taskTable(rows){
   }
   if(!seen.size){const row=el('tr'),cell=el('td','No tasks selected.');cell.colSpan=4;row.append(cell);body.append(row);}
 }
-function render(){if(data){const rows=filtered();plot(rows);taskTable(filtered(data.rows));}}
+function render(){
+  if(!data)return;
+  const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
+  $('median-control').hidden=!showMedians;$('median-legend').hidden=!showMedians;
+  const rows=filtered();plot(rows,showMedians);taskTable(filtered(data.rows));
+}
 async function load(){
   try{
     const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);

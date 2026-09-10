@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.8 — 2026-09-10
+
+- Show the median controls, legend, and points only with two or more selected tasks; single-task views retain normal contrast.
+
+- Group median diamonds by provider, model, and reasoning effort. Label each with its model and effort, and show the single effort in hover details. Preserve filters, focus behavior, and raw-unit median calculations.
+
 ## 0.8.7 — 2026-09-10
 
 - Add read-only `progress RUN_DIR ...` checkpoint summaries and host-side visualize/live progress guidance during evaluation runs, with text fallback when unavailable. Preserve the headless harness and one-skill plugin.

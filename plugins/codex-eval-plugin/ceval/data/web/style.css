@@ -21,3 +21,5 @@
 #plot.median-focus .median-label{font-size:14px}
 @media(max-width:650px){.heading-toggles{justify-content:flex-start;gap:16px}.legend{flex-wrap:wrap;gap:16px}}
 @media(prefers-reduced-motion:reduce){#plot .task-point-layer,#plot .task-label-layer{transition:none}}
+
+#median-control[hidden],#median-legend[hidden]{display:none}

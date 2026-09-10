@@ -1,4 +1,4 @@
-# Codex Eval · 0.8.7
+# Codex Eval · 0.8.8
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -76,6 +76,8 @@ Doctor without `--check-model-access` checks local requirements and known model 
 
 Before final approval, run `python3 bin/codex-eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.
 
-Dashboard diamonds show one median per model across selected task/configuration averages. **Median focus** at the top right fades the task points and enlarges medians. Filters and axis selections update the medians; hover reveals their sample coverage.
+Dashboard diamonds show one median per model × reasoning-effort combination across selected task/configuration averages. **Median focus** at the top right fades the task points and enlarges medians. Filters and axis selections update the medians; hover reveals their sample coverage.
 
 During evaluation runs in Codex desktop, the skill uses the available visualize/live skills to show checkpoint progress in the task sidebar. `bin/codex-eval progress RUN_DIR [RUN_DIR ...]` supplies finished/remaining attempts, active-at-checkpoint slots, and pass/fail/error counts. The host agent refreshes the view while observing the run; CLI/text progress remains available without visualization skills. No extra dependencies enter the evaluated agents.
+
+Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
