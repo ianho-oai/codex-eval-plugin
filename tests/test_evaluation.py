@@ -212,6 +212,42 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(r['reasoning_tokens'],120)
         self.assertIsNone(r['cache_write_tokens'])
 
+    def test_codex_native_cache_writes_use_the_write_rate(self):
+        usage = {'input_tokens':1000, 'cached_input_tokens':700, 'cache_write_input_tokens':250,
+                 'output_tokens':200, 'reasoning_output_tokens':120}
+        r = normalize('codex', json.dumps({'type':'turn.completed','usage':usage}), 'gpt-5.6-sol', self.rates)
+        self.assertEqual(r['cache_write_tokens'], 250)
+        self.assertAlmostEqual(r['cost_usd'], (50*4 + 700*.4 + 250*5 + 200*20)/1e6)
+        usage['cache_creation_input_tokens'] = 999  # Native spelling takes precedence.
+        self.assertEqual(normalize('codex', json.dumps({'type':'turn.completed','usage':usage}), 'gpt-5.6-sol', self.rates)['cache_write_tokens'], 250)
+        usage['cache_write_input_tokens'] = 301
+        self.assertIsNone(normalize('codex', json.dumps({'type':'turn.completed','usage':usage}), 'gpt-5.6-sol', self.rates)['cost_usd'])
+
+    def test_cache_write_display_correction_preserves_original_and_retry_unknowns(self):
+        from ceval.report import correct_codex_cache_cost
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            usage = {'input_tokens':1000,'cached_input_tokens':700,'cache_write_input_tokens':250,'output_tokens':200}
+            original = {'provider':'codex','model':'gpt-5.6-sol','input_tokens':1000,'cache_read_tokens':700,
+                        'output_tokens':200,'cache_write_tokens':None,'cost_usd':.00548,'cost_upper_usd':.009,
+                        'completion':1,'status':'passed'}
+            raw = json.dumps({'type':'turn.completed','usage':usage})
+            write_json(folder/'result.json', original)
+            (folder/'events.jsonl').write_text(raw)
+            corrected = correct_codex_cache_cost(original, folder, self.rates)
+            self.assertAlmostEqual(corrected['cost_usd'], .00573)
+            self.assertEqual(corrected['recorded_cost_usd'], .00548)
+            self.assertEqual(read_json(folder/'result.json'), original)
+            self.assertEqual(corrected['completion'], 1)
+            trial = folder/'retries/001';trial.mkdir(parents=True)
+            write_json(trial/'result.json', original);(trial/'events.jsonl').write_text(raw)
+            missing = folder/'retries/000';missing.mkdir()
+            write_json(missing/'result.json', dict(original,cost_usd=None,cost_upper_usd=None,input_tokens=None))
+            aggregate = dict(original, retry_attempts=[{'directory':'retries/000'},{'directory':'retries/001'}])
+            correction = correct_codex_cache_cost(aggregate, folder, self.rates)
+            self.assertIsNone(correction['cost_usd'])
+            self.assertAlmostEqual(correction['known_cost_usd'], .00573)
+
     def test_codex_sums_completed_turns(self):
         e={'type':'turn.completed','usage':{'input_tokens':10,'cached_input_tokens':0,'output_tokens':3}}
         r=normalize('codex','\n'.join([json.dumps(e)]*2),'gpt-5.6-luna',self.rates)

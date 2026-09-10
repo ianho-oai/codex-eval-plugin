@@ -99,3 +99,11 @@ The command checks the installed version and capabilities, runs one original tru
 
 - All 55 tests, self-check, and plugin export pass.
 - Refreshed all four Chrome dashboards and confirmed the run-stop banner is hidden and empty while plotted results remain visible. Saved run state and CLI diagnostics are unchanged.
+
+## 0.7.2 Codex pricing audit — 2026-09-10
+
+- Verified all four bundled Codex model prices, cache-write rates, and long-context multipliers against https://developers.openai.com/api/docs/pricing. Numeric rates were already correct; OpenAI verification dates and model-page references are now recorded separately from Anthropic verification.
+- Actual saved Codex 0.153.4 events expose `cache_write_input_tokens`; the previous parser read only `cache_creation_input_tokens`. Corrected the parser while retaining compatibility with that older spelling. Reasoning remains included in output, with cached reads subtracted from total input before charging other input.
+- Existing report/dashboard views now derive corrected cache-write estimates from native logs and original per-run rates, after checking signed result integrity and matching input/output/cache-read totals. Corrections retain the recorded cost, evidence hashes, and missing retry costs. Original run files and scores are untouched.
+- All 57 tests, self-check, and export pass, including real-field cache-write arithmetic, impossible token partitions, historical corrections, and unknown-cost retry preservation. All four dashboard APIs serve corrected estimates.
+- Costs remain Standard global estimates. Native turn totals do not reveal each request's context tier; long-context/cache-write uncertainty is retained as an upper estimate. Fast-mode/regional pricing is outside this fixed rate-card scope.

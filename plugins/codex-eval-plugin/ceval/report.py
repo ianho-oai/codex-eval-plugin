@@ -1,6 +1,7 @@
 """Fixed result model, summaries, CSV, and localhost-only dashboard serving."""
 import csv
 import io
+import hashlib
 import json
 import math
 import os
@@ -54,6 +55,46 @@ def task_summaries(root, run, rows):
                  for r in rows}.values())
 
 
+def correct_codex_cache_cost(row, folder, pricing):
+    """Derive corrected display costs without rewriting signed execution evidence."""
+    if row.get('provider') != 'codex' or row.get('not_started'):
+        return row
+    trials = row.get('retry_attempts', [])
+    if trials:
+        corrected = [correct_codex_cache_cost(read_json(child(folder, t['directory'])/'result.json'),
+                                             child(folder, t['directory']), pricing) for t in trials]
+        if not any(r.get('cost_adjustment') for r in corrected):
+            return row
+        result = dict(row)
+        for key in ('cost_usd', 'cost_lower_usd', 'cost_upper_usd', 'cache_write_tokens'):
+            values = [r.get(key) for r in corrected]
+            result[key] = sum(values) if all(v is not None for v in values) else None
+        result['known_cost_usd'] = sum(r.get('cost_usd') or 0 for r in corrected)
+        result['known_cost_upper_usd'] = sum(r.get('cost_upper_usd') or 0 for r in corrected)
+        result['cost_evidence'] = [r.get('cost_evidence') for r in corrected]
+    else:
+        events_path = folder/'events.jsonl'
+        if row.get('cache_write_tokens') is not None or not events_path.is_file():
+            return row
+        from .telemetry import normalize
+        raw = events_path.read_text()
+        parsed = normalize('codex', raw, row['model'], pricing)
+        if parsed['cache_write_tokens'] is None or parsed['cost_usd'] is None:
+            return row
+        # A correction must describe the same signed token totals, not another call.
+        if any(parsed[k] != row.get(k) for k in ('input_tokens', 'output_tokens', 'cache_read_tokens')):
+            return row
+        result = dict(row)
+        for key in ('cost_usd', 'cost_lower_usd', 'cost_upper_usd', 'cache_write_tokens'):
+            result[key] = parsed[key]
+        result['cost_evidence'] = {'events_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                                   'pricing_sha256': digest(pricing)}
+    result.update(recorded_cost_usd=row.get('cost_usd'), cost_adjustment='codex_cache_write_field',
+                  cost_source='corrected_rate_card_estimate',
+                  cost_note='Display estimate corrected from native cache_write_input_tokens using the original run rate card. Signed run results are unchanged; request-level long-context pricing remains uncertain.')
+    return result
+
+
 def dataset(root):
     root = Path(root)
     run = read_json(root / 'run.json')
@@ -68,6 +109,7 @@ def dataset(root):
                 require(digest(original) == trial['sha256'] and read_json(folder / 'result.sha256.json').get('sha256') == trial['sha256'], 'Retry result integrity check failed')
         else:
             require(run.get('simulation') is True and r.get('simulation') is True, 'Result artifact missing')
+    rows = [correct_codex_cache_cost(r, root/'attempts'/r['cell_id'], run.get('pricing', {})) for r in rows]
     return {'schema_version': 1, 'run': run, 'rows': rows, 'tasks': task_summaries(root, run, rows), 'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
 
 
@@ -182,7 +224,7 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effor
               'valid', 'simulation', 'execution_mode', 'latency_seconds', 'agent_seconds', 'grader_seconds',
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
-              'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note',
+              'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
               'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted']
 
 

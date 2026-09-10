@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2 — 2026-09-10
+
+- Verify the four Codex model rate cards against official Standard global API pricing; record source dates and Sol promotional-price timing.
+- Read native Codex `cache_write_input_tokens` and apply its separate rate. Derive corrected historical dashboard/report estimates from native events and each run's original pricing, retaining signed results and recorded costs.
+- Read long-context envelope multipliers from the frozen rate card instead of hardcoding them.
+
 ## 0.7.1 — 2026-09-10
 
 - Remove run-stop banners from the dashboard. Preserve stop reasons in CLI reports and saved run data; retain synthetic-data and data-loading error notices.

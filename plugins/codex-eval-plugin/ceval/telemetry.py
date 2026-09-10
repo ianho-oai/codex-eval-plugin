@@ -43,7 +43,7 @@ def normalize(provider, text, model, pricing):
         usage = [e.get('usage', {}) for e in completed]
         result.update(input_tokens=total(usage, 'input_tokens'), output_tokens=total(usage, 'output_tokens'),
                       cache_read_tokens=total(usage, 'cached_input_tokens'),
-                      cache_write_tokens=total(usage, 'cache_creation_input_tokens'),
+                      cache_write_tokens=total([dict(u, cache_writes=u.get('cache_write_input_tokens', u.get('cache_creation_input_tokens'))) for u in usage], 'cache_writes'),
                       reasoning_tokens=total(usage, 'reasoning_output_tokens'),
                       turns=len(completed) if completed else None, turn_unit='codex_conversation_turn',
                       tool_calls=sum(e.get('type') == 'item.completed' and e.get('item', {}).get('type') in ('command_execution', 'file_change') for e in ev) if ev else None,
@@ -62,7 +62,7 @@ def normalize(provider, text, model, pricing):
                 out_cost = o*rate['output']/1e6
                 upper_input = ((i-c)*max(rate['input'], rate['cache_write']) + c*rate['cached_input'])/1e6
                 result.update(cost_usd=input_cost+out_cost, cost_lower_usd=input_cost+out_cost,
-                              cost_upper_usd=upper_input*2+out_cost*1.5,
+                              cost_upper_usd=upper_input*rate.get('long_input_multiplier', 1)+out_cost*rate.get('long_output_multiplier', 1),
                               cost_source='estimated_rate_card',
                               cost_note='Standard global short-context estimate. Upper envelope allows long-context rates and unknown cache writes; native turn aggregates cannot identify request tiers. Reasoning is included in output cost.')
     else:
