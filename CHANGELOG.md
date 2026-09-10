@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.7 — 2026-09-10
+
+- Add read-only `progress RUN_DIR ...` checkpoint summaries and host-side visualize/live progress guidance during evaluation runs, with text fallback when unavailable. Preserve the headless harness and one-skill plugin.
+
 ## 0.8.6 — 2026-09-10
 
 - Remove the comparison arrows, legend, and pairing assets. Preserve median diamonds, Median focus, and model-only median labels.

@@ -198,3 +198,14 @@ Before final approval, run `./eval doctor SUITE --check-model-access` to compare
 Each model has a diamond marker showing the median X and median Y of its currently selected task/configuration averages. The top-right **Median focus** switch fades task points and labels while enlarging the median markers. Turn it off to restore normal contrast; median diamonds remain visible.
 
 Each displayed task/configuration point gets equal weight, pooling selected efforts and saved runs for that model. This is a descriptive median of the plotted averages, not a median of raw attempts or a matched-task leaderboard. The tooltip shows the number of contributing points/tasks, effort levels, and both selected-axis values. Only points with both axis measurements contribute; genuine zeros and failures remain included. Log toggles change placement, not the calculation; nonpositive medians cannot be plotted on log axes and are counted in the plot note.
+
+### In-Codex evaluation progress
+
+```bash
+./eval progress evaluations/customer/run
+./eval progress evaluations/customer/codex/run evaluations/customer/claude/run
+```
+
+This read-only command returns one saved checkpoint per exact run directory, deduplicating repeated paths. It reports scheduled, finished, remaining (including active), active-at-checkpoint, passed, failed, errors, recorded state, and checkpoint timestamp. It preserves original scheduled counts even for results hidden by dashboard view receipts. Outcome receipts are checked; mismatched manifest/result counts temporarily produce null outcome counts. Missing paths show awaiting start with unknown totals. It makes no provider calls and does not resume, pause, or alter execution.
+
+The evaluation skill uses these snapshots with the available visualize/live skills in Codex desktop. It samples about every 15–30 seconds while observing the runner, updates one registered view using apply_patch, and leaves a final checkpoint on completion or stop. The fragment has no network access. A saved running state is not a heartbeat or proof of a live process, and updates do not continue automatically after the observing turn ends. CLI-only environments retain text progress.

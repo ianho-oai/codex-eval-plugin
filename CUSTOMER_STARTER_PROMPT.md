@@ -52,7 +52,7 @@ Build and validate the approved tasks. Default to all cataloged GPT-5.6 models a
 
 Include all supported reasoning/effort levels for each selected model and show that full matrix in the plan. Use three repeats per task/model/effort (or one if I request a quick sweep) and five concurrent attempts in total, refilling each free slot immediately. Share the slot limit across batches. Explain how concurrency affects latency and how in-flight calls can exceed a spend threshold.
 
-After approval, use the bundled CLI to execute and grade the tasks headlessly, then open the prebuilt local dashboard with both providers combined. Show mean cost, latency, and token usage, while retaining individual attempts, pass counts, failures, and missing metrics. Keep my data and credentials out of Git.
+After approval, use the bundled CLI to execute and grade the tasks headlessly. While tests run, use the available visualize skill and its live companion to show progress inside Codex: completed/remaining attempts, active workers, and pass/fail/error counts from the bundled progress command. Keep one view updated from real checkpoints; fall back to text progress if unavailable, without installing extra dependencies or changing the tested agents. Then open the prebuilt local dashboard with both providers combined. Show mean cost, latency, and token usage, while retaining individual attempts, pass counts, failures, and missing metrics. Keep my data and credentials out of Git.
 
 Continue through to results without unnecessary check-ins. If something is blocked, tell me exactly what is needed and provide any command I must run myself.
 

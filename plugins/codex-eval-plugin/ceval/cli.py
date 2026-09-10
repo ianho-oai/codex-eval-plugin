@@ -21,6 +21,7 @@ from .discovery import history, repo_evidence, snapshot
 from .report import report, serve
 from .runner import clean_env, execute, preflight, execution_summary, run, schedule, validate_graders
 from .catalog import examples, portfolio
+from .progress import progress
 
 
 def load_local_keys():
@@ -289,6 +290,7 @@ def parser():
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')
+    a = sub.add_parser('progress', help='Read saved run checkpoints for Codex progress views'); a.add_argument('run_dir', nargs='+')
     a = sub.add_parser('dashboard'); a.add_argument('run_dir', nargs='*', default=['evaluations'], help='Evaluation workspace(s); defaults to all live runs under evaluations/'); a.add_argument('--port', type=int, default=8765); a.add_argument('--scope', action='store_true', help='Show only the supplied run(s) or directory tree; do not expand to the entire evaluation workspace')
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
@@ -334,6 +336,7 @@ def main(argv=None):
             result = {'output': a.output, 'coverage_note': result['coverage_note']}
         elif c == 'snapshot': result = snapshot(a.repo, a.commit, a.output)
         elif c == 'report': result = report(a.run_dir)
+        elif c == 'progress': result = progress(a.run_dir)
         elif c == 'dashboard': serve(a.run_dir, a.port, scope=a.scope); return 0
         elif c == 'export': result = export_plugin(a.output)
         elif c == 'self-check': result = self_check()

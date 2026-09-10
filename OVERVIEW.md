@@ -54,3 +54,5 @@ Codex is blue and Claude orange when at least one repeat passes; groups with no 
 See [VALIDATION.md](VALIDATION.md) for dated test results and live-provider evidence. Passing offline tests does not establish model availability. Fable/Mythos simulation attempts have exposed CLI compatibility and model-access errors; [troubleshooting](docs/TROUBLESHOOTING.md) explains the findings and recovery. Do not interpret these as failures to implement the software task.
 
 Use the [CLI reference](docs/CLI_REFERENCE.md) for manual operation, selectors, retries, and dashboard commands. Use the [starter prompt](CUSTOMER_STARTER_PROMPT.md) to begin a customer evaluation.
+
+During evaluation runs in Codex desktop, the skill uses the available visualize/live skills to show checkpoint progress in the task sidebar. `./eval progress RUN_DIR [RUN_DIR ...]` supplies finished/remaining attempts, active-at-checkpoint slots, and pass/fail/error counts. The host agent refreshes the view while observing the run; CLI/text progress remains available without visualization skills. No extra dependencies enter the evaluated agents.

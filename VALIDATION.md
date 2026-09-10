@@ -161,3 +161,10 @@ The command checks the installed version and capabilities, runs one original tru
 
 - All 64 tests pass; JavaScript syntax, CLI self-check, export, and extracted standalone self-check pass.
 - Chrome verification confirms zero comparison arrows in Median focus and seven remaining median diamonds with model-only labels. All four dashboard servers restarted with the updated UI. Removed the pairing asset, route, legend, arrow-only test, and associated feature documentation.
+
+## 0.8.7 host-side evaluation progress — 2026-09-10
+
+- All 68 tests pass. New progress tests cover mixed pass/fail/error outcomes, pending including active work, duplicate run paths, read-only behavior, missing/stopped runs, advancing checkpoint counts, and altered outcome rejection.
+- CLI self-check, export, extracted standalone self-check/progress command, and the evaluation skill validator pass. The package retains exactly one evaluation skill with a progress reference; visualization remains optional host-side functionality.
+- A read-only check against two saved Fable replacement runs reports 15/15 finished with 13 passes and two genuine failures, and 5/5 with five passes, respectively. No provider calls were made and no saved run was modified.
+- Live sidebar updates are performed by the observing host agent via the installed visualize/live skills and apply_patch. This release provides the checkpoint command and workflow instructions; it does not add a background UI watcher or claim updates after the observing turn ends. Dashboard UI is unchanged from the browser-verified 0.8.6 release.
