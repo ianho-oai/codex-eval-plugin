@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.4 — 2026-09-10
+
+- Add one median diamond per provider/model across the selected task/configuration averages, updating with filters and axes. Tooltip discloses coverage and selected-axis values.
+- Add a top-right Median focus switch that fades individual points/labels and emphasizes medians. Preserve raw-unit calculations under log axes, include real zeros/failures, and report medians that cannot appear on log scales.
+
 ## 0.8.3 — 2026-09-10
 
 - Exclude Mythos from default model sweeps. Require account-model checks and exact CLI-path/version verification in the evaluation skill, including an upgrade request when needed.

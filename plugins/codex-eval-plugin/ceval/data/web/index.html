@@ -4,7 +4,7 @@
 <body>
 <header><a class="brand" href="/">Codex Eval</a><a class="export" href="/results.csv">Export CSV ↗</a></header>
 <main>
-  <div class="page-heading"><h1>Workflow evaluation</h1><label class="label-toggle"><span>Show labels</span><input id="labels" type="checkbox" role="switch" checked></label></div>
+  <div class="page-heading"><h1>Workflow evaluation</h1><div class="heading-toggles"><label class="label-toggle"><span>Median focus</span><input id="median-focus" type="checkbox" role="switch"></label><label class="label-toggle"><span>Show labels</span><input id="labels" type="checkbox" role="switch" checked></label></div></div>
   <div id="banner" class="banner" role="status" hidden></div>
   <section class="panel" aria-label="Workflow evaluation chart">
     <div class="controls">
@@ -15,11 +15,11 @@
       <div class="axis-setting"><label>Y-axis<select id="y"></select></label><label class="scale-toggle"><input id="log-y" type="checkbox">Log scale</label></div>
       </div>
     </div>
-    <div class="legend"><span class="codex-key">● <span>Codex</span></span><span class="claude-key">● <span>Claude Code</span></span></div>
+    <div class="legend"><span class="codex-key">● <span>Codex</span></span><span class="claude-key">● <span>Claude Code</span></span><span>◇ <span>Model median</span></span></div>
     <div id="plot-note" class="plot-note" role="status" hidden></div>
     <div class="plot-wrap"><svg id="plot" viewBox="0 0 1200 560" role="group" aria-label="Evaluation attempts. Focus a point to inspect its details."></svg><div id="tooltip" class="tooltip" role="tooltip" hidden></div></div>
   </section>
   <section class="panel task-panel" aria-labelledby="task-table-title"><h2 id="task-table-title">Task summaries</h2><div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Description</th><th scope="col">Difficulty</th><th scope="col">Development type</th></tr></thead><tbody id="task-summaries"></tbody></table></div></section>
 </main>
-<script src="/app.js"></script>
+<script src="/medians.js"></script><script src="/app.js"></script>
 </body></html>

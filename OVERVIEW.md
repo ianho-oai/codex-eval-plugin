@@ -34,7 +34,7 @@ Local mode runs trusted fixtures on the customer's host. It does not enforce gra
 
 ## Dashboard
 
-The chart comes first, with provider/model and difficulty/task checkbox groups, select-all controls, toggleable model labels, and independent logarithmic axes. Hover details show model/effort, task, difficulty, pass count, cost, and end-to-end latency. The task table uses short workflow descriptions.
+The chart comes first, with provider/model and difficulty/task checkbox groups, select-all controls, toggleable model labels, and independent logarithmic axes. Hover details show model/effort, task, difficulty, pass count, cost, and end-to-end latency. The task table uses short workflow descriptions. A diamond marks each model's median across selected task/configuration averages. The top-right Median focus switch fades task points and emphasizes these diamonds; hover shows sample coverage and the selected-axis medians.
 
 Codex is blue and Claude orange when at least one repeat passes; groups with no successful repeat are grey. A point averages only its own run/task/model/effort group, including failed attempts. Missing metrics and pending attempts remain explicit. Combining separate runs does not establish that their settings are comparable.
 

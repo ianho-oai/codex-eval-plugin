@@ -1,6 +1,6 @@
 {
   "name": "codex-eval-plugin",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Explicitly requested headless evaluation tests comparing Codex with Claude Code.",
   "author": {
     "name": "Ian Ho"

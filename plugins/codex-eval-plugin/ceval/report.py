@@ -314,9 +314,9 @@ class Handler(BaseHTTPRequestHandler):
                 data, mime = json.dumps(dashboard_dataset(self.root, scope=self.scope)).encode(), 'application/json'
             elif path == '/results.csv':
                 data, mime = csv_text(dashboard_dataset(self.root, scope=self.scope)['rows']).encode(), 'text/csv'
-            elif path in ('/', '/app.js', '/style.css'):
-                p = DATA / 'web' / {'/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css'}[path]
-                data, mime = p.read_bytes(), {'/': 'text/html', '/app.js': 'text/javascript', '/style.css': 'text/css'}[path]
+            elif path in ('/', '/app.js', '/medians.js', '/style.css'):
+                p = DATA / 'web' / {'/': 'index.html', '/app.js': 'app.js', '/medians.js': 'medians.js', '/style.css': 'style.css'}[path]
+                data, mime = p.read_bytes(), {'/': 'text/html', '/app.js': 'text/javascript', '/medians.js': 'text/javascript', '/style.css': 'text/css'}[path]
             else:
                 self.send_error(404)
                 return

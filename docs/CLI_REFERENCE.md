@@ -192,3 +192,9 @@ Fable 5.1 (`claude-fable-5-1`) is a default model with `low`, `medium`, `high`, 
 Evaluation tasks should be achievable by the selected models, with cost, latency, and token use as the primary comparison after verifying correctness. Keep requirements explicit, provide enough context, and allow reasonable execution time. Difficulty increases coding work within a simple prepared environment; provisioning is outside the timed task. Expected success is a design target, while actual pass/fail remains determined by the same fixed checks for every model.
 
 Before final approval, run `./eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.
+
+### Model medians
+
+Each model has a diamond marker showing the median X and median Y of its currently selected task/configuration averages. The top-right **Median focus** switch fades task points and labels while enlarging the median markers. Turn it off to restore normal contrast; median diamonds remain visible.
+
+Each displayed task/configuration point gets equal weight, pooling selected efforts and saved runs for that model. This is a descriptive median of the plotted averages, not a median of raw attempts or a matched-task leaderboard. The tooltip shows the number of contributing points/tasks, effort levels, and both selected-axis values. Only points with both axis measurements contribute; genuine zeros and failures remain included. Log toggles change placement, not the calculation; nonpositive medians cannot be plotted on log axes and are counted in the plot note.

@@ -24,7 +24,10 @@ function hideDetails(){ $('tooltip').hidden=true; }
 function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
-  for(const [label,value] of [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']]){
+  const formatMetric=key=>key==='cost_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
+  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Efforts',r.efforts.join(', ')],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
+    [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
+  for(const [label,value] of fields){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
   }
   popup.append(list);popup.hidden=false;
@@ -40,13 +43,17 @@ function plot(rows){
   hideDetails();const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
   const logX=$('log-x').checked,logY=$('log-y').checked;
   const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
+  const medians=modelMedians(rows,x,y);
+  const focus=$('median-focus').checked;root.classList.toggle('median-focus',focus);
   const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
+  const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const omitted=measured.length-points.length;
-  $('plot-note').hidden=!omitted;
-  $('plot-note').textContent=`${omitted} point${omitted===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`;
-  if(!points.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},measured.length&&omitted?'Log scales require positive values.':'No measured points for these filters and axes.'));return;}
+  const omittedMedians=medians.length-medianPoints.length;
+  $('plot-note').hidden=!(omitted||omittedMedians);
+  $('plot-note').textContent=`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`;
+  if(!points.length&&!medianPoints.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},measured.length&&omitted?'Log scales require positive values.':'No measured points for these filters and axes.'));return;}
   const scale = (key,log) => {
-    const values=points.map(r=>r[key]);
+    const values=[...points,...medianPoints].map(r=>r[key]);
     if(log){
       const low=Math.floor(Math.log10(Math.min(...values))),high=Math.max(low+1,Math.ceil(Math.log10(Math.max(...values))));
       const stride=Math.max(1,Math.ceil((high-low)/6)),ticks=[];
@@ -77,15 +84,17 @@ function plot(rows){
     root.append(svg('line',{x1:left,x2:right,y1:b,y2:b,class:'grid'}),svg('text',{x:left-14,y:b+6,'text-anchor':'end',class:'tick'},tick(y,value,sy.step)));
   }
   root.append(svg('text',{x:630,y:545,'text-anchor':'middle',class:'axis-label'},'Average '+metrics[x].toLowerCase()+(logX?' · log':'')),svg('text',{transform:'translate(20 260) rotate(-90)','text-anchor':'middle',class:'axis-label'},'Average '+metrics[y].toLowerCase()+(logY?' · log':'')));
-  const labelLayer=svg('g'),pointLayer=svg('g');root.append(labelLayer,pointLayer);
-  for(const r of points){
+  const labelLayer=svg('g',{class:'task-label-layer'}),pointLayer=svg('g',{class:'task-point-layer'}),medianLayer=svg('g',{class:'median-layer'});root.append(labelLayer,pointLayer,medianLayer);
+  for(const r of [...points,...medianPoints]){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
-    if($('labels').checked)labelLayer.append(svg('text',{x:px+12,y:py+4,fill:color,class:'model-label'},modelLabel(r)));
-    const dot=svg('circle',{cx:px,cy:py,r:7,fill:color,class:'point',tabindex:0,role:'button','aria-label':`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
+    const label=r.median?`${r.model} · median`:modelLabel(r),size=focus?13:9;
+    if($('labels').checked)(r.median?medianLayer:labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
+    const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
+    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${r.model}, median of ${r.point_count} task/configuration averages`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});
-    pointLayer.append(dot);
+    (r.median?medianLayer:pointLayer).append(dot);
   }
 }
 function bulkControls(container,selections,update,unit){
@@ -166,7 +175,7 @@ async function load(){
     render();
   }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;}
 }
-for(const id of ['x','y','labels','log-x','log-y'])$(id).addEventListener('change',render);
+for(const id of ['x','y','labels','median-focus','log-x','log-y'])$(id).addEventListener('change',render);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideDetails();$('models-menu').open=false;$('tasks-menu').open=false;}});
 window.addEventListener('resize',hideDetails);document.addEventListener('pointerdown',e=>{if(!e.target.closest('.point'))hideDetails();if(!e.target.closest('#models-menu'))$('models-menu').open=false;if(!e.target.closest('#tasks-menu'))$('tasks-menu').open=false;});
 load();setInterval(load,15000);

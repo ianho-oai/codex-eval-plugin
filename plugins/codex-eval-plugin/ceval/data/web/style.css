@@ -11,3 +11,13 @@
 .bulk-option{font-weight:500}.model-options> .bulk-option{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:12px}.model-options fieldset .bulk-option{color:#bcbcbc}
 
 .axis-setting{display:flex;flex-direction:column;gap:10px}.scale-toggle{flex-direction:row;align-items:center;gap:8px;cursor:pointer}.scale-toggle input{accent-color:var(--codex);margin:0;width:16px;height:16px}.plot-note{font-size:13px;color:#bcbcbc;margin:12px 8px 0}.model-options fieldset{padding-left:14px;border-left:1px solid #4c4c4c;margin-left:7px}.model-options legend{font-size:13px;font-weight:600;margin-left:-14px;background:#292929;padding:0 6px 0 0}.model-options fieldset .model-option:not(.bulk-option){padding-left:20px}.model-options fieldset[data-provider=codex] input{accent-color:var(--codex)}.model-options fieldset[data-provider=claude] input{accent-color:var(--claude)}.model-options fieldset[data-provider=codex] .bulk-option{color:var(--codex)}.model-options fieldset[data-provider=claude] .bulk-option{color:var(--claude)}
+
+.heading-toggles{display:flex;align-items:center;justify-content:flex-end;gap:24px;flex-wrap:wrap}
+#plot .task-point-layer,#plot .task-label-layer{transition:opacity .18s ease}
+#plot.median-focus .task-point-layer{opacity:.16}#plot.median-focus .task-label-layer{opacity:.12}
+#plot .median-point{stroke:#f0f0f0;stroke-width:1.5;paint-order:stroke fill}
+#plot .median-label{font-weight:650}
+#plot.median-focus .median-point{stroke-width:3;filter:drop-shadow(0 0 6px #0009)}
+#plot.median-focus .median-label{font-size:14px}
+@media(max-width:650px){.heading-toggles{justify-content:flex-start;gap:16px}.legend{flex-wrap:wrap;gap:16px}}
+@media(prefers-reduced-motion:reduce){#plot .task-point-layer,#plot .task-label-layer{transition:none}}

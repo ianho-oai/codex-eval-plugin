@@ -1,4 +1,4 @@
-# Codex Eval · 0.8.3
+# Codex Eval · 0.8.4
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -75,3 +75,5 @@ Evaluation tasks should be achievable by the selected models, with cost, latency
 Doctor without `--check-model-access` checks local requirements and known model minimum CLI versions; account checks require that flag. Fable 5.1 requires Claude Code 2.1.251 or newer. Update the CLI and pin the actual version in a newly validated/approved suite before retrying. An unavailable Mythos model ID or account requires a separate access check; there is no automatic model substitution.
 
 Before final approval, run `python3 bin/codex-eval doctor SUITE --check-model-access` to compare selected IDs with account-visible models. If the CLI is outdated, ask the customer to upgrade, locate the upgraded executable, and update the exact pin before validation. Listing success does not establish native effort support; blocked checks stay unresolved until the customer supplies results.
+
+Dashboard diamonds show one median per model across selected task/configuration averages. **Median focus** at the top right fades the task points and enlarges medians. Filters and axis selections update the medians; hover reveals their sample coverage.
