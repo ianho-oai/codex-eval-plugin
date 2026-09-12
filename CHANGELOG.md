@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.10.0 — 2026-09-12
+
+- Exclude explicit rate-limit trials from provider comparisons, restoring recovered-attempt task cost, tokens, and latency. Keep raw signed results, full accounting, and exclusion receipts; rate-limit-only cells remain unmeasured. Genuine task failures and other error categories are preserved.
+
+## 0.9.9 — 2026-09-12
+
+- Ignore common local evaluation output folders and root run artifacts. Correct stale three-repeat documentation to the one-round-first policy and remove a stale version from the plugin README.
+
+- Switch chart legends with Median focus: ordinary task colors in normal view; provider diamonds and pass/mixed/fail/pending status dots in median view.
+
+## 0.9.8 — 2026-09-12
+
+- Require first-round schedule reconciliation across all selected tasks, models, and efforts before offering exactly two optional consistency rounds.
+
+- Hide median diamonds, labels, and legend unless Median focus is enabled. Add green, split green/red, or red status dots for all-pass, mixed, or all-fail median groups; pending repeats use grey. Status includes selected results missing axis telemetry.
+
+- Expand task-design guidance to propose focused hard and repository-reasoning hard tasks alongside easy and medium tasks for each workflow. Allow original designs, require meaningful cross-module behavior and provider-neutral graders, and disclose the expanded schedule before approval. Existing frozen runs remain unchanged.
+
+## 0.9.7 — 2026-09-12
+
+- Readiness checks tolerate text diagnostic messages and malformed nested event fields while still requiring successful shell execution evidence. A provider notice no longer crashes the gate before a later successful command is inspected.
+
 ## 0.9.6 — 2026-09-12
 
 - Gate customer matrices on a bounded native edit-and-test check in the actual launch environment, preserving separate probe evidence, costs and failures.

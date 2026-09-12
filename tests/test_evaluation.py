@@ -544,7 +544,7 @@ class DiscoveryAndReportTests(Workspace):
         self.assertEqual(len(combined['run']['sources']), 2)
         self.assertIn('Separate runs', combined['run']['comparison_note'])
         self.assertEqual((one/'results.json').read_bytes(), before)
-        self.assertEqual(dashboard_dataset([one]), dataset(one))
+        self.assertEqual(dashboard_dataset([one]), dataset(one, comparison=True))
         self.assertIn('source_run', csv_text(combined['rows']).splitlines()[0])
 
     def test_legacy_task_descriptions_use_matching_suite_without_changing_results(self):

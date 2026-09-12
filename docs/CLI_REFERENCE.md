@@ -45,7 +45,7 @@ New suites use local execution by default. Pin existing local CLI versions/paths
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
 | `snapshot --repo PATH --commit FULL_SHA --output TASK/baseline` | Export a regular-file snapshot without Git history |
 | `examples --query TEXT [--inventory]` | Search offline task design examples and upstream metadata |
-| `portfolio DISCOVERY --suite SUITE --output FILE` | Propose three difficulty slots per workflow and register coverage |
+| `portfolio DISCOVERY --suite SUITE --output FILE` | Seed three difficulty slots per workflow and register coverage; the skill adds a distinct repository-reasoning hard task before approval |
 | `benchmarks`, `models` | Inspect dated methodology/model catalogs |
 | `validate SUITE --check-graders` | Verify schema, paths, baseline failure, and oracle success |
 | `plan SUITE`, `approve SUITE --by NAME` | Review and seal exact inputs |
@@ -148,7 +148,7 @@ Configure an authored suite before validation and approval. Repeat `--model` and
 
 `--all-tasks` clears the execution subset; the full easy/medium/hard portfolio stays intact. `--all-models` restores the default catalog matrix. Unknown selections are rejected without modifying the suite. Changes need renewed validation and approval.
 
-All new suites and smoke commands default to three fresh attempts per task/model configuration. Charts show arithmetic mean cost, latency, and tokens, including failed attempts. Popups show the pass count; a point is grey only when none of its repeats passes. Partial groups are labelled pending. Missing telemetry stays unavailable rather than becoming zero. Separate runs and effort settings are never averaged together; raw attempts remain in CSV/results, and `report` writes `averages.json`.
+All new suites and smoke commands default to one fresh attempt per task/model/effort configuration. Complete and review the first-round matrix before asking approval for exactly two more iterations of the same configurations, giving three observations total. Follow [staged repeats](../plugins/codex-eval-plugin/skills/evaluate/references/staged-repeats.md) to preserve the original run and avoid buying three additional attempts. Charts show arithmetic mean cost, latency, and tokens, including failed attempts. Popups show the pass count; a point is grey only when none of its repeats passes. Partial groups are labelled pending. Missing telemetry stays unavailable rather than becoming zero. Separate runs and effort settings are never averaged together; raw attempts remain in CSV/results, and `report` writes `averages.json`.
 
 Give each customer simulation its own directory and dashboard, combining its provider runs:
 
@@ -174,7 +174,7 @@ For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, contain
 
 Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--rate-limit-retries 3 --retry-delay 30`, or disable using `--rate-limit-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
 
-Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage pauses execution only when a spend stop is configured; otherwise missing costs remain null and execution continues. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
+Retries belong to the same task/model/repeat. Raw accounting includes every trial and retry wait. Comparison results exclude explicit rate-limit error trials and their retry waits, while retaining genuine coding failures. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage pauses execution only when a spend stop is configured; otherwise missing costs remain null and execution continues. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
 
 ### Reasoning and effort sweeps
 
@@ -255,3 +255,11 @@ Use `history --source-kind direct` for original session roots and `--source-kind
 Omit evidence arguments for interview-only discovery. The companion `coverage.md` shows requested and observed dates, session/message counts, source scope, exclusions, unread records, assumptions, and workflow confirmation. In discovery.json, record per-workflow `source_refs` and `customer_confirmation`, plus `customer_confirmed_scope` only after the customer actually confirms them. Rerun the report after updating this record. Receipts contain no copied message excerpts and remain private in the ignored evaluation directory.
 
 Dashboard X and Y logarithmic scales are enabled by default; each can be switched off independently. Nonpositive values remain explicitly unplottable on a log axis.
+
+Median diamonds, labels, and their legend appear only with Median focus enabled and multiple tasks selected. Each diamond carries a small green status dot for all observed runs passing, split green/red for mixed results, or red for all failing. Incomplete repeat groups use grey. The tooltip reports exact pass and pending counts; missing axis telemetry does not hide a recorded failure from the badge. Failed task points remain grey unless at least one repeat passes.
+
+The legend follows the active view: normal mode explains provider colors and grey points with no passing runs; Median focus replaces it with provider diamonds and the all-pass, mixed, all-fail, and pending status dots.
+
+### Comparison versus full accounting
+
+Comparison reports, CSVs, chart points, and medians exclude explicit native rate-limit error trials for both providers. After recovery, use the non-rate-limited trial's measured cost, tokens, and task latency; exclude the rate-limit trials and their external retry waits. A rate-limit-only cell remains unmeasured and is counted separately, never as a coding failure or a pass. Genuine verifier failures, timeouts, authentication/quota errors, and capacity errors are not excluded by this policy. Preserve original signed results and trials, total elapsed time, unknown charges, and full spend accounting. The reporting view uses `exclude_rate_limits_v1`; `report` writes comparison `results.csv`, separate `accounting.csv`, and `rate-limit-exclusions.json`. `summary.json` includes separate accounting totals and excluded counts. Missing non-rate-limit telemetry remains unknown. Historical mixed capacity/rate-limit backoff cannot be split reliably, so its comparison latency stays unknown. Native internal retries within a successful CLI call remain included when separate trial telemetry is unavailable.

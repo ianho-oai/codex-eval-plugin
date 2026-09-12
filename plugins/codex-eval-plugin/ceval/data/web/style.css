@@ -23,3 +23,5 @@
 @media(prefers-reduced-motion:reduce){#plot .task-point-layer,#plot .task-label-layer{transition:none}}
 
 #median-control[hidden],#median-legend[hidden]{display:none}
+
+.legend{flex-wrap:wrap;row-gap:12px}.legend-item{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.legend-caption{color:#aaa}.legend-symbol{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}.codex-dot{background:var(--codex)}.claude-dot{background:var(--claude)}.failed-dot{background:#a3a3a3}.pass-dot{background:#48c78e}.fail-dot{background:#ef6b73}.mixed-dot{background:linear-gradient(to right,#48c78e 50%,#ef6b73 50%)}.legend-symbol.diamond{border-radius:0;transform:rotate(45deg);border:1px solid #f0f0f0}.status-legend{padding-top:12px;font-size:13px}

@@ -42,3 +42,20 @@ assert.equal(groups.find(g=>g.effort==='none').cost_usd,30);
 assert.equal(groups.find(g=>g.provider==='claude').cost_usd,999);
 '''
         subprocess.run(['node', '-e', script], cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True)
+
+    def test_status_counts_repeats_missing_metrics_and_pending(self):
+        script = r'''
+const assert = require('node:assert/strict');
+const {modelMedians,medianStatusLabel} = require('./plugins/codex-eval-plugin/ceval/data/web/medians.js');
+const row=extra=>({provider:'codex',model:'one',effort:'low',task_id:'a',cost_usd:1,latency_seconds:2,completion:1,...extra});
+const status=rows=>modelMedians(rows,'cost_usd','latency_seconds')[0];
+assert.equal(status([row({}),row({task_id:'b'})]).result_status,'passed');
+assert.equal(status([row({completion:0}),row({completion:0,task_id:'b'})]).result_status,'failed');
+const mixed=status([row({successes:2,attempts:3,expected_attempts:3}),row({completion:0,cost_usd:null})]);
+assert.equal(mixed.result_status,'mixed');assert.equal(mixed.successes,2);assert.equal(mixed.attempts,4);
+assert.equal(mixed.point_count,1);assert.equal(medianStatusLabel(mixed),'2/4 runs passed');
+const pending=status([row({successes:1,attempts:1,expected_attempts:3})]);
+assert.equal(pending.result_status,'pending');assert.equal(medianStatusLabel(pending),'1/1 runs passed, 2 pending');
+assert.equal(status([row({}),row({model:'other',completion:0})]).result_status,'passed');
+'''
+        subprocess.run(['node', '-e', script], cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True)

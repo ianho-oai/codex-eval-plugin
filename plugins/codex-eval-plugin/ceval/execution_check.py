@@ -46,16 +46,20 @@ def shell_check_ran(row, folder):
         if not isinstance(event, dict):
             continue
         item = event.get('item') or {}
+        if not isinstance(item, dict):
+            item = {}
         if (event.get('type') == 'item.completed' and item.get('type') == 'command_execution'
                 and item.get('exit_code') == 0 and 'check.py' in str(item.get('command', ''))):
             return True
-        content = (event.get('message') or {}).get('content', [])
+        message = event.get('message')
+        content = message.get('content', []) if isinstance(message, dict) else []
         if not isinstance(content, list):
             continue
         for block in content:
             if not isinstance(block, dict):
                 continue
-            if event.get('type') == 'assistant' and block.get('type') == 'tool_use' and block.get('name') == 'Bash' and 'check.py' in str(block.get('input', {}).get('command', '')):
+            tool_input = block.get('input')
+            if event.get('type') == 'assistant' and block.get('type') == 'tool_use' and block.get('name') == 'Bash' and isinstance(tool_input, dict) and 'check.py' in str(tool_input.get('command', '')):
                 bash.add(block.get('id'))
             if event.get('type') == 'user' and block.get('type') == 'tool_result' and block.get('tool_use_id') in bash and not block.get('is_error'):
                 return True

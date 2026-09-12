@@ -15,7 +15,7 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 | Step | What the agent does | What you provide or decide |
 | --- | --- | --- |
 | 1. Discover | Learns the workflows and shows a coverage receipt with actual sources, dates, sampling limits, and confirmed scope. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
-| 2. Propose | Suggests easy, medium, and hard tasks for each workflow, with short descriptions, acceptance checks, and benchmark inspiration. | Approve the task list or ask for changes. |
+| 2. Propose | Proposes easy, medium, focused hard, and repository-reasoning hard tasks per workflow (at least four by default), with short descriptions, acceptance checks, and benchmark inspiration or original-design rationale. | Approve the task list or ask for changes. |
 | 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
 | 5. Execute and adapt | First checks a real native edit-and-test operation, then monitors results, retries transient capacity/rate-limit errors within bounds, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
@@ -46,7 +46,7 @@ The agent follows an adaptive loop: design observable requirements, challenge it
 
 Python 3.11+, native Codex and Claude Code CLIs, provider API keys, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
 
-Completion is **1 or 0**, determined by separate behavioral checks and allowed-file changes. The runner records latency, tokens, native turns/tool calls when available, Claude's reported cost, and OpenAI rate-card estimates. Missing values remain unavailable; provider errors are distinct from task failures. Inputs and grading are fixed, while model outputs and provider caches remain nondeterministic. See the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md).
+Completion is **1 or 0**, determined by separate behavioral checks and allowed-file changes. The runner records latency, tokens, native turns/tool calls when available, Claude's reported cost, and OpenAI rate-card estimates. Comparison results exclude explicit rate-limit error trials; successful retries contribute their measured task metrics. Raw logs and separate accounting retain all attempts and charges. Missing non-rate-limit values remain unavailable; other provider errors are distinct from task failures. Inputs and grading are fixed, while model outputs and provider caches remain nondeterministic. See the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md).
 
 ## Documentation
 
@@ -79,6 +79,8 @@ python3 -m unittest discover -s tests -v
 ./eval self-check
 ./eval export --output dist
 ```
+
+Keep all local discovery receipts, customer task snapshots, run logs, and results under `evaluations/`; it is ignored by Git. Alternate root `runs/`, `results/`, and `logs/` folders and provider `.env.local` files are also ignored. Use `git status --short` before committing; ignore rules do not remove already-tracked files. Publish only original synthetic fixtures and public benchmark references.
 
 The versioned export includes exactly one skill, the CLI, catalogs, examples, schemas, and dashboard. Customer data and results stay in ignored evaluation directories. Repository and plugin versions move together; exported ZIPs include a checksum. Public source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin).
 
