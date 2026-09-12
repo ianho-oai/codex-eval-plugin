@@ -12,12 +12,26 @@ from unittest.mock import patch
 from test_evaluation import Workspace
 from ceval.core import digest, load_suite, read_json, write_json
 from ceval.discovery import discovery_report, history
-from ceval.execution_check import check, probe_task
+from ceval.execution_check import check, probe_task, shell_check_ran
 from ceval.parallel import Slots, run
 from ceval.rate_limits import Cooldown, transient_reason
 
 
 class ReadinessTests(Workspace):
+    def test_text_diagnostics_do_not_hide_successful_shell_evidence(self):
+        events = [{'type':'error','message':'transient provider notice'},
+                  {'type':'item.completed','item':'unexpected text'},
+                  {'type':'assistant','message':{'content':[{'type':'tool_use','name':'Bash','input':'unexpected text'}]}}]
+        log = self.root / 'events.jsonl'
+        log.write_text('\n'.join(json.dumps(e) for e in events))
+        self.assertFalse(shell_check_ran({}, self.root))
+        events.append({'type':'item.completed','item':{'type':'command_execution','command':'python3 check.py','exit_code':1}})
+        log.write_text('\n'.join(json.dumps(e) for e in events))
+        self.assertFalse(shell_check_ran({}, self.root))
+        events[-1]['item']['exit_code'] = 0
+        log.write_text('\n'.join(json.dumps(e) for e in events))
+        self.assertTrue(shell_check_ran({}, self.root))
+
     def test_real_native_probe_requires_edit_test_and_no_helper_failure(self):
         binary = self.root / 'native'
         binary.write_text('#!' + sys.executable + '\n' + '''import json, subprocess, sys

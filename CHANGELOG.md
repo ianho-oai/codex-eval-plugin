@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.7 — 2026-09-12
+
+- Readiness checks tolerate text diagnostic messages and malformed nested event fields while still requiring successful shell execution evidence. A provider notice no longer crashes the gate before a later successful command is inspected.
+
 ## 0.9.6 — 2026-09-12
 
 - Gate customer matrices on a bounded native edit-and-test check in the actual launch environment, preserving separate probe evidence, costs and failures.
