@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Expand task-design guidance to propose focused hard and repository-reasoning hard tasks alongside easy and medium tasks for each workflow. Allow original designs, require meaningful cross-module behavior and provider-neutral graders, and disclose the expanded schedule before approval. Existing frozen runs and runtime version remain unchanged.
+
 ## 0.9.7 — 2026-09-12
 
 - Readiness checks tolerate text diagnostic messages and malformed nested event fields while still requiring successful shell execution evidence. A provider notice no longer crashes the gate before a later successful command is inspected.

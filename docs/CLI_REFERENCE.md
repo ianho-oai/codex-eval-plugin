@@ -45,7 +45,7 @@ New suites use local execution by default. Pin existing local CLI versions/paths
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
 | `snapshot --repo PATH --commit FULL_SHA --output TASK/baseline` | Export a regular-file snapshot without Git history |
 | `examples --query TEXT [--inventory]` | Search offline task design examples and upstream metadata |
-| `portfolio DISCOVERY --suite SUITE --output FILE` | Propose three difficulty slots per workflow and register coverage |
+| `portfolio DISCOVERY --suite SUITE --output FILE` | Seed three difficulty slots per workflow and register coverage; the skill adds a distinct repository-reasoning hard task before approval |
 | `benchmarks`, `models` | Inspect dated methodology/model catalogs |
 | `validate SUITE --check-graders` | Verify schema, paths, baseline failure, and oracle success |
 | `plan SUITE`, `approve SUITE --by NAME` | Review and seal exact inputs |
