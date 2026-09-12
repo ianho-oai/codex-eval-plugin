@@ -17,7 +17,7 @@
 ## Current defaults
 
 - All cataloged GPT-5.6 models and GPT-6 Astra, plus Claude Fable/Opus/Sonnet/Haiku, at every supported single-agent effort level.
-- Three repeats; one repeat is available for quick sweeps.
+- One iteration per task/model/effort first. After reviewing results and costs, the agent asks before two additional rounds for consistency and averaging.
 - Five concurrent attempts, with a shared pool available across batches.
 - No spend stop. Optional thresholds stop new dispatch; active calls can overshoot them.
 - Local execution, bundled fixtures, and existing simple frameworks. Docker is an explicitly requested advanced option. Native-app workflows test representative logic without requiring GUI automation or platform simulators.

@@ -52,7 +52,7 @@ def initialize(destination, mode, image, purpose='customer'):
     catalog = read_json(DATA / 'models.json')
     s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
          'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': m['efforts']} for m in catalog['models'] if m.get('default')],
-         'repeats': 3, 'seed': 42, 'pricing': 'rates.json',
+         'repeats': 1, 'seed': 42, 'pricing': 'rates.json',
          'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
                        'codex_version': '0.153.4', 'claude_version': '2.1.251', 'cpus': 2, 'memory_mb': 4096}}
@@ -154,7 +154,7 @@ def self_check():
             'status': 'passed', 'note': 'Structure validation only. Run validate --check-graders and unit/integration tests for behavior.'}
 
 
-def smoke(provider, output, model=None, binary=None, repeats=3):
+def smoke(provider, output, model=None, binary=None, repeats=1):
     """One-command live check using only the bundled original, trusted slug task."""
     destination = Path(output).resolve()
     require(not destination.exists(), 'Smoke output exists; choose a new directory to preserve the earlier run')
@@ -302,7 +302,7 @@ def parser():
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
     a = sub.add_parser('image-pin'); a.add_argument('suite'); a.add_argument('--image', required=True)
-    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary'); a.add_argument('--repeats', type=int, default=3)
+    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary'); a.add_argument('--repeats', type=int, default=1)
     return p
 
 

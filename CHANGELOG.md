@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.4 — 2026-09-12
+
+- Default new customer suites and smoke runs to one iteration per task/model/effort. Keep the full default model/effort sweep and explicit repeat overrides.
+- Present first-round results and costs before asking for two additional consistency rounds. Document separately approved follow-up runs and careful pooled reporting without mutating original evidence.
+
 ## 0.9.3 — 2026-09-11
 
 - Treat Codex reconnect notices followed by terminal completion as recovered events. Still require a successful native process and deterministic grader; failed turns, trailing errors, and unfinished turns remain unsuccessful.

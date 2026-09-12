@@ -29,7 +29,7 @@ Customer entry point: [setup and starter prompt](../CUSTOMER_STARTER_PROMPT.md).
 ./eval dashboard evaluations/customer-run
 ```
 
-The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 36 model/effort configurations × 3 repeats = 324 calls**. There is **no spend stop by default**. Do a small smoke run first. Doctor checks local CLI versions, required flags, keys, and known model minimum versions; account access still needs a live check; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
+The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 36 model/effort configurations × 1 repeat = 108 calls**. There is **no spend stop by default**. Do a small smoke run first. Doctor checks local CLI versions, required flags, keys, and known model minimum versions; account access still needs a live check; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
 
 New suites use local execution by default. Pin existing local CLI versions/paths and use small, self-contained tasks with unittest, already-installed pytest, Node tests, or an equivalent available runner. For iOS workflows, test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI testing. Docker remains available only when explicitly requested with `init ... --mode docker`; it is not part of the default customer flow. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
@@ -138,7 +138,7 @@ Configure an authored suite before validation and approval. Repeat `--model` and
 ```sh
 ./eval configure evaluations/customer/suite.json \
   --model codex:gpt-5.6-sol --model claude:claude-sonnet-5 \
-  --task TASK_ID --task ANOTHER_TASK_ID --repeats 3
+  --task TASK_ID --task ANOTHER_TASK_ID --repeats 1
 ./eval validate evaluations/customer/suite.json --check-graders
 ./eval plan evaluations/customer/suite.json
 ./eval approve evaluations/customer/suite.json --by "Customer reviewer"
@@ -229,3 +229,7 @@ This read-only command returns one saved checkpoint per exact run directory, ded
 The evaluation skill uses these snapshots with the available visualize/live skills in Codex desktop. It samples about every 15–30 seconds while observing the runner, updates one registered view using apply_patch, and leaves a final checkpoint on completion or stop. The fragment has no network access. A saved running state is not a heartbeat or proof of a live process, and updates do not continue automatically after the observing turn ends. CLI-only environments retain text progress.
 
 Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
+
+## Optional consistency rounds
+
+New suites and smoke runs default to one iteration per task/model/effort. After reviewing the first round and its costs, the agent asks before two additional rounds. Use a separate, newly approved follow-up suite with `configure SUITE --repeats 2` and a fresh output directory; preserve the original run. See [staged repeats](../plugins/codex-eval-plugin/skills/evaluate/references/staged-repeats.md) for matching conditions, incremental cost estimates, and reporting. Existing explicit repeat settings are preserved.

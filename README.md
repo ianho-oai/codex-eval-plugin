@@ -19,7 +19,7 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 | 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
 | 5. Execute and adapt | Monitors results, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
-| 6. Compare | Opens the prebuilt local dashboard combining both providers. | Explore task/model filters, cost, latency, tokens, and model × effort medians; inspect failures and export results. |
+| 6. Compare | Opens the prebuilt dashboard after the first round and reports results and costs. | Explore comparisons, then decide whether to approve two additional rounds for consistency and averaging. No extra rounds run automatically. |
 
 ### Have these ready
 
@@ -34,11 +34,11 @@ The main checkpoints for you are **task approval** and **run-plan approval**. Af
 
 - **Models:** cataloged GPT-5.6 Sol/Terra/Luna and GPT-6 Astra; Claude Fable 5.1, Opus 5, Sonnet 5, and Haiku 4.5.
 - **Effort:** every catalog-supported single-agent level for each model. Provider effort labels are not equivalent compute budgets.
-- **Repeats:** three per task/model/effort; request one for a quick sweep.
+- **Repeats:** one per task/model/effort first. After reviewing results and costs, optionally approve two additional rounds for consistency and averaging.
 - **Concurrency:** five attempts total, starting the next as soon as a slot opens.
 - **Spend:** no spend stop by default. Set an optional threshold or narrow models, tasks, and efforts before approval.
 
-The example matrix is **3 tasks × 36 model/effort configurations × 3 repeats = 324 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks the selected IDs against account-visible models. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
+The example matrix is **3 tasks × 36 model/effort configurations × 1 repeat = 108 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks the selected IDs against account-visible models. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
 ## Requirements and results
 

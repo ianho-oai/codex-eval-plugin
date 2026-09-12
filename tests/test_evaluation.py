@@ -466,6 +466,23 @@ class RunnerTests(Workspace):
 
 
 class DiscoveryAndReportTests(Workspace):
+    def test_first_round_schedules_each_lane_once_and_explicit_followup_twice(self):
+        dest = self.root/'first-round'
+        initialize(dest, 'local', None, purpose='smoke')
+        path = dest/'suite.json'
+        _, suite, tasks, _, first_seal = load_suite(path)
+        first = schedule(suite, tasks)
+        expected = sum(len(m['efforts']) for m in suite['matrix']) * len(tasks)
+        self.assertEqual(len(first), expected)
+        self.assertEqual({c['repeat'] for c in first}, {1})
+        self.assertEqual({c['provider'] for c in first}, {'codex', 'claude'})
+        configure(path, repeats=2)
+        _, followup, tasks, _, second_seal = load_suite(path)
+        self.assertNotEqual(first_seal, second_seal)
+        self.assertEqual(len(schedule(followup, tasks)), 2 * expected)
+        configure(path, all_efforts=True)
+        self.assertEqual(read_json(path)['repeats'], 2)
+
     def test_repeat_averages_include_failures_and_preserve_missing_telemetry(self):
         rows = [{'task_id':'one','provider':'codex','model':'test','effort':'medium',
                  'completion':int(i != 1),'valid':True,'cost_usd':cost,'latency_seconds':latency,
@@ -480,7 +497,7 @@ class DiscoveryAndReportTests(Workspace):
         self.assertEqual((partial['status'],partial['expected_attempts'],partial['completion']), ('pending',3,0))
         rows[1]['cost_usd'] = None
         self.assertIsNone(average_attempts(rows, run)[0]['cost_usd'])
-        self.assertEqual(parser().parse_args(['smoke','--provider','codex','--output','unused']).repeats, 3)
+        self.assertEqual(parser().parse_args(['smoke','--provider','codex','--output','unused']).repeats, 1)
         self.assertEqual(read_json(self.path)['repeats'], 1)  # Explicit fixture override survives.
 
     def test_dashboard_scope_keeps_one_simulation_and_averages_runs_separately(self):
