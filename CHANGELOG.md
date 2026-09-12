@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.1 — 2026-09-12
+
+- Default new customer suites to a 30-minute agent timeout per attempt for both providers. Preserve separate grader and smoke/readiness limits and all existing approved run settings.
+
 ## 0.10.0 — 2026-09-12
 
 - Exclude explicit rate-limit trials from provider comparisons, restoring recovered-attempt task cost, tokens, and latency. Keep raw signed results, full accounting, and exclusion receipts; rate-limit-only cells remain unmeasured. Genuine task failures and other error categories are preserved.

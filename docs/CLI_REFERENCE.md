@@ -33,6 +33,8 @@ The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra m
 
 New suites use local execution by default. Pin existing local CLI versions/paths and use small, self-contained tasks with unittest, already-installed pytest, Node tests, or an equivalent available runner. For iOS workflows, test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI testing. Docker remains available only when explicitly requested with `init ... --mode docker`; it is not part of the default customer flow. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
+New customer suites allow **30 minutes per agent attempt** (`limits.agent_seconds: 1800`) for both providers. The deterministic grader keeps its separate 60-second limit; smoke and readiness probes remain short. Retry attempts each receive the configured agent limit, so total elapsed time including retries and waiting can exceed 30 minutes. To choose another limit, edit `limits.agent_seconds` in the unapproved suite, then validate and approve it. Changing an approved limit requires a new suite revision and output directory; it does not extend an in-flight process or rewrite historical timeouts.
+
 ### CLI map
 
 | Command | Purpose |

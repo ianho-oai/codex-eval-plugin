@@ -171,6 +171,7 @@ def execution_summary(s):
         'execution_mode': s['execution']['mode'],
         'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',
         'repeats': s['repeats'],
+        'agent_timeout_seconds': s['limits']['agent_seconds'],
         'spend_stop_usd': stop,
         'spend_policy': 'No spend stop; missing cost remains visible and does not stop dispatch.' if stop is None else f'Stop dispatch at known spend of ${stop:g}; missing cost may pause execution.',
         'overrides': 'configure SUITE --model PROVIDER:MODEL --effort LEVEL --spend-stop-usd AMOUNT; use --all-models --all-efforts --no-spend-stop to restore defaults.',
@@ -184,6 +185,7 @@ def preflight(s):
     for lane in s['matrix']:
         print(f"  {lane['provider']}:{lane['model']} — {', '.join(lane['efforts'])}", file=sys.stderr, flush=True)
     print(f"Selected: {s['repeats']} repeat(s). {summary['spend_policy']}", file=sys.stderr, flush=True)
+    print(f"Agent timeout: {summary['agent_timeout_seconds']:g} seconds per attempt, for both providers.", file=sys.stderr, flush=True)
     print(f"Execution: {summary['execution_mode']}. {summary['task_setup']}", file=sys.stderr, flush=True)
     print(summary['execution_check'], file=sys.stderr, flush=True)
     result = {'execution_summary': summary}

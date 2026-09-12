@@ -1,2 +1,2 @@
 """Reproducible orchestration for native coding-agent evaluations."""
-__version__ = '0.10.0'
+__version__ = '0.10.1'

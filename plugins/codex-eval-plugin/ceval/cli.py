@@ -53,7 +53,7 @@ def initialize(destination, mode, image, purpose='customer'):
     s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
          'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': m['efforts']} for m in catalog['models'] if m.get('default')],
          'repeats': 1, 'seed': 42, 'pricing': 'rates.json',
-         'limits': {'agent_seconds': 600, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
+         'limits': {'agent_seconds': 1800, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
                        'codex_version': '0.153.4', 'claude_version': '2.1.251', 'cpus': 2, 'memory_mb': 4096}}
     write_json(dest / 'suite.json', s)

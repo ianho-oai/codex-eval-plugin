@@ -147,6 +147,9 @@ def slugify(text):
         self.assertNotIn('claude-mythos-5-1', [lane['model'] for lane in suite['matrix']])
         self.assertIsNone(suite['limits']['spend_stop_usd'])
         summary = execution_summary(suite)
+        self.assertEqual(summary['agent_timeout_seconds'], 1800)
+        suite['limits']['agent_seconds'] = 900
+        self.assertEqual(execution_summary(suite)['agent_timeout_seconds'], 900)
         self.assertIn('No spend stop', summary['message'])
         self.assertEqual(summary['selected_matrix'], suite['matrix'])
         configure(dest/'suite.json', spend_stop_usd=12.5)
