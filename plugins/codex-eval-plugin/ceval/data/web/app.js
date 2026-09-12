@@ -25,7 +25,7 @@ function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
   const formatMetric=key=>key==='cost_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
-  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Reasoning effort',r.effort],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
+  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Results',medianStatusLabel(r)],['Reasoning effort',r.effort],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
     [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
   for(const [label,value] of fields){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
@@ -43,8 +43,9 @@ function plot(rows,showMedians){
   hideDetails();const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
   const logX=$('log-x').checked,logY=$('log-y').checked;
   const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
-  const medians=showMedians?modelMedians(rows,x,y):[];
-  const focus=showMedians&&$('median-focus').checked;root.classList.toggle('median-focus',focus);
+  const focus=showMedians&&$('median-focus').checked;
+  const medians=focus?modelMedians(rows,x,y):[];
+  root.classList.toggle('median-focus',focus);
   const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const omitted=measured.length-points.length;
@@ -90,11 +91,20 @@ function plot(rows,showMedians){
     const label=modelLabel(r),size=focus?13:9;
     if($('labels').checked)(r.median?medianLayer:labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
     const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
-    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, median of ${r.point_count} task/configuration averages`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
+    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, median of ${r.point_count} task/configuration averages, ${medianStatusLabel(r)}`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});
     (r.median?medianLayer:pointLayer).append(dot);
+    if(r.median){
+      const cy=py-size-8,radius=5;
+      const badge=svg('g',{class:'median-status','aria-hidden':'true','pointer-events':'none'});
+      const fill=r.result_status==='passed'?'#48c78e':r.result_status==='failed'?'#ef6b73':r.result_status==='mixed'?'#ef6b73':'#a3a3a3';
+      badge.append(svg('circle',{cx:px,cy,r:radius,fill}));
+      if(r.result_status==='mixed')badge.append(svg('path',{d:`M ${px} ${cy-radius} A ${radius} ${radius} 0 0 0 ${px} ${cy+radius} Z`,fill:'#48c78e'}));
+      badge.append(svg('circle',{cx:px,cy,r:radius,fill:'none',stroke:'#171717','stroke-width':1}));
+      medianLayer.append(badge);
+    }
   }
 }
 function bulkControls(container,selections,update,unit){
@@ -165,7 +175,7 @@ function taskTable(rows){
 function render(){
   if(!data)return;
   const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
-  $('median-control').hidden=!showMedians;$('median-legend').hidden=!showMedians;
+  $('median-control').hidden=!showMedians;$('median-legend').hidden=!(showMedians&&$('median-focus').checked);
   const rows=filtered();plot(rows,showMedians);taskTable(filtered(data.rows));
 }
 async function load(){

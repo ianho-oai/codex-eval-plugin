@@ -2,6 +2,8 @@
 
 Default to one iteration for every selected task × provider/model × supported effort. Preserve narrower user selections and any explicitly requested repeat count. The full default model/effort matrix still applies to both Codex and Claude Code; one iteration reduces initial spend, not coverage. Retries for transient rate limits remain part of an iteration, not extra consistency rounds.
 
+Complete the entire approved first-round matrix before offering consistency rounds: every selected task, model, and effort gets one scheduled iteration, including both kinds of hard task. Do not start repeat two for an early-finishing configuration while other first iterations remain queued or running. Reconcile results against the approved schedule; explain blocked or unavailable combinations rather than declaring them complete. Genuine failures count as the first iteration and remain visible.
+
 After completing and reviewing the first round:
 
 1. Present pass/fail, latency, token usage, known spend, missing costs, and remaining coverage. One sample cannot measure run-to-run consistency.

@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.9.8 — 2026-09-12
 
-- Expand task-design guidance to propose focused hard and repository-reasoning hard tasks alongside easy and medium tasks for each workflow. Allow original designs, require meaningful cross-module behavior and provider-neutral graders, and disclose the expanded schedule before approval. Existing frozen runs and runtime version remain unchanged.
+- Require first-round schedule reconciliation across all selected tasks, models, and efforts before offering exactly two optional consistency rounds.
+
+- Hide median diamonds, labels, and legend unless Median focus is enabled. Add green, split green/red, or red status dots for all-pass, mixed, or all-fail median groups; pending repeats use grey. Status includes selected results missing axis telemetry.
+
+- Expand task-design guidance to propose focused hard and repository-reasoning hard tasks alongside easy and medium tasks for each workflow. Allow original designs, require meaningful cross-module behavior and provider-neutral graders, and disclose the expanded schedule before approval. Existing frozen runs remain unchanged.
 
 ## 0.9.7 — 2026-09-12
 
