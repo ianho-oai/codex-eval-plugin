@@ -15,7 +15,26 @@
       <div class="axis-setting"><label>Y-axis<select id="y"></select></label><label class="scale-toggle"><input id="log-y" type="checkbox" checked>Log scale</label></div>
       </div>
     </div>
-    <div class="legend"><span class="codex-key">● <span>Codex</span></span><span class="claude-key">● <span>Claude Code</span></span><span id="median-legend" hidden>◇ <span>Model × effort median</span></span></div>
+    <div id="task-legend" class="legend" aria-label="Task point colors">
+      <span class="legend-item"><i class="legend-symbol codex-dot" aria-hidden="true"></i>Codex</span>
+      <span class="legend-item"><i class="legend-symbol claude-dot" aria-hidden="true"></i>Claude Code</span>
+      <span class="legend-item"><i class="legend-symbol failed-dot" aria-hidden="true"></i>No passing runs</span>
+    </div>
+    <div id="median-legend" class="median-legend" aria-label="Median symbols and results" hidden>
+      <div class="legend">
+        <span class="legend-caption">Model × effort median</span>
+        <span class="legend-item"><i class="legend-symbol diamond codex-dot" aria-hidden="true"></i>Codex</span>
+        <span class="legend-item"><i class="legend-symbol diamond claude-dot" aria-hidden="true"></i>Claude Code</span>
+        <span class="legend-item"><i class="legend-symbol diamond failed-dot" aria-hidden="true"></i>No passing runs</span>
+      </div>
+      <div class="legend status-legend">
+        <span class="legend-caption">Dot above diamond</span>
+        <span class="legend-item"><i class="legend-symbol pass-dot" aria-hidden="true"></i>All passed</span>
+        <span class="legend-item"><i class="legend-symbol mixed-dot" aria-hidden="true"></i>Some passed</span>
+        <span class="legend-item"><i class="legend-symbol fail-dot" aria-hidden="true"></i>All failed</span>
+        <span class="legend-item"><i class="legend-symbol failed-dot" aria-hidden="true"></i>Repeats pending</span>
+      </div>
+    </div>
     <div id="plot-note" class="plot-note" role="status" hidden></div>
     <div class="plot-wrap"><svg id="plot" viewBox="0 0 1200 560" role="group" aria-label="Evaluation attempts. Focus a point to inspect its details."></svg><div id="tooltip" class="tooltip" role="tooltip" hidden></div></div>
   </section>

@@ -175,7 +175,8 @@ function taskTable(rows){
 function render(){
   if(!data)return;
   const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
-  $('median-control').hidden=!showMedians;$('median-legend').hidden=!(showMedians&&$('median-focus').checked);
+  const focus=showMedians&&$('median-focus').checked;
+  $('median-control').hidden=!showMedians;$('median-legend').hidden=!focus;$('task-legend').hidden=focus;
   const rows=filtered();plot(rows,showMedians);taskTable(filtered(data.rows));
 }
 async function load(){

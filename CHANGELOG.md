@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.9 — 2026-09-12
+
+- Ignore common local evaluation output folders and root run artifacts. Correct stale three-repeat documentation to the one-round-first policy and remove a stale version from the plugin README.
+
+- Switch chart legends with Median focus: ordinary task colors in normal view; provider diamonds and pass/mixed/fail/pending status dots in median view.
+
 ## 0.9.8 — 2026-09-12
 
 - Require first-round schedule reconciliation across all selected tasks, models, and efforts before offering exactly two optional consistency rounds.

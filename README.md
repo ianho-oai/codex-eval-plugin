@@ -80,6 +80,8 @@ python3 -m unittest discover -s tests -v
 ./eval export --output dist
 ```
 
+Keep all local discovery receipts, customer task snapshots, run logs, and results under `evaluations/`; it is ignored by Git. Alternate root `runs/`, `results/`, and `logs/` folders and provider `.env.local` files are also ignored. Use `git status --short` before committing; ignore rules do not remove already-tracked files. Publish only original synthetic fixtures and public benchmark references.
+
 The versioned export includes exactly one skill, the CLI, catalogs, examples, schemas, and dashboard. Customer data and results stay in ignored evaluation directories. Repository and plugin versions move together; exported ZIPs include a checksum. Public source: [ianho-oai/codex-eval-plugin](https://github.com/ianho-oai/codex-eval-plugin).
 
 ## Contributing

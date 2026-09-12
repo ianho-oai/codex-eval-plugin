@@ -148,7 +148,7 @@ Configure an authored suite before validation and approval. Repeat `--model` and
 
 `--all-tasks` clears the execution subset; the full easy/medium/hard portfolio stays intact. `--all-models` restores the default catalog matrix. Unknown selections are rejected without modifying the suite. Changes need renewed validation and approval.
 
-All new suites and smoke commands default to three fresh attempts per task/model configuration. Charts show arithmetic mean cost, latency, and tokens, including failed attempts. Popups show the pass count; a point is grey only when none of its repeats passes. Partial groups are labelled pending. Missing telemetry stays unavailable rather than becoming zero. Separate runs and effort settings are never averaged together; raw attempts remain in CSV/results, and `report` writes `averages.json`.
+All new suites and smoke commands default to one fresh attempt per task/model/effort configuration. Complete and review the first-round matrix before asking approval for exactly two more iterations of the same configurations, giving three observations total. Follow [staged repeats](../plugins/codex-eval-plugin/skills/evaluate/references/staged-repeats.md) to preserve the original run and avoid buying three additional attempts. Charts show arithmetic mean cost, latency, and tokens, including failed attempts. Popups show the pass count; a point is grey only when none of its repeats passes. Partial groups are labelled pending. Missing telemetry stays unavailable rather than becoming zero. Separate runs and effort settings are never averaged together; raw attempts remain in CSV/results, and `report` writes `averages.json`.
 
 Give each customer simulation its own directory and dashboard, combining its provider runs:
 
@@ -257,3 +257,5 @@ Omit evidence arguments for interview-only discovery. The companion `coverage.md
 Dashboard X and Y logarithmic scales are enabled by default; each can be switched off independently. Nonpositive values remain explicitly unplottable on a log axis.
 
 Median diamonds, labels, and their legend appear only with Median focus enabled and multiple tasks selected. Each diamond carries a small green status dot for all observed runs passing, split green/red for mixed results, or red for all failing. Incomplete repeat groups use grey. The tooltip reports exact pass and pending counts; missing axis telemetry does not hide a recorded failure from the badge. Failed task points remain grey unless at least one repeat passes.
+
+The legend follows the active view: normal mode explains provider colors and grey points with no passing runs; Median focus replaces it with provider diamonds and the all-pass, mixed, all-fail, and pending status dots.
