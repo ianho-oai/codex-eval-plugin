@@ -1,7 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const metrics = {
-  cost_usd:'Total cost · USD', latency_seconds:'End-to-end latency · s',
+  cost_usd:'Task cost · USD', latency_seconds:'Task latency · s',
   input_tokens:'Total input tokens', output_tokens:'Output tokens', cache_read_tokens:'Cache read tokens'
 };
 let data = null;

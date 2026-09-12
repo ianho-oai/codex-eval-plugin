@@ -46,7 +46,7 @@ The agent follows an adaptive loop: design observable requirements, challenge it
 
 Python 3.11+, native Codex and Claude Code CLIs, provider API keys, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
 
-Completion is **1 or 0**, determined by separate behavioral checks and allowed-file changes. The runner records latency, tokens, native turns/tool calls when available, Claude's reported cost, and OpenAI rate-card estimates. Missing values remain unavailable; provider errors are distinct from task failures. Inputs and grading are fixed, while model outputs and provider caches remain nondeterministic. See the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md).
+Completion is **1 or 0**, determined by separate behavioral checks and allowed-file changes. The runner records latency, tokens, native turns/tool calls when available, Claude's reported cost, and OpenAI rate-card estimates. Comparison results exclude explicit rate-limit error trials; successful retries contribute their measured task metrics. Raw logs and separate accounting retain all attempts and charges. Missing non-rate-limit values remain unavailable; other provider errors are distinct from task failures. Inputs and grading are fixed, while model outputs and provider caches remain nondeterministic. See the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md).
 
 ## Documentation
 

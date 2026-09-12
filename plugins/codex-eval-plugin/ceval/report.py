@@ -137,7 +137,46 @@ def exclude_models(root, run, rows):
     return view, [r for r in rows if not matches(r)], [dict(r, exclusion_reason=receipt['reason']) for r in rows if matches(r)]
 
 
-def dataset(root):
+def comparison_attempt(row, folder, pricing):
+    """Exclude explicit rate-limit trials from comparisons, retaining signed accounting."""
+    from .rate_limits import is_rate_limited, rollup
+    folder = Path(folder).resolve()
+
+    def limited(value, directory):
+        return value.get('status') == 'provider_error' and (
+            value.get('transient_reason') == 'rate_limit' or value.get('rate_limited') is True
+            or is_rate_limited(value, directory))
+
+    entries = row.get('retry_attempts', [])
+    trials = [(read_json(child(folder, t['directory']) / 'result.json'), child(folder, t['directory']))
+              for t in entries] if entries else [(row, folder)]
+    excluded = [(r, p) for r, p in trials if limited(r, p)]
+    if not excluded:
+        return row, []
+    receipts = [{'cell_id': row['cell_id'], 'provider': row['provider'], 'model': row['model'],
+                 'task_id': row['task_id'], 'effort': row.get('effort'),
+                 'trial_directory': str(p.relative_to(folder)), 'result_sha256': digest(r),
+                 'reason': 'rate_limit', 'cost_usd': r.get('cost_usd')}
+                for r, p in excluded]
+    # An exhausted rate-limit result is unmeasured, never a coding failure or a pass.
+    if limited(*trials[-1]):
+        return None, receipts
+    kept = [(correct_codex_cache_cost(r, p, pricing), p) for r, p in trials if not limited(r, p)]
+    result = dict(kept[0][0]) if len(kept) == 1 else rollup(kept, folder, 0)
+    # Historical mixed recovery records have one combined wait counter. Do not
+    # invent the portion attributable to capacity versus rate-limit backoff.
+    if len(kept) > 1 and row.get('retry_wait_seconds', 0):
+        result['latency_seconds'] = None
+    result.update(comparison_policy='exclude_rate_limits_v1',
+                  excluded_rate_limit_attempts=len(excluded),
+                  comparison_note='Rate-limit trials and their retry waits excluded; raw results retain full spend and elapsed time.',
+                  runtime_diagnostics=row.get('runtime_diagnostics', []),
+                  recorded_cost_usd=row.get('cost_usd'),
+                  recorded_latency_seconds=row.get('latency_seconds'))
+    return result, receipts
+
+
+def dataset(root, *, comparison=False):
     root = Path(root)
     run = read_json(root / 'run.json')
     rows = read_json(root / 'results.json')['rows'] if (root / 'results.json').exists() else []
@@ -155,8 +194,25 @@ def dataset(root):
     run, rows, reset_rows = reset_version_errors(root, run, rows)
     run, rows, excluded_rows = exclude_models(root, run, rows)
     rows = [correct_codex_cache_cost(r, root/'attempts'/r['cell_id'], run.get('pricing', {})) for r in rows]
+    accounting_rows = rows
+    omitted = []
+    if comparison:
+        projected = []
+        for row in rows:
+            value, receipts = comparison_attempt(row, root/'attempts'/row['cell_id'], run.get('pricing', {}))
+            omitted.extend(receipts)
+            if value is not None:
+                projected.append(value)
+        rows = projected
+    summary = summarize(rows, len(run.get('schedule', [])))
+    if comparison:
+        summary.update(comparison_policy='exclude_rate_limits_v1',
+                       excluded_rate_limit_attempts=len(omitted),
+                       rate_limit_only_cells=len(accounting_rows)-len(rows))
     return {'schema_version': 1, 'run': run, 'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': descriptions,
-            'averages': average_attempts(rows, run), 'summary': summarize(rows, len(run.get('schedule', [])))}
+            'rate_limit_exclusions': omitted, 'accounting_rows': accounting_rows,
+            'accounting_summary': summarize(accounting_rows, len(run.get('schedule', []))),
+            'averages': average_attempts(rows, run), 'summary': summary}
 
 
 def dashboard_dataset(roots, *, scope=False):
@@ -190,16 +246,19 @@ def dashboard_dataset(roots, *, scope=False):
     roots = list(dict.fromkeys(discovered))
     require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
     if len(roots) == 1:
-        return dataset(roots[0])
+        return dataset(roots[0], comparison=True)
     rows, sources, stopped, tasks, averages, reset_rows, excluded_rows = [], [], [], [], [], [], []
+    accounting_rows, rate_limit_exclusions = [], []
     scheduled = 0
     for root in roots:
-        data = dataset(root)  # Verify every original artifact before combining views.
+        data = dataset(root, comparison=True)  # Verify every original artifact before combining views.
         run = data['run']
         source = str(root)
         sources.append({'id': source, 'name': run['suite']['name'],
                         'state': run.get('state'), 'execution': run['suite'].get('execution')})
         rows.extend(dict(row, source_run=source) for row in data['rows'])
+        accounting_rows.extend(dict(row, source_run=source) for row in data['accounting_rows'])
+        rate_limit_exclusions.extend(dict(row, source_run=source) for row in data['rate_limit_exclusions'])
         reset_rows.extend(dict(row, source_run=source) for row in data.get('reset_rows', []))
         excluded_rows.extend(dict(row, source_run=source) for row in data.get('excluded_rows', []))
         tasks.extend(dict(task, source_run=source) for task in data['tasks'])
@@ -210,7 +269,11 @@ def dashboard_dataset(roots, *, scope=False):
     return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
             'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
             'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
-            'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': tasks, 'averages': averages, 'summary': summarize(rows, scheduled)}
+            'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': tasks, 'averages': averages,
+            'rate_limit_exclusions': rate_limit_exclusions, 'accounting_summary': summarize(accounting_rows, scheduled),
+            'summary': dict(summarize(rows, scheduled), comparison_policy='exclude_rate_limits_v1',
+                            excluded_rate_limit_attempts=len(rate_limit_exclusions),
+                            rate_limit_only_cells=len(accounting_rows)-len(rows))}
 
 
 MEAN_FIELDS = ('cost_usd', 'latency_seconds', 'input_tokens', 'output_tokens', 'cache_read_tokens')
@@ -277,7 +340,8 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effor
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
               'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
-              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted']
+              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted',
+              'comparison_policy', 'excluded_rate_limit_attempts', 'comparison_note', 'recorded_latency_seconds']
 
 
 def csv_text(rows):
@@ -291,7 +355,10 @@ def csv_text(rows):
 
 
 def report(root):
-    d = dataset(root)
+    d = dataset(root, comparison=True)
+    d['summary']['accounting'] = d['accounting_summary']
+    write_json(Path(root) / 'rate-limit-exclusions.json', d['rate_limit_exclusions'])
+    (Path(root) / 'accounting.csv').write_text(csv_text(d['accounting_rows']))
     from .execution_check import saved_receipts
     probes = [r for c in saved_receipts(root) for r in c['rows']]
     if probes:
