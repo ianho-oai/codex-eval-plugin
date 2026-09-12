@@ -17,7 +17,7 @@ from pathlib import Path
 
 from . import __version__
 from .core import DATA, EvalError, digest, load_suite, now, read_json, require, tree, write_json
-from .discovery import history, repo_evidence, snapshot
+from .discovery import history, repo_evidence, snapshot, discovery_report
 from .report import report, serve
 from .runner import clean_env, execute, preflight, execution_summary, run, schedule, validate_graders
 from .catalog import examples, portfolio
@@ -282,12 +282,13 @@ def parser():
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
     e = a.add_mutually_exclusive_group(); e.add_argument('--all-efforts', action='store_true', help='Use every catalog-supported effort for each selected model'); e.add_argument('--effort', action='append', help='Select an effort supported by every selected model; repeat for more')
     t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
-    a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true'); a.add_argument('--workers', type=int, default=5, help='Concurrent attempts; refill each freed slot (default: 5)'); a.add_argument('--slot-pool', help='Share the worker limit with other batches using this directory'); a.add_argument('--rate-limit-retries', type=int, default=3, help='Additional attempts after explicit rate-limit failures (default: 3)'); a.add_argument('--retry-delay', type=float, default=30, help='Initial retry delay in seconds, doubled per retry (default: 30)')
+    a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true'); a.add_argument('--workers', type=int, default=5, help='Concurrent attempts; refill each freed slot (default: 5)'); a.add_argument('--slot-pool', help='Share the worker limit with other batches using this directory'); a.add_argument('--transient-retries', '--rate-limit-retries', dest='rate_limit_retries', type=int, default=3, help='Cumulative additional attempts per cell for rate limits or explicit capacity errors; invocation-wide ceiling (default: 3)'); a.add_argument('--retry-delay', type=float, default=30, help='Initial retry delay in seconds, doubled per retry (default: 30)')
     a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
     a = sub.add_parser('examples'); a.add_argument('--query', default=''); a.add_argument('--workflow'); a.add_argument('--limit', type=int, default=10); a.add_argument('--inventory', action='store_true')
     a = sub.add_parser('portfolio'); a.add_argument('discovery'); a.add_argument('--suite'); a.add_argument('--output')
-    a = sub.add_parser('history'); a.add_argument('--provider', required=True, choices=['codex', 'claude']); a.add_argument('--root'); a.add_argument('--days', type=int, default=90, help='Session history lookback in days (default: 90, about three months)'); a.add_argument('--consent', action='store_true'); a.add_argument('--output', required=True)
+    a = sub.add_parser('discovery-report'); a.add_argument('discovery'); a.add_argument('--evidence', action='append', default=[]); a.add_argument('--output', required=True)
+    a = sub.add_parser('history'); a.add_argument('--source-kind', choices=['direct', 'export', 'unspecified'], default='unspecified'); a.add_argument('--provider', required=True, choices=['codex', 'claude']); a.add_argument('--root'); a.add_argument('--days', type=int, default=90, help='Session history lookback in days (default: 90, about three months)'); a.add_argument('--consent', action='store_true'); a.add_argument('--output', required=True)
     a = sub.add_parser('repo'); a.add_argument('--path'); a.add_argument('--provider', choices=['github', 'gitlab']); a.add_argument('--repo'); a.add_argument('--days', type=int, default=30); a.add_argument('--host'); a.add_argument('--output', required=True)
     a = sub.add_parser('snapshot'); a.add_argument('--repo', required=True); a.add_argument('--commit', required=True); a.add_argument('--output', required=True)
     a = sub.add_parser('report'); a.add_argument('run_dir')
@@ -336,7 +337,8 @@ def main(argv=None):
             require(1 <= a.limit <= 100, '--limit must be 1..100')
             result = examples(a.query, a.workflow, a.limit, a.inventory)
         elif c == 'portfolio': result = portfolio(a.discovery, a.suite, a.output)
-        elif c == 'history': result = history(a.provider, a.root or ('~/.codex/sessions' if a.provider == 'codex' else '~/.claude/projects'), a.days, a.consent, a.output)
+        elif c == 'discovery-report': result = discovery_report(a.discovery, a.evidence, a.output)
+        elif c == 'history': result = history(a.provider, a.root or ('~/.codex/sessions' if a.provider == 'codex' else '~/.claude/projects'), a.days, a.consent, a.output, a.source_kind)
         elif c == 'repo':
             result = repo_evidence(a.path, a.provider, a.repo, a.days, a.host)
             write_json(a.output, result)

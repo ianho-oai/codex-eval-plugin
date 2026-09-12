@@ -125,3 +125,26 @@ class RetryTests(Workspace):
         row=read_json(raw);row['cost_usd']=0;write_json(raw,row)
         with self.assertRaisesRegex(EvalError,'Retry result integrity'):
             dataset(self.root/'run')
+
+    def test_capacity_recovery_preserves_unknown_trial_cost_and_exhaustion_bound(self):
+        self.prepare()
+        calls=[]
+        def attempt(cell, task, suite, pricing, directory, pf):
+            calls.append(directory)
+            row=self.result(cell,directory,rate=True,cost=None)
+            (directory/'events.jsonl').write_text(json.dumps({'type':'turn.failed','error':{'message':'Selected model is at capacity. Please try a different model.'}}))
+            return row
+        with patch('ceval.runner.preflight',return_value={'codex':{'ok':True}}), patch('ceval.runner.attempt',side_effect=attempt), contextlib.redirect_stdout(io.StringIO()):
+            info=run(self.path,self.root/'run',rate_limit_retries=1,retry_delay=0)
+            run(self.path,self.root/'run',resume=True,rate_limit_retries=1,retry_delay=0)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(info['stop_reason'],'transient_retries_exhausted')
+        original=(calls[0]/'result.json').read_bytes()
+        with patch('ceval.runner.preflight',return_value={'codex':{'ok':True}}), patch('ceval.runner.attempt',side_effect=lambda c,t,s,p,d,pf:self.result(c,d)), contextlib.redirect_stdout(io.StringIO()):
+            recovered=run(self.path,self.root/'run',resume=True,rate_limit_retries=2,retry_delay=0)
+        self.assertEqual(recovered['state'],'complete')
+        row=read_json(self.root/'run/results.json')['rows'][0]
+        self.assertEqual(row['retry_count'],2)
+        self.assertIsNone(row['cost_usd'])
+        self.assertEqual(row['known_cost_usd'],.1)
+        self.assertEqual((calls[0]/'result.json').read_bytes(),original)

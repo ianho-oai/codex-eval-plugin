@@ -2,7 +2,7 @@
 
 ## What is controlled
 
-Native `codex exec --json` and `claude -p --output-format stream-json` are API-authenticated agent loops. Each task/model/effort/repeat starts from fresh candidate files; only explicit rate-limit failures receive bounded transport retries. The suite fixes task snapshots, prompt, permitted edits, grader, CLI/runtime versions, trial order, repeats, and pricing. Optional skills/plugins/MCP integrations are disabled.
+Native `codex exec --json` and `claude -p --output-format stream-json` are API-authenticated agent loops. Each task/model/effort/repeat starts from fresh candidate files; only explicit rate-limit or temporary capacity failures receive bounded transport retries. The suite fixes task snapshots, prompt, permitted edits, grader, CLI/runtime versions, trial order, repeats, and pricing. Optional skills/plugins/MCP integrations are disabled.
 
 Default tasks run locally with existing lightweight test runners, bundled data, and in-process service fakes. Task and grader behavior requires no network, application integrations, Docker, platform SDKs, or simulators. Only the coding-agent provider calls require API access. Graders run separately with sanitized environment variables and reside outside the candidate workspace. Local execution is for trusted tasks and cannot enforce grader secrecy or host isolation. If Docker is explicitly requested, use a pinned image with separate agent/verifier mounts; apply host egress controls separately.
 
@@ -53,7 +53,7 @@ The run CLI defaults to five concurrent attempts. Dispatch follows the seeded pe
 
 ## Rate-limit recovery
 
-Native rate-limit errors may retry up to three times by default, with 30/60/120-second backoff and longer provider hints honored. This is transport recovery within one evaluation repeat, using fresh workspaces and signed trial records. Cost/tokens aggregate across trials; latency includes automatic retry waits. Unavailable trial costs stay null with known spend exposed separately. Known-spend thresholds cannot enforce a hard cap on unreported retry charges. Retry exhaustion stops dispatch. Unrelated unknown spend stops dispatch only when a spend stop is configured. Verifier failures and auth/quota errors never receive this automatic recovery.
+Native rate-limit and temporary capacity errors may retry up to three times by default, with 30/60/120-second backoff and longer provider hints honored up to one hour. This is transport recovery within one evaluation repeat, using fresh workspaces and signed trial records. Cost/tokens aggregate across trials; latency includes automatic retry waits. Unavailable trial costs stay null with known spend exposed separately. Known-spend thresholds cannot enforce a hard cap on unreported retry charges. Retry exhaustion stops dispatch. Unrelated unknown spend stops dispatch only when a spend stop is configured. Verifier failures and auth/quota errors never receive this automatic recovery.
 
 ### Default model sweep and spend policy
 
@@ -66,3 +66,5 @@ New evaluations default to all cataloged GPT-5.6 models and GPT-6 Astra, plus ca
 Each model has a diamond marker showing the median X and median Y of its currently selected task/configuration averages. The top-right **Median focus** switch fades task points and labels while enlarging the median markers. Turn it off to restore normal contrast; median diamonds remain visible.
 
 Each displayed task/configuration point gets equal weight, pooling selected efforts and saved runs for that model. This is a descriptive median of the plotted averages, not a median of raw attempts or a matched-task leaderboard. The tooltip shows the number of contributing points/tasks, effort levels, and both selected-axis values. Only points with both axis measurements contribute; genuine zeros and failures remain included. Log toggles change placement, not the calculation; nonpositive medians cannot be plotted on log axes and are counted in the plot note.
+
+Customer runs gate dispatch on a bounded native edit-and-test probe per provider in the actual launch context, with separate receipts and costs included in spend checks. Discovery proposals include the CLI-generated coverage receipt and customer-confirmed scope; selected samples and exports never imply a complete lookback crawl. Both dashboard log axes default on. See the evaluate skill and its task-review reference for operational guidance.

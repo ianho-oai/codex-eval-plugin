@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.6 — 2026-09-12
+
+- Gate customer matrices on a bounded native edit-and-test check in the actual launch environment, preserving separate probe evidence, costs and failures.
+- Retry recognized temporary capacity errors alongside rate limits, with cumulative ceilings and provider cooldowns shared across worker pools; retain every trial and unknown charge.
+- Add `discovery-report` JSON/Markdown coverage receipts for dates, sampled/exported sources, exclusions, inferred workflows and customer confirmation.
+- Enable logarithmic scales on both dashboard axes by default.
+
 ## 0.9.5 — 2026-09-12
 
 - Include measured retry charges in report known-spend subtotals when the full attempt cost is unavailable. Keep missing-cost counts and cost-per-success uncertainty, avoid double counting complete costs, and preserve signed run evidence.

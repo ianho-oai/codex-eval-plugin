@@ -42,7 +42,8 @@ def progress(run_dirs):
             failed = sum(bool(row.get('valid')) and row.get('completion') != 1 for row in rows)
             errors = len(rows) - passed - failed
         runs.append({'run_dir': str(root), 'name': info.get('suite', {}).get('name', root.name),
-                     'recorded_state': info.get('state', 'unknown'),
+                     'recorded_state': info.get('state', 'unknown'), 'phase': info.get('phase', 'matrix'),
+                     'execution_check_cost': info.get('execution_check_cost'),
                      'checkpoint_at': info.get('updated_at') or info.get('created_at'),
                      'scheduled': scheduled, 'finished': finished, 'remaining': scheduled-finished,
                      'active_at_checkpoint': info.get('active_cells'),

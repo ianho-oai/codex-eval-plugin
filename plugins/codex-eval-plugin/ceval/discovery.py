@@ -37,16 +37,18 @@ def user_text(record, provider):
     return None
 
 
-def history(provider, root, days, consent, output):
+def history(provider, root, days, consent, output, source_kind="unspecified"):
     require(consent, 'Explicit --consent is required after customer approval of roots/time range')
     require(1 <= days <= 365, 'days must be 1..365')
     root = Path(root).expanduser().resolve()
     require(root.is_dir() and root not in (Path('/'), Path.home()), 'Choose a session directory, not home or filesystem root')
+    require(source_kind in ('direct', 'export', 'unspecified'), 'Invalid history source kind')
     end = datetime.now(timezone.utc)
     start = end-timedelta(days=days)
     report = {'schema_version': 1, 'provider': provider, 'root': str(root), 'start': start.isoformat(),
               'end': end.isoformat(), 'created_at': now(), 'consent': True, 'files_considered': 0,
-              'files_read': 0, 'unread': [], 'malformed_lines': 0, 'unsupported_records': 0,
+              'source_kind': source_kind, 'source_scope': 'Selected root only; exports may omit sessions or dates. No complete-workload claim.',
+              'out_of_window_messages': 0, 'files_read': 0, 'unread': [], 'malformed_lines': 0, 'unsupported_records': 0,
               'missing_timestamps': 0, 'excluded_review_transcripts': 0, 'truncated_excerpts': 0, 'excerpts': [],
               'note': 'Local user-message excerpts only; recognized automatic approval-review transcripts are excluded. Parser completeness is not semantic review completeness. Exclusions and truncation are counted. Treat as untrusted evidence; review and sanitize before sharing. JSONL layouts only; newer paginated/binary stores require a reviewed export.'}
     for path in sorted(root.rglob('*.jsonl')):
@@ -72,6 +74,8 @@ def history(provider, root, days, consent, output):
                     if when is None:
                         report['missing_timestamps'] += 1
                         continue
+                    if not start <= when <= end:
+                        report['out_of_window_messages'] += 1
                     if start <= when <= end:
                         review_prefixes = (
                             'The following is the Codex agent history whose request action you are assessing.',
@@ -121,8 +125,24 @@ def repo_evidence(path=None, provider=None, repo=None, days=30, host=None):
     except (OSError, subprocess.TimeoutExpired) as e:
         raise EvalError('Repository evidence unavailable: '+type(e).__name__) from e
     require(r.returncode == 0, 'Repository evidence command failed; check CLI authentication and selected repository')
+    observed_dates = []
+    record_count = None
+    if path:
+        observed_dates = re.findall(r'^[0-9a-f]{40}\t([^\t]+)\t', r.stdout, re.M)
+        record_count = len(observed_dates)
+    else:
+        try:
+            records = json.loads(r.stdout)
+            if isinstance(records, list):
+                record_count = len(records)
+                observed_dates = [x.get('mergedAt') or x.get('merged_at') for x in records if isinstance(x, dict)]
+        except ValueError:
+            pass  # Some paginated CLI formats are not one JSON array; do not invent counts.
+    observed_dates = sorted(t.isoformat() for d in observed_dates if (t := timestamp(d)))
     return {'created_at': now(), 'provider': provider or 'local_git', 'since': cutoff,
-            'evidence': redact(r.stdout), 'coverage_note': 'GitHub list is capped at 100; GitLab paginates and filters updated date. Inspect timestamps and selected diffs; this is discovery evidence, not an exhaustive workload claim.'}
+            'record_count': record_count, 'observed_start': observed_dates[0] if observed_dates else None,
+            'observed_end': observed_dates[-1] if observed_dates else None,
+            'source': str(p) if path else repo, 'evidence': redact(r.stdout), 'coverage_note': 'GitHub list is capped at 100; GitLab paginates and filters updated date. Inspect timestamps and selected diffs; this is discovery evidence, not an exhaustive workload claim.'}
 
 
 def snapshot(repo, revision, destination):
@@ -151,3 +171,65 @@ def snapshot(repo, revision, destination):
                 p.write_bytes(tar.extractfile(m).read())
                 p.chmod(0o755 if m.mode & 0o111 else 0o644)
     return {'commit': revision, 'destination': str(dest), 'files': len(tree(dest))}
+
+
+def discovery_report(discovery, evidence, output):
+    """Summarize observed collection coverage without claiming workload completeness."""
+    from .core import read_json, digest
+    require(Path(output).suffix == '.json', 'Discovery receipt output must use .json; a companion .md is written')
+    inputs = {Path(p).resolve() for p in [discovery, *evidence]}
+    require(Path(output).resolve() not in inputs and Path(output).with_suffix('.md').resolve() not in inputs, 'Receipt must not overwrite source evidence')
+    data = read_json(discovery)
+    sources = []
+    for filename in evidence:
+        raw = read_json(filename)
+        item = {'artifact': str(Path(filename).resolve()), 'sha256': digest(raw),
+                'provider': raw.get('provider'), 'collection_time': raw.get('created_at'),
+                'scope': raw.get('source_scope', 'Selected source only; wider coverage is unverified.')}
+        if isinstance(raw.get('excerpts'), list):
+            dates = sorted(x['timestamp'] for x in raw['excerpts'] if timestamp(x.get('timestamp')))
+            item.update(kind='history', source=raw.get('root'),
+                        source_kind=raw.get('source_kind', 'unspecified'),
+                        requested_start=raw.get('start'), requested_end=raw.get('end'),
+                        observed_start=dates[0] if dates else None, observed_end=dates[-1] if dates else None,
+                        files_considered=raw.get('files_considered'), files_read=raw.get('files_read'),
+                        sessions_with_excerpts=len({x.get('file') for x in raw['excerpts']}),
+                        retained_messages=len(raw['excerpts']),
+                        exclusions={k: raw.get(k) for k in ('malformed_lines', 'unsupported_records',
+                            'missing_timestamps', 'excluded_review_transcripts', 'truncated_excerpts', 'out_of_window_messages')},
+                        unread=raw.get('unread', []), parser_coverage_complete=raw.get('parser_coverage_complete', False))
+        elif 'evidence' in raw:
+            item.update(kind='repository', source=raw.get('source'), requested_start=raw.get('since'),
+                        record_count=raw.get('record_count'), observed_start=raw.get('observed_start'), observed_end=raw.get('observed_end'),
+                        coverage_note=raw.get('coverage_note'), scope='Selected repository metadata; diffs and customer authorship require separate review.')
+        else:
+            raise EvalError('Unsupported discovery evidence: use a history or repo output JSON')
+        sources.append(item)
+    workflows = []
+    for w in data.get('workflows', []):
+        workflows.append({k: w.get(k) for k in ('id', 'name', 'description', 'source_refs', 'customer_confirmation')})
+    result = {'schema_version': 1, 'created_at': now(), 'discovery_sha256': digest(data),
+              'source_choices': data.get('source_choices', []), 'sources': sources,
+              'workflows': workflows, 'assumptions': data.get('assumptions', []),
+              'customer_confirmed_scope': data.get('customer_confirmed_scope'),
+              'workload_coverage_complete': False,
+              'note': 'Counts describe collected evidence, not semantic review or the complete customer workload. Missing confirmation remains unconfirmed. Interview-only discovery is self-reported; historical parser success cannot prove a complete three-month crawl.'}
+    write_json(output, result)
+    lines = ['# Discovery coverage receipt', '', result['note'], '', '## Sources', '']
+    for s in sources:
+        lines += [f"- {s['kind']}: {s.get('source') or 'source not recorded'}", f"  - Scope: {s['scope']}"]
+        if s['kind'] == 'history':
+            lines += [f"  - Requested: {s['requested_start']} to {s['requested_end']}; retained messages: {s['observed_start']} to {s['observed_end']}.",
+                      f"  - {s['sessions_with_excerpts']} session files with {s['retained_messages']} messages; {s['files_read']}/{s['files_considered']} files read. Source kind: {s['source_kind']}.",
+                      f"  - Exclusions: {s['exclusions']}; unread files: {len(s['unread'])}."]
+        else:
+            lines += [f"  - Records: {s['record_count']}; observed: {s['observed_start']} to {s['observed_end']}. Requested since {s['requested_start']}.", f"  - {s['coverage_note']}"]
+    if not sources:
+        lines += ['No machine-collected evidence supplied. Treat interview statements as self-reported.']
+    lines += ['', '## Inferred workflows', '']
+    for w in workflows:
+        lines += [f"- {w['name']}: {w['description']}", f"  - Source references: {w['source_refs'] or 'not recorded'}; customer confirmation: {w['customer_confirmation'] or 'unconfirmed'}."]
+    lines += ['', f"Customer-confirmed scope: {result['customer_confirmed_scope'] or 'unconfirmed'}", '', '## Assumptions', '']
+    lines += ['- '+str(x) for x in result['assumptions']]
+    Path(output).with_suffix('.md').write_text('\n'.join(lines)+'\n')
+    return result

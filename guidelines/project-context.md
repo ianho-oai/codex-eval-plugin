@@ -15,7 +15,7 @@ Default execution is local, using self-contained trusted task fixtures, clean ca
 
 Scores are binary. Infrastructure errors and interrupted attempts score zero in the all-attempt summary but are separately categorized. Scorable success rates exclude infrastructure-invalid rows and always display their count. Missing usage is null. With an explicit spend stop, unknown spend unrelated to authorized rate-limit retries pauses execution because the threshold cannot be enforced from missing telemetry. By default no spend stop is configured, and missing telemetry is retained without stopping dispatch.
 
-The spend threshold is checked before queue dispatch. In-flight calls can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback or silent model substitution. Explicit rate-limit failures have bounded automatic retries; other failures do not.
+The spend threshold is checked before queue dispatch. In-flight calls can overshoot it; provider-side limits remain necessary for a hard billing cap. No automatic provider fallback or silent model substitution. Explicit native rate-limit and temporary capacity failures have bounded automatic retries and a shared provider cooldown; other failures do not.
 
 Model IDs, pricing, and CLI compatibility in the bundled catalog are versioned snapshots; verify account access and configuration support before use. Access from one terminal does not establish access from another host or agent session. See [the validation guide](../VALIDATION.md) for offline and live-provider checks.
 
@@ -55,3 +55,5 @@ Model median diamonds summarize currently selected task/configuration averages w
 Host-side evaluation progress uses installed visualize/live skills when available in Codex desktop, with one apply_patch-refreshed fragment and read-only `progress RUN_DIR ...` snapshots. Keep visualization outside the sealed headless agents and preserve the single exported evaluation skill. Missing visualization support falls back to text; saved running state is not proof of process liveness.
 
 Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
+
+Customer runs gate dispatch on a bounded native edit-and-test probe per provider in the actual launch context, with separate receipts and costs included in spend checks. Discovery proposals include the CLI-generated coverage receipt and customer-confirmed scope; selected samples and exports never imply a complete lookback crawl. Both dashboard log axes default on. See docs/CLI_REFERENCE.md for operational details.

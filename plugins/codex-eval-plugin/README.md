@@ -1,4 +1,4 @@
-# Codex Eval · 0.9.3
+# Codex Eval · 0.9.6
 
 One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
 
@@ -56,13 +56,13 @@ For a graceful pause, create `RUN_DIR/stop-requested.json` (for example, contain
 
 ### Rate-limit retries
 
-Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--rate-limit-retries 3 --retry-delay 30`, or disable using `--rate-limit-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
+Explicit native rate-limit failures retry up to three times with 30/60/120-second backoff (longer provider retry hints are honored). Configure with `--transient-retries 3 --retry-delay 30`, or disable using `--transient-retries 0`. Each retry uses a fresh workspace and retains signed raw evidence. A retrying job keeps its worker slot during backoff; other workers continue, and the combined active/retrying job limit stays five.
 
-Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing rate-limit usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage pauses execution only when a spend stop is configured; otherwise missing costs remain null and execution continues. Exhausted retries stop new work and drain active calls. `--resume` retries previously rate-limited cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
+Retries belong to the same task/model/repeat. Reported cost and tokens include every trial; latency includes trial execution plus retry waits. Missing transient-error usage stays null, with `known_cost_usd` reported separately. The spend stop uses known amounts and cannot cap unreported retry charges. Unrelated unknown usage pauses execution only when a spend stop is configured; otherwise missing costs remain null and execution continues. Exhausted retries stop new work and drain active calls. `--resume` retries previously transient-failed cells only while their configured retry allowance remains. Verifier failures, auth/quota errors, and unrelated provider errors are not automatically retried.
 
 ## Effort sweeps
 
-New suites include all catalog-supported single-agent effort levels per model. Before approval, expand an existing suite with `python3 bin/codex-eval configure SUITE --all-efforts --repeats 1` for a quick sweep. Repeated `--effort low --effort high` selects narrower levels supported by every selected model. General default repeats remain three; charts label each model and effort separately.
+New suites include all catalog-supported single-agent effort levels per model. Before approval, expand an existing suite with `python3 bin/codex-eval configure SUITE --all-efforts --repeats 1` for a quick sweep. Repeated `--effort low --effort high` selects narrower levels supported by every selected model. Default repeats are one; ask before two additional rounds; charts label each model and effort separately.
 
 ### Default model sweep and spend policy
 
@@ -83,3 +83,13 @@ Dashboard diamonds show one median per model × reasoning-effort combination acr
 During evaluation runs in Codex desktop, the skill uses the available visualize/live skills to show checkpoint progress in the task sidebar. `bin/codex-eval progress RUN_DIR [RUN_DIR ...]` supplies finished/remaining attempts, active-at-checkpoint slots, and pass/fail/error counts. The host agent refreshes the view while observing the run; CLI/text progress remains available without visualization skills. No extra dependencies enter the evaluated agents.
 
 Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
+
+## Customer readiness and coverage receipts
+
+Customer runs automatically perform a bounded native edit-and-test check in the actual execution environment before matrix dispatch. The first configured model/effort per provider is checked, using the same sandbox and shared slots. Failures block the matrix. Signed probe trials and JSON receipts live under `execution-checks/`; their known costs are separate from model averages and included in spend stops. Pending resumes check again; completed resumes do not. Inspect interrupted probe evidence rather than blindly retrying.
+
+`run --transient-retries 3 --retry-delay 30` covers explicit rate limits and native capacity/overload errors. `--rate-limit-retries` remains an alias. Provider-wide cooldowns are shared by batches using the same `--slot-pool`, with exponential delay and provider hints capped at one hour. Retry ceilings are cumulative per cell and apply invocation-wide. Verifier failures, auth/quota errors and unsupported models are not retried.
+
+Use `history --source-kind direct|export` and `discovery-report DISCOVERY --evidence HISTORY_OR_REPO_JSON --output coverage.json` to generate a JSON/Markdown coverage receipt. Repeat evidence arguments for combined sources or omit for interview-only discovery. The receipt distinguishes requested dates from observed records, states collection limits and exclusions, and displays workflow source references and customer confirmation from discovery.json. A selected export is never presented as a complete three-month crawl.
+
+Both dashboard axes default to logarithmic scale; either can be switched off independently.

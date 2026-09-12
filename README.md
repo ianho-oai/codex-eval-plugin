@@ -14,11 +14,11 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 
 | Step | What the agent does | What you provide or decide |
 | --- | --- | --- |
-| 1. Discover | Learns the development workflows you want to evaluate. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
+| 1. Discover | Learns the workflows and shows a coverage receipt with actual sources, dates, sampling limits, and confirmed scope. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
 | 2. Propose | Suggests easy, medium, and hard tasks for each workflow, with short descriptions, acceptance checks, and benchmark inspiration. | Approve the task list or ask for changes. |
 | 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
-| 5. Execute and adapt | Monitors results, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
+| 5. Execute and adapt | First checks a real native edit-and-test operation, then monitors results, retries transient capacity/rate-limit errors within bounds, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
 | 6. Compare | Opens the prebuilt dashboard after the first round and reports results and costs. | Explore comparisons, then decide whether to approve two additional rounds for consistency and averaging. No extra rounds run automatically. |
 
 ### Have these ready

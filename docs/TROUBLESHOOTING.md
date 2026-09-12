@@ -61,3 +61,9 @@ An explicit user-requested reset may remove confirmed native CLI-version errors 
 Explicit model removals use a per-run `excluded-models.json` receipt with provider/model pairs, requester, and reason; these remove that model's points and pending cells from active views. Original records remain accessible in `excluded_rows` and on disk. Removing either receipt restores the original view. A view exclusion does not cancel an active runner; request a graceful pause separately.
 
 Replacement attempts use fresh validated suites, updated pins, new output directories, and the same task/effort settings. Their pending cells count once in the active comparison. Raw evidence and recorded spend remain in the original artifacts even when excluded from the active view.
+
+## Execution check blocks a run
+
+Inspect `RUN/execution-checks/receipt-*.json` and the referenced native events, grader output, candidate and runtime diagnostics. The check must actually edit the file and run its test successfully. Exit 0 or agent prose alone is insufficient. A terminal that works may still fail when invoked inside another agent sandbox. Use the already approved command in an authorized ordinary terminal with the same sandbox settings, then resume pending work; retain the failed check and its costs. If model access/capacity caused the probe failure, resolve that issue before concluding the host is broken. A probe validates only its representative model/effort.
+
+`execution_check_interrupted` means a prior check lacks a final receipt; inspect retained trials and reconcile unknown spend before approving a new run. Do not delete evidence or mark it passed. Explicit capacity errors now share the bounded transient retry policy; exhausted retries require an approved policy extension or a later reviewed continuation, not unlimited retry.

@@ -277,7 +277,7 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effor
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
               'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
-              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted']
+              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted']
 
 
 def csv_text(rows):
@@ -292,6 +292,13 @@ def csv_text(rows):
 
 def report(root):
     d = dataset(root)
+    from .execution_check import saved_receipts
+    probes = [r for c in saved_receipts(root) for r in c['rows']]
+    if probes:
+        d['summary']['execution_check_cost'] = {
+            'known_cost_usd': sum(r['cost_usd'] if r.get('cost_usd') is not None else r.get('known_cost_usd', 0) for r in probes),
+            'incomplete_rows': sum(r.get('cost_usd') is None and not r.get('not_started') for r in probes),
+            'note': 'Additional setup cost, separate from scored task costs and model averages.'}
     write_json(Path(root) / 'summary.json', d['summary'])
     write_json(Path(root) / 'averages.json', {'rows': d['averages']})
     (Path(root) / 'results.csv').write_text(csv_text(d['rows']))
