@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.5 — 2026-09-12
+
+- Include measured retry charges in report known-spend subtotals when the full attempt cost is unavailable. Keep missing-cost counts and cost-per-success uncertainty, avoid double counting complete costs, and preserve signed run evidence.
+
 ## 0.9.4 — 2026-09-12
 
 - Default new customer suites and smoke runs to one iteration per task/model/effort. Keep the full default model/effort sweep and explicit repeat overrides.

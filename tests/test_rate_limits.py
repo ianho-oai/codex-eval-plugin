@@ -80,6 +80,10 @@ class RetryTests(Workspace):
         self.assertFalse(row['telemetry_complete'])
         self.assertTrue(row['rate_limit_cost_incomplete'])
         self.assertEqual(row['known_cost_usd'],.1)
+        summary = dataset(self.root/'run')['summary']['groups'][0]
+        self.assertEqual(summary['known_cost_usd'], .1)
+        self.assertEqual(summary['cost_missing'], 1)
+        self.assertIsNone(summary['cost_per_success_usd'])
 
     def test_exhaustion_is_bounded_and_not_restarted_on_resume(self):
         self.prepare()

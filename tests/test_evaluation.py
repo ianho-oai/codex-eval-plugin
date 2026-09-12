@@ -466,6 +466,17 @@ class RunnerTests(Workspace):
 
 
 class DiscoveryAndReportTests(Workspace):
+    def test_known_spend_includes_partial_retry_cost_without_double_counting(self):
+        base = {'provider':'codex', 'model':'test', 'effort':'medium', 'completion':1, 'valid':True}
+        rows = [dict(base, cost_usd=2, known_cost_usd=2),
+                dict(base, cost_usd=None, known_cost_usd=.5),
+                dict(base, cost_usd=0, known_cost_usd=9),
+                dict(base, cost_usd=None)]
+        group = summarize(rows, 4)['groups'][0]
+        self.assertEqual(group['known_cost_usd'], 2.5)
+        self.assertEqual(group['cost_missing'], 2)
+        self.assertIsNone(group['cost_per_success_usd'])
+
     def test_first_round_schedules_each_lane_once_and_explicit_followup_twice(self):
         dest = self.root/'first-round'
         initialize(dest, 'local', None, purpose='smoke')
