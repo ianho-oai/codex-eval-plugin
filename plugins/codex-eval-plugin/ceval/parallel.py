@@ -8,6 +8,7 @@ import time
 from .core import EvalError, require, read_json, write_json, digest, now
 from . import runner as engine
 from . import rate_limits
+from . import execution_check
 
 
 class Slots:
@@ -74,6 +75,7 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
     cells = engine.schedule(suite, tasks)
     lookup = {t['spec']['id']: t for t in tasks}
     slots = Slots(slot_pool, workers)
+    cooldown = rate_limits.Cooldown(Path(slot_pool) if slot_pool else output / 'cooldowns')
     manifest = output / 'run.json'
     info = read_json(manifest) if manifest.exists() else {
         'schema_version': 1, 'seal': seal, 'suite': suite, 'pricing': pricing,
@@ -83,9 +85,10 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
     info.setdefault('scheduling_history', []).append({
         'started_at': now(), 'workers': workers, 'slot_pool': str(Path(slot_pool).resolve()) if slot_pool else None,
         'scheduler_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        'rate_limit_retries': rate_limit_retries, 'retry_delay': retry_delay,
+        'rate_limit_retries': rate_limit_retries, 'retry_delay': retry_delay, 'transient_retry_scope': 'Rate limits and explicit capacity errors; cumulative per cell, invocation-wide ceiling; shared provider cooldown.',
         'retry_policy_sha256': hashlib.sha256(Path(rate_limits.__file__).read_bytes()).hexdigest(),
         'policy': 'Refill on completion; drain active attempts on stop. Concurrent latency may include host contention.'})
+    info['execution_checks'] = execution_check.saved_receipts(output)
     info.update(state='running', stop_reason=None)
     write_json(manifest, info)
     pf = engine.preflight(suite)
@@ -107,11 +110,13 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
             write_json(directory / 'result.sha256.json', {'sha256': digest(row)})
             rows.append(row)
     retrying = {r['cell_id'] for r in rows if rate_limit_retries > r.get('retry_count', 0) and
-                (r.get('rate_limited') or rate_limits.is_rate_limited(r, output / 'attempts' / r['cell_id']))}
+                (r.get('transient_reason') or r.get('rate_limited') or rate_limits.transient_reason(r, output / 'attempts' / r['cell_id']))}
     done = {r['cell_id'] for r in rows} - retrying
     todo = [c for c in cells if c['cell_id'] not in done]
     pending = {}
-    stop_reason = 'rate_limit_retries_exhausted' if any(r.get('rate_limit_retries_exhausted') and r['cell_id'] not in retrying for r in rows) else None
+    stop_reason = 'transient_retries_exhausted' if any((r.get('transient_retries_exhausted') or r.get('rate_limit_retries_exhausted')) and r['cell_id'] not in retrying for r in rows) else None
+    if stop_reason and any(r.get('rate_limit_retries_exhausted') for r in rows):
+        stop_reason = 'rate_limit_retries_exhausted'
     fatal = None
 
     def checkpoint():
@@ -121,37 +126,65 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
         write_json(output / 'results.json', {'schema_version': 1, 'rows': rows})
         info.update(updated_at=now(), completed_cells=len(rows), scheduled_cells=len(cells),
                     active_cells=len(pending), stop_reason=stop_reason,
-                    incomplete_cost_cells=sum(bool(r.get('rate_limit_cost_incomplete')) for r in rows),
+                    incomplete_cost_cells=sum(bool((r.get('transient_cost_incomplete') or r.get('rate_limit_cost_incomplete'))) for r in rows),
                     known_spend_upper_usd=sum(r.get('cost_upper_usd') or r.get('known_cost_upper_usd') or 0 for r in rows))
+        checks = [r for c in info.get('execution_checks', []) for r in c['rows']]
+        info['execution_check_cost'] = {'known_cost_usd': sum(r.get('cost_usd') or r.get('known_cost_usd') or 0 for r in checks),
+                                        'incomplete_rows': sum(r.get('cost_usd') is None and not r.get('not_started') for r in checks)}
         write_json(manifest, info)
 
     checkpoint()
+    if todo and not stop_reason and suite.get('purpose') == 'customer':
+        info['phase'] = 'execution_check'
+        checkpoint()
+        prior_checks = info.setdefault('execution_checks', [])
+        limit = suite['limits']['spend_stop_usd']
+        spent = sum(r.get('cost_upper_usd') or 0 for r in rows + [r for c in prior_checks for r in c['rows']])
+        if any(c.get('state') == 'started' for c in prior_checks):
+            stop_reason = 'execution_check_interrupted'
+            print('A prior execution check has no final receipt. Reconcile its native evidence before a new approved run; no automatic paid retry.', flush=True)
+        elif limit is not None and (spent >= limit or any(r.get('cost_upper_usd') is None and not r.get('not_started') for r in rows + [r for c in prior_checks for r in c['rows']])):
+            stop_reason = 'execution_check_spend_stop'
+        else:
+            check_suite = dict(suite, matrix=[m for m in suite['matrix'] if m['provider'] in {c['provider'] for c in todo}],
+                               limits=dict(suite['limits'], spend_stop_usd=None if limit is None else limit-spent))
+            checked = execution_check.check(check_suite, pricing, output, pf, slots, cooldown, rate_limit_retries, retry_delay)
+            prior_checks.append(checked)
+            if not checked['ok']:
+                stop_reason = 'execution_check_failed'
+                print('Execution check blocked the matrix. Inspect execution-checks receipts; fix the actual launch context without weakening the sandbox, then resume.', flush=True)
+        checkpoint()
+    if not stop_reason:
+        info['phase'] = 'matrix'
+        checkpoint()
+    check_rows = [r for c in info.get('execution_checks', []) for r in c['rows']]
     with ThreadPoolExecutor(max_workers=workers) as executor:
         while pending or (todo and not stop_reason):
             try:
                 if not stop_reason:
                     if (output / 'stop-requested.json').exists():
                         stop_reason = 'paused'
-                    elif any(r.get('rate_limit_retries_exhausted') and r['cell_id'] not in retrying for r in rows):
-                        stop_reason = 'rate_limit_retries_exhausted'
+                    elif any((r.get('transient_retries_exhausted') or r.get('rate_limit_retries_exhausted')) and r['cell_id'] not in retrying for r in rows):
+                        stop_reason = 'rate_limit_retries_exhausted' if any(r.get('rate_limit_retries_exhausted') for r in rows) else 'transient_retries_exhausted'
                     elif suite['limits']['spend_stop_usd'] is not None and any(r.get('cost_upper_usd') is None and not r.get('not_started') and r['cell_id'] not in retrying
-                             and not (rate_limit_retries and r.get('rate_limit_cost_incomplete')) for r in rows):
+                             and not (rate_limit_retries and (r.get('transient_cost_incomplete') or r.get('rate_limit_cost_incomplete'))) for r in rows + check_rows):
                         stop_reason = 'unknown_spend'
-                    elif suite['limits']['spend_stop_usd'] is not None and sum(r.get('cost_upper_usd') or r.get('known_cost_upper_usd') or 0 for r in rows) >= suite['limits']['spend_stop_usd']:
+                    elif suite['limits']['spend_stop_usd'] is not None and sum(r.get('cost_upper_usd') or r.get('known_cost_upper_usd') or 0 for r in rows + check_rows) >= suite['limits']['spend_stop_usd']:
                         stop_reason = 'spend_threshold'
                 # Consume every ready result before refilling, so known stop conditions win.
                 ready = [f for f in pending if f.done()]
-                if not ready and not stop_reason and todo and len(pending) < workers:
+                available_index = next((i for i, c in enumerate(todo) if not cooldown.remaining(c['provider'])), None)
+                if not ready and not stop_reason and available_index is not None and len(pending) < workers:
                     lease = slots.acquire()
                     if lease is not None:
                         try:
                             require(engine.load_suite(path)[4] == seal, 'Sealed inputs changed during execution')
-                            cell = todo.pop(0)
+                            cell = todo.pop(available_index)
                             directory = output / 'attempts' / cell['cell_id']
                             write_json(directory / 'started.json', {'cell': cell, 'started_at': now()})
                             previous = next((r for r in rows if r['cell_id'] == cell['cell_id']), None)
                             future = executor.submit(rate_limits.attempt, cell, lookup[cell['task_id']], suite, pricing, directory, pf[cell['provider']],
-                                                     previous=previous, max_retries=rate_limit_retries, base_delay=retry_delay)
+                                                     previous=previous, max_retries=rate_limit_retries, base_delay=retry_delay, cooldown=cooldown)
                             pending[future] = (cell, directory, lease)
                             checkpoint()
                         except BaseException:
@@ -171,6 +204,14 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
                                    'execution_mode': suite['execution']['mode'], 'diagnostic': type(error).__name__}
                         finally:
                             slots.release(lease)
+                        if row.get('not_started') and row.get('retry_paused'):
+                            # A stop during shared cooldown made no native call. Keep
+                            # dispatch evidence without consuming a scheduled cell.
+                            write_json(directory / 'dispatch-paused.json', row)
+                            (directory / 'started.json').replace(directory / 'dispatch-paused-started.json')
+                            stop_reason = 'paused'
+                            checkpoint()
+                            continue
                         row['scheduling_workers'] = workers
                         write_json(directory / 'result.json', row)
                         write_json(directory / 'result.sha256.json', {'sha256': digest(row)})
@@ -178,8 +219,8 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
                         rows.append(row)
                         retrying.discard(cell['cell_id'])
                         print(f"{len(rows)}/{len(cells)} {cell['task_id']} {cell['model']} {cell['effort']}: {row['status']}", flush=True)
-                        if row.get('rate_limit_retries_exhausted'):
-                            stop_reason = 'rate_limit_retries_exhausted'
+                        if row.get('transient_retries_exhausted') or row.get('rate_limit_retries_exhausted'):
+                            stop_reason = 'rate_limit_retries_exhausted' if any(r.get('rate_limit_retries_exhausted') for r in rows) else 'transient_retries_exhausted'
                         elif row.get('retry_paused'):
                             stop_reason = 'paused'
                         elif row['status'] == 'interrupted':

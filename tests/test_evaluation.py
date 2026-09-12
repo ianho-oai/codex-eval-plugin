@@ -74,6 +74,28 @@ class Workspace(unittest.TestCase):
 
 
 class SuiteTests(Workspace):
+    def test_example_grader_accepts_dataclass_based_candidate(self):
+        candidate = self.root / 'dataclass-candidate'
+        candidate.mkdir()
+        (candidate / 'slug.py').write_text('''from __future__ import annotations
+from dataclasses import dataclass
+import re
+import unicodedata
+
+@dataclass(frozen=True)
+class Slug:
+    value: str
+
+def slugify(text):
+    if not isinstance(text, str):
+        raise TypeError('Expected text')
+    normalized = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode().lower()
+    return Slug('-'.join(re.findall('[a-z0-9]+', normalized))).value
+''')
+        verifier = DATA / 'examples/slug-normalization/grader/verify.py'
+        result = execute([sys.executable, str(verifier), str(candidate)], self.root, clean_env(), 30)
+        self.assertEqual(result['exit_code'], 0, result['stderr'] + result['stdout'])
+
     def test_all_baselines_fail_all_oracles_pass(self):
         checks = validate_graders(self.path)
         self.assertEqual(len(checks),3)
@@ -259,6 +281,23 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(r['input_tokens'],20)
         self.assertEqual(r['turns'],2)
 
+    def test_codex_recovered_errors_and_terminal_failure(self):
+        complete = {'type':'turn.completed','usage':{'input_tokens':10,'cached_input_tokens':0,'output_tokens':3}}
+        warning = {'type':'error','message':'Reconnecting after rate limit exceeded'}
+        failed = {'type':'turn.failed','error':{'message':'Retry limit exceeded'}}
+        started = {'type':'turn.started'}
+        for stream, success in [([warning, complete], True),
+                                ([started, warning, warning, complete], True),
+                                ([warning], False), ([warning, failed], False),
+                                ([complete, warning], False), ([complete, started], False),
+                                ([failed, complete], False)]:
+            with self.subTest(stream=stream):
+                row = normalize('codex', '\n'.join(map(json.dumps, stream)), 'gpt-5.6-luna', self.rates)
+                self.assertEqual(row['provider_success'], success)
+                if complete in stream:
+                    self.assertEqual(row['input_tokens'], 10)
+                    self.assertIsNotNone(row['cost_usd'])
+
     def test_claude_input_components_and_reported_cost(self):
         e={'type':'result','subtype':'success','num_turns':12,'total_cost_usd':.77,'duration_ms':12000,
            'usage':{'input_tokens':100,'cache_read_input_tokens':200,'cache_creation_input_tokens':300,'output_tokens':50},
@@ -286,7 +325,7 @@ class TelemetryTests(unittest.TestCase):
 
 
 class RunnerTests(Workspace):
-    def fake_binary(self, provider='codex'):
+    def fake_binary(self, provider='codex', prefix_events=()):
         # Offline native protocol emulator. Every filesystem/grade step still runs.
         binary=self.root/provider
         oracle=(DATA/'examples/slug-normalization/oracle/slug.py').read_text()
@@ -295,6 +334,7 @@ class RunnerTests(Workspace):
         if provider=='claude':
             events=[{'type':'result','subtype':'success','num_turns':2,'total_cost_usd':.03,
                      'usage':{'input_tokens':50,'cache_read_input_tokens':10,'cache_creation_input_tokens':20,'output_tokens':30}}]
+        events = list(prefix_events) + events
         binary.write_text('#!'+sys.executable+'\nimport sys,json\nfrom pathlib import Path\n'
             +"if '--version' in sys.argv: print('codex-cli 0.153.4' if "+repr(provider)+"=='codex' else '2.1.251 (Claude Code)');sys.exit(0)\n"
             +"if '--help' in sys.argv: print('--json --ephemeral --ignore-user-config --bare --strict-mcp-config --effort');sys.exit(0)\n"
@@ -336,6 +376,24 @@ class RunnerTests(Workspace):
         with patch.dict(os.environ,{'OPENAI_API_KEY':'test-key'}),contextlib.redirect_stdout(io.StringIO()):run(self.path,self.root/'run')
         self.s['repeats']=2;self.save()
         with self.assertRaises(EvalError):run(self.path,self.root/'run',resume=True)
+
+    def test_native_reconnect_recovery_keeps_verified_pass(self):
+        from ceval.parallel import run as run_parallel
+        self.prep()
+        self.fake_binary(prefix_events=[{'type':'error','message':'Reconnecting after rate limit exceeded'}])
+        self.approve()
+        out = self.root/'run'
+        with patch.dict(os.environ, {'OPENAI_API_KEY':'test-key'}), contextlib.redirect_stdout(io.StringIO()):
+            run_parallel(self.path, out, retry_delay=0)
+        row = read_json(out/'results.json')['rows'][0]
+        self.assertEqual(row['status'], 'passed')
+        self.assertTrue(row['valid'])
+        self.assertEqual(row['completion'], 1)
+        self.assertEqual(row['grader_exit_code'], 0)
+        self.assertEqual(row['retry_count'], 0)
+        self.assertEqual(len(row['retry_attempts']), 1)
+        trial = out/'attempts'/row['cell_id']/row['retry_attempts'][0]['directory']
+        self.assertIn('Reconnecting', (trial/'events.jsonl').read_text())
 
     def test_modified_result_rejected(self):
         self.prep()
@@ -408,6 +466,34 @@ class RunnerTests(Workspace):
 
 
 class DiscoveryAndReportTests(Workspace):
+    def test_known_spend_includes_partial_retry_cost_without_double_counting(self):
+        base = {'provider':'codex', 'model':'test', 'effort':'medium', 'completion':1, 'valid':True}
+        rows = [dict(base, cost_usd=2, known_cost_usd=2),
+                dict(base, cost_usd=None, known_cost_usd=.5),
+                dict(base, cost_usd=0, known_cost_usd=9),
+                dict(base, cost_usd=None)]
+        group = summarize(rows, 4)['groups'][0]
+        self.assertEqual(group['known_cost_usd'], 2.5)
+        self.assertEqual(group['cost_missing'], 2)
+        self.assertIsNone(group['cost_per_success_usd'])
+
+    def test_first_round_schedules_each_lane_once_and_explicit_followup_twice(self):
+        dest = self.root/'first-round'
+        initialize(dest, 'local', None, purpose='smoke')
+        path = dest/'suite.json'
+        _, suite, tasks, _, first_seal = load_suite(path)
+        first = schedule(suite, tasks)
+        expected = sum(len(m['efforts']) for m in suite['matrix']) * len(tasks)
+        self.assertEqual(len(first), expected)
+        self.assertEqual({c['repeat'] for c in first}, {1})
+        self.assertEqual({c['provider'] for c in first}, {'codex', 'claude'})
+        configure(path, repeats=2)
+        _, followup, tasks, _, second_seal = load_suite(path)
+        self.assertNotEqual(first_seal, second_seal)
+        self.assertEqual(len(schedule(followup, tasks)), 2 * expected)
+        configure(path, all_efforts=True)
+        self.assertEqual(read_json(path)['repeats'], 2)
+
     def test_repeat_averages_include_failures_and_preserve_missing_telemetry(self):
         rows = [{'task_id':'one','provider':'codex','model':'test','effort':'medium',
                  'completion':int(i != 1),'valid':True,'cost_usd':cost,'latency_seconds':latency,
@@ -422,7 +508,7 @@ class DiscoveryAndReportTests(Workspace):
         self.assertEqual((partial['status'],partial['expected_attempts'],partial['completion']), ('pending',3,0))
         rows[1]['cost_usd'] = None
         self.assertIsNone(average_attempts(rows, run)[0]['cost_usd'])
-        self.assertEqual(parser().parse_args(['smoke','--provider','codex','--output','unused']).repeats, 3)
+        self.assertEqual(parser().parse_args(['smoke','--provider','codex','--output','unused']).repeats, 1)
         self.assertEqual(read_json(self.path)['repeats'], 1)  # Explicit fixture override survives.
 
     def test_dashboard_scope_keeps_one_simulation_and_averages_runs_separately(self):

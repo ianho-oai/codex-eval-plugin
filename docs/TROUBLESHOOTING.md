@@ -37,6 +37,12 @@ Mythos is excluded from new default suites. Add it only on explicit request afte
 
 Confirm the exact ID and availability for the same key used by the runner. If the model remains unavailable, retain that finding and choose whether to wait for access or approve a narrower matrix. Do not silently replace it with another model or classify it as a failed coding task.
 
+## Native editing works in a terminal but fails inside an agent
+
+A nested native agent can encounter filesystem or namespace restrictions inherited from its parent. A passing version check or model listing does not verify native editing in that context. Check actual edit events, file changes, test-command exits, and helper stderr using a small approved task in the intended launch environment.
+
+If nested execution is unsupported, keep the configured sandbox intact and hand the exact approved evaluation command to an authorized ordinary terminal, or to the customer. Do not disable sandboxing or redirect protected runtime files. Record the execution-context change and retain any interrupted or timing-affected run separately; a clean terminal check does not establish that nested execution works.
+
 ## Recover without losing evidence
 
 1. Stop new dispatch for an affected active run by creating `RUN_DIR/stop-requested.json`; active attempts drain and are saved.
@@ -55,3 +61,9 @@ An explicit user-requested reset may remove confirmed native CLI-version errors 
 Explicit model removals use a per-run `excluded-models.json` receipt with provider/model pairs, requester, and reason; these remove that model's points and pending cells from active views. Original records remain accessible in `excluded_rows` and on disk. Removing either receipt restores the original view. A view exclusion does not cancel an active runner; request a graceful pause separately.
 
 Replacement attempts use fresh validated suites, updated pins, new output directories, and the same task/effort settings. Their pending cells count once in the active comparison. Raw evidence and recorded spend remain in the original artifacts even when excluded from the active view.
+
+## Execution check blocks a run
+
+Inspect `RUN/execution-checks/receipt-*.json` and the referenced native events, grader output, candidate and runtime diagnostics. The check must actually edit the file and run its test successfully. Exit 0 or agent prose alone is insufficient. A terminal that works may still fail when invoked inside another agent sandbox. Use the already approved command in an authorized ordinary terminal with the same sandbox settings, then resume pending work; retain the failed check and its costs. If model access/capacity caused the probe failure, resolve that issue before concluding the host is broken. A probe validates only its representative model/effort.
+
+`execution_check_interrupted` means a prior check lacks a final receipt; inspect retained trials and reconcile unknown spend before approving a new run. Do not delete evidence or mark it passed. Explicit capacity errors now share the bounded transient retry policy; exhausted retries require an approved policy extension or a later reviewed continuation, not unlimited retry.

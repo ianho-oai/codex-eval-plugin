@@ -165,8 +165,9 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
 def execution_summary(s):
     stop = s['limits']['spend_stop_usd']
     return {
-        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus cataloged default Claude models, at every supported single-agent effort level. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
+        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus cataloged default Claude models, at every supported single-agent effort level, one iteration per task/model/effort. Review the first round before approving two additional rounds for consistency. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
         'selected_matrix': s['matrix'],
+        'execution_check': 'Before each pending customer-run invocation: bounded edit-and-test check using the first configured model/effort per provider, same native environment and slots, up to 120 seconds per trial. Probe costs are separate from scored tasks and count toward spend stops. A failure blocks the matrix. Smoke runs are themselves readiness checks.',
         'execution_mode': s['execution']['mode'],
         'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',
         'repeats': s['repeats'],
@@ -184,6 +185,7 @@ def preflight(s):
         print(f"  {lane['provider']}:{lane['model']} — {', '.join(lane['efforts'])}", file=sys.stderr, flush=True)
     print(f"Selected: {s['repeats']} repeat(s). {summary['spend_policy']}", file=sys.stderr, flush=True)
     print(f"Execution: {summary['execution_mode']}. {summary['task_setup']}", file=sys.stderr, flush=True)
+    print(summary['execution_check'], file=sys.stderr, flush=True)
     result = {'execution_summary': summary}
     for provider in sorted({m['provider'] for m in s['matrix']}):
         binary = ex[provider + '_bin']

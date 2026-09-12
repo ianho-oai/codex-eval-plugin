@@ -251,6 +251,10 @@ def summarize(rows, scheduled):
         wins = sum(r['completion'] for r in valid)
         costs = [r.get('cost_usd') for r in group]
         known = [x for x in costs if x is not None]
+        # An incomplete retry aggregate can still contain measured charges.
+        # Prefer the complete cost when present so those trials are not counted twice.
+        known_spend = sum(r['cost_usd'] if r.get('cost_usd') is not None
+                          else (r.get('known_cost_usd') or 0) for r in group)
         latencies = [r['latency_seconds'] for r in group if r.get('latency_seconds') is not None]
         n = len(valid)
         # Wilson 95% interval; useful with repeats, never implied precision on one sample.
@@ -262,7 +266,7 @@ def summarize(rows, scheduled):
                         'scorable': n, 'infrastructure_invalid': len(group)-n, 'successes': wins,
                         'success_rate_all': wins/len(group), 'success_rate_scorable': p,
                         'success_rate_95_interval': [max(0, center-half), min(1, center+half)] if n else None,
-                        'known_cost_usd': sum(known), 'cost_missing': len(costs)-len(known),
+                        'known_cost_usd': known_spend, 'cost_missing': len(costs)-len(known),
                         'cost_per_success_usd': sum(known)/wins if wins and len(known) == len(costs) else None,
                         'median_latency_seconds': statistics.median(latencies) if latencies else None})
     return {'scheduled': scheduled, 'attempted': len(rows), 'pending': max(0, scheduled-len(rows)), 'groups': summary}
@@ -273,7 +277,7 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effor
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
               'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
-              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted']
+              'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted']
 
 
 def csv_text(rows):
@@ -288,6 +292,13 @@ def csv_text(rows):
 
 def report(root):
     d = dataset(root)
+    from .execution_check import saved_receipts
+    probes = [r for c in saved_receipts(root) for r in c['rows']]
+    if probes:
+        d['summary']['execution_check_cost'] = {
+            'known_cost_usd': sum(r['cost_usd'] if r.get('cost_usd') is not None else r.get('known_cost_usd', 0) for r in probes),
+            'incomplete_rows': sum(r.get('cost_usd') is None and not r.get('not_started') for r in probes),
+            'note': 'Additional setup cost, separate from scored task costs and model averages.'}
     write_json(Path(root) / 'summary.json', d['summary'])
     write_json(Path(root) / 'averages.json', {'rows': d['averages']})
     (Path(root) / 'results.csv').write_text(csv_text(d['rows']))

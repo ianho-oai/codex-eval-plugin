@@ -40,6 +40,7 @@ def normalize(provider, text, model, pricing):
               'provider_success': False, 'model_usage': {}, 'invalid_event_lines': invalid}
     if provider == 'codex':
         completed = [e for e in ev if e.get('type') == 'turn.completed']
+        states = [e['type'] for e in ev if e.get('type') in ('turn.started', 'turn.completed', 'turn.failed', 'error')]
         usage = [e.get('usage', {}) for e in completed]
         result.update(input_tokens=total(usage, 'input_tokens'), output_tokens=total(usage, 'output_tokens'),
                       cache_read_tokens=total(usage, 'cached_input_tokens'),
@@ -47,7 +48,9 @@ def normalize(provider, text, model, pricing):
                       reasoning_tokens=total(usage, 'reasoning_output_tokens'),
                       turns=len(completed) if completed else None, turn_unit='codex_conversation_turn',
                       tool_calls=sum(e.get('type') == 'item.completed' and e.get('item', {}).get('type') in ('command_execution', 'file_change') for e in ev) if ev else None,
-                      provider_success=bool(completed) and not any(e.get('type') in ('turn.failed', 'error') for e in ev))
+                      # Error events can describe recovered stream reconnects.
+                      # Require terminal completion; never erase a failed turn.
+                      provider_success=bool(states) and states[-1] == 'turn.completed' and 'turn.failed' not in states)
         # Native events currently aggregate a conversation turn, not each model request.
         # Never infer an exact long-context/cache-write charge from this aggregate.
         rate = pricing.get('models', {}).get(model)

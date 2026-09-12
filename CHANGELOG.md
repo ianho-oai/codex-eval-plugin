@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.6 — 2026-09-12
+
+- Gate customer matrices on a bounded native edit-and-test check in the actual launch environment, preserving separate probe evidence, costs and failures.
+- Retry recognized temporary capacity errors alongside rate limits, with cumulative ceilings and provider cooldowns shared across worker pools; retain every trial and unknown charge.
+- Add `discovery-report` JSON/Markdown coverage receipts for dates, sampled/exported sources, exclusions, inferred workflows and customer confirmation.
+- Enable logarithmic scales on both dashboard axes by default.
+
+## 0.9.5 — 2026-09-12
+
+- Include measured retry charges in report known-spend subtotals when the full attempt cost is unavailable. Keep missing-cost counts and cost-per-success uncertainty, avoid double counting complete costs, and preserve signed run evidence.
+
+## 0.9.4 — 2026-09-12
+
+- Default new customer suites and smoke runs to one iteration per task/model/effort. Keep the full default model/effort sweep and explicit repeat overrides.
+- Present first-round results and costs before asking for two additional consistency rounds. Document separately approved follow-up runs and careful pooled reporting without mutating original evidence.
+
+## 0.9.3 — 2026-09-11
+
+- Treat Codex reconnect notices followed by terminal completion as recovered events. Still require a successful native process and deterministic grader; failed turns, trailing errors, and unfinished turns remain unsuccessful.
+- Preserve original event evidence and usage. Add regression coverage for recovered rate limits, terminal failures, incomplete streams, and a verified pass without duplicate outer retries. Historical signed results and active frozen engines remain unchanged.
+
+## 0.9.2 — 2026-09-11
+
+- Make task quality an adaptive design, challenge, observe, diagnose, and repair loop. Use contract-driven counterexamples, sustained run observation, and bounded fair reruns under explicit repair scope. Keep initial authoring lightweight and preserve genuine failures.
+- Clarify supported execution-context checks and terminal handoff when nested native sandboxing is unavailable; preserve sandbox policy and separate affected timing evidence.
+- Accept valid dataclass-based Python candidates in the bundled slug grader by using normal import registration, with a regression test. Add targeted grader-design examples without treating them as exhaustive rules.
+
 ## 0.9.1 — 2026-09-11
 
 - Keep local candidate and private agent-home directories beneath each attempt, preserve installed toolchain paths in Codex shells, and disable login-shell initialization without inheriting credentials.

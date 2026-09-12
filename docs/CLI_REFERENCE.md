@@ -29,7 +29,7 @@ Customer entry point: [setup and starter prompt](../CUSTOMER_STARTER_PROMPT.md).
 ./eval dashboard evaluations/customer-run
 ```
 
-The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 36 model/effort configurations × 3 repeats = 324 calls**. There is **no spend stop by default**. Do a small smoke run first. Doctor checks local CLI versions, required flags, keys, and known model minimum versions; account access still needs a live check; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
+The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra models, plus the cataloged Claude Fable/Opus/Sonnet/Haiku lineup, using a dated catalog. Edit `matrix` to choose explicit model IDs, effort settings, and repeats. Default sample matrix: **3 tasks × 36 model/effort configurations × 1 repeat = 108 calls**. There is **no spend stop by default**. Do a small smoke run first. Doctor checks local CLI versions, required flags, keys, and known model minimum versions; account access still needs a live check; unavailable lanes are never silently removed. `models --refresh --provider codex|claude` lists account-visible IDs without modifying the suite. Limited-access models remain included and explicitly marked; account access is not guaranteed.
 
 New suites use local execution by default. Pin existing local CLI versions/paths and use small, self-contained tasks with unittest, already-installed pytest, Node tests, or an equivalent available runner. For iOS workflows, test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI testing. Docker remains available only when explicitly requested with `init ... --mode docker`; it is not part of the default customer flow. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
@@ -39,6 +39,7 @@ New suites use local execution by default. Pin existing local CLI versions/paths
 | --- | --- |
 | `init DIRECTORY` | Create a customer-owned suite and discovery record |
 | `history --provider ... --consent --output FILE` | Read approved JSONL user-message history, default last three months (90 days) |
+| `discovery-report DISCOVERY --evidence FILE --output coverage.json` | Generate JSON/Markdown source coverage and workflow confirmation receipt |
 | `repo --path PATH --output FILE` | Read local Git workflow evidence |
 | `repo --provider github --repo OWNER/REPO --output FILE` | Read merged PR metadata through `gh` |
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
@@ -138,7 +139,7 @@ Configure an authored suite before validation and approval. Repeat `--model` and
 ```sh
 ./eval configure evaluations/customer/suite.json \
   --model codex:gpt-5.6-sol --model claude:claude-sonnet-5 \
-  --task TASK_ID --task ANOTHER_TASK_ID --repeats 3
+  --task TASK_ID --task ANOTHER_TASK_ID --repeats 1
 ./eval validate evaluations/customer/suite.json --check-graders
 ./eval plan evaluations/customer/suite.json
 ./eval approve evaluations/customer/suite.json --by "Customer reviewer"
@@ -229,3 +230,28 @@ This read-only command returns one saved checkpoint per exact run directory, ded
 The evaluation skill uses these snapshots with the available visualize/live skills in Codex desktop. It samples about every 15–30 seconds while observing the runner, updates one registered view using apply_patch, and leaves a final checkpoint on completion or stop. The fragment has no network access. A saved running state is not a heartbeat or proof of a live process, and updates do not continue automatically after the observing turn ends. CLI-only environments retain text progress.
 
 Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
+
+## Optional consistency rounds
+
+New suites and smoke runs default to one iteration per task/model/effort. After reviewing the first round and its costs, the agent asks before two additional rounds. Use a separate, newly approved follow-up suite with `configure SUITE --repeats 2` and a fresh output directory; preserve the original run. See [staged repeats](../plugins/codex-eval-plugin/skills/evaluate/references/staged-repeats.md) for matching conditions, incremental cost estimates, and reporting. Existing explicit repeat settings are preserved.
+
+## Execution readiness and transient recovery
+
+For customer suites, `run` checks a tiny file edit and successful native shell test before matrix dispatch. It uses the first configured model/effort for each selected provider, the same executable, environment, sandbox and shared slot pool, up to 120 seconds per trial. `plan` discloses these additional calls. `execution-checks/receipt-*.json` and signed per-trial artifacts retain results, diagnostics, cost and token telemetry. `run.json.execution_check_cost` reports known probe cost and missing rows separately from scored attempts. Probe costs count toward spend stops. A failed probe blocks the matrix; diagnose its evidence before resuming. Each pending resume performs a fresh context check; a completed resume does not. An interrupted probe receipt requires evidence reconciliation instead of an automatic new probe. Smoke suites already perform a scoped readiness task.
+
+`--transient-retries N` (default 3; legacy alias `--rate-limit-retries`) limits cumulative additional trials per cell across resumes for explicit native rate limits and recognized capacity/overload errors. `--retry-delay 30` starts exponential backoff capped at 300 seconds; provider hints can extend a wait up to 3600 seconds. The ceiling is invocation-wide. Provider-wide deadlines are shared through `--slot-pool` across concurrent batches, or locally within a run otherwise. Healthy providers can continue; active calls are not cancelled. Unknown costs stay unknown, every trial is retained, and exhausted retries stop new dispatch. A later higher ceiling must be explicitly approved. Auth/quota/model-access errors, recovered notices and grader failures do not trigger retries.
+
+## Discovery coverage
+
+Use `history --source-kind direct` for original session roots and `--source-kind export` for selected/exported records; the default is `unspecified`. Never infer full coverage from parser success. Then run:
+
+```sh
+./eval discovery-report evaluations/customer/discovery.json \
+  --evidence evaluations/customer/history.json \
+  --evidence evaluations/customer/repository.json \
+  --output evaluations/customer/coverage.json
+```
+
+Omit evidence arguments for interview-only discovery. The companion `coverage.md` shows requested and observed dates, session/message counts, source scope, exclusions, unread records, assumptions, and workflow confirmation. In discovery.json, record per-workflow `source_refs` and `customer_confirmation`, plus `customer_confirmed_scope` only after the customer actually confirms them. Rerun the report after updating this record. Receipts contain no copied message excerpts and remain private in the ignored evaluation directory.
+
+Dashboard X and Y logarithmic scales are enabled by default; each can be switched off independently. Nonpositive values remain explicitly unplottable on a log axis.
