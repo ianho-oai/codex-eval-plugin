@@ -34,6 +34,8 @@ New runs default to one iteration per task/model/effort (including smoke). After
 
 Each axis has an independent logarithmic toggle. Nonpositive measurements are explicitly counted as unplottable on log axes; values are never shifted or silently changed. Provider checkbox groups use the same blue/orange palette as successful points.
 
+Post-run difficulty relabeling uses a run-local `difficulty-labels.json` receipt tied to the original run seal, with a requester, reason, and exact task/from/to mappings. Reports, CSV, and dashboards apply these labels after verifying original evidence and retain `recorded_difficulty`. `harder` is supported as a display category after `hard`; authored task schemas and sealed run inputs retain their original difficulty tiers. Relabeling never rewrites scores or sealed artifacts.
+
 The run CLI defaults to a five-worker queue with immediate refill. `--workers 1` restores sequential execution; shared `--slot-pool` directories enforce a combined limit across batches. Scheduler metadata records workers, implementation hash and concurrency caveat. A single coordinator writes checkpoints; stop requests, unknown spend and budget thresholds drain active work before stopping.
 
 New suites expand every selected model across its catalog-supported efforts. `configure --all-efforts` expands existing suites; repeated `--effort` narrows to levels supported by every selected model. Customer plans disclose capability exclusions, and model labels include effort. The first sweep uses one repeat; extra rounds require later customer approval.

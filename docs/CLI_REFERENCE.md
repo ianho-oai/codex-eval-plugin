@@ -132,6 +132,20 @@ The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invo
 
 ### Dashboard design
 
+For an explicitly requested post-run difficulty correction, place `difficulty-labels.json` in each affected run directory. It is a display receipt, not a new task definition:
+
+```json
+{
+  "schema_version": 1,
+  "run_seal": "COPY_THE_SEAL_FROM_THIS_RUN_JSON",
+  "requested_by": "Customer reviewer",
+  "reason": "Separate the more demanding repository tasks",
+  "tasks": [{"task_id": "TASK_ID", "from": "hard", "to": "harder"}]
+}
+```
+
+Labels can be `easy`, `medium`, `hard`, or `harder`. Task IDs and original labels must match the saved task metadata. Reports and dashboards verify the original results first, then apply the receipt to task descriptions, result rows, averages, and CSV exports, retaining `recorded_difficulty`. Saved input definitions, approvals, scores, and raw results stay unchanged. Remove the receipt to restore the original labels; regenerate any report exports afterward. An already-running dashboard server must be restarted when upgrading to code that supports these receipts.
+
 The chart is the main view. Model-name labels use Codex blue (`#339cff`, blue300 in the [OpenAI developer stylesheet](https://developers.openai.com/_astro/PageLayout.BSuKgUPa.css)) and Claude orange. Typography prefers locally installed OpenAI Sans, the family identified in [OpenAI design guidelines](https://openai.com/brand/), with system sans-serif fallbacks; no font download is required. The task-description table remains; model summary tables, explanatory sections, and run-count badges are omitted from the UI. Detailed telemetry and source provenance remain available through CLI reports, JSON, and CSV.
 
 ### Choose models, tasks, and repeats

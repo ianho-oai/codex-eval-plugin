@@ -144,8 +144,8 @@ function buildModels(){
   modelSummary();bulkControls($('model-options'),modelSelections,modelSummary,'models');
 }
 function buildTasks(){
-  const rank={easy:0,medium:1,hard:2};
-  const tasks=[...new Map(data.rows.map(r=>[taskKey(r),r])).values()].sort((a,b)=>(rank[a.difficulty]??3)-(rank[b.difficulty]??3)||a.task_id.localeCompare(b.task_id));
+  const rank={easy:0,medium:1,hard:2,harder:3};
+  const tasks=[...new Map(data.rows.map(r=>[taskKey(r),r])).values()].sort((a,b)=>(rank[a.difficulty]??4)-(rank[b.difficulty]??4)||a.task_id.localeCompare(b.task_id));
   const keys=tasks.map(taskKey),current=[...$('task-options').querySelectorAll('input.choice')].map(b=>b.value);
   if(JSON.stringify(keys)===JSON.stringify(current))return;
   $('task-options').replaceChildren();
