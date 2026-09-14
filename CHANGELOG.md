@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add run-scoped difficulty display receipts and a Harder dashboard category. Preserve original sealed inputs/results and expose the recorded difficulty in exports. Validation: 111 unit tests, self-check, live data reconciliation, and browser verification. Remove a run's receipt to restore its original labels.
+- Clarify the main README's underlying CLI workflow: discovery helpers, configuration and approval, native agent execution, monitoring/resume, and report/dashboard commands. Documentation only; checked command syntax against the CLI parser, behavior against the implementation, local links, and diff formatting. No release or provider run required.
+
 ## 0.10.1 — 2026-09-12
 
 - Default new customer suites to a 30-minute agent timeout per attempt for both providers. Preserve separate grader and smoke/readiness limits and all existing approved run settings.

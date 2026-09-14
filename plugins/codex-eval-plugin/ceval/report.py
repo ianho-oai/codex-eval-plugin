@@ -176,6 +176,43 @@ def comparison_attempt(row, folder, pricing):
     return result, receipts
 
 
+def difficulty_labels(root, run, descriptions, rows, accounting_rows):
+    """Apply run-scoped display labels after verifying original result evidence."""
+    path = root / 'difficulty-labels.json'
+    if not path.exists():
+        return descriptions, rows, accounting_rows
+    receipt = read_json(path)
+    require(isinstance(receipt, dict) and receipt.get('schema_version') == 1
+            and receipt.get('requested_by') and receipt.get('reason')
+            and run.get('seal') and receipt.get('run_seal') == run['seal'],
+            'Invalid difficulty-label receipt or run seal mismatch')
+    entries = receipt.get('tasks')
+    require(isinstance(entries, list) and bool(entries), 'Difficulty labels require task entries')
+    known = {t['task_id']: t.get('difficulty') for t in descriptions}
+    labels = {}
+    for entry in entries:
+        require(isinstance(entry, dict), 'Invalid difficulty-label task')
+        task_id, original, label = entry.get('task_id'), entry.get('from'), entry.get('to')
+        require(isinstance(task_id, str) and task_id in known and task_id not in labels
+                and original == known[task_id] and isinstance(label, str)
+                and label in ('easy', 'medium', 'hard', 'harder'),
+                'Unknown, duplicate, or invalid difficulty-label task')
+        labels[task_id] = (original, label)
+
+    def apply(records):
+        result = []
+        for record in records:
+            change = labels.get(record.get('task_id'))
+            if change:
+                original, label = change
+                require(record.get('difficulty') == original, 'Difficulty-label source mismatch')
+                record = dict(record, difficulty=label, recorded_difficulty=original)
+            result.append(record)
+        return result
+
+    return apply(descriptions), apply(rows), apply(accounting_rows)
+
+
 def dataset(root, *, comparison=False):
     root = Path(root)
     run = read_json(root / 'run.json')
@@ -204,6 +241,7 @@ def dataset(root, *, comparison=False):
             if value is not None:
                 projected.append(value)
         rows = projected
+    descriptions, rows, accounting_rows = difficulty_labels(root, run, descriptions, rows, accounting_rows)
     summary = summarize(rows, len(run.get('schedule', [])))
     if comparison:
         summary.update(comparison_policy='exclude_rate_limits_v1',
@@ -292,6 +330,8 @@ def average_attempts(rows, run):
         expected = scheduled.get(identity, run.get('suite', {}).get('repeats', len(group)))
         successes = sum(r.get('completion') == 1 for r in group)
         point = {k: first.get(k) for k in ('task_id', 'difficulty', 'provider', 'model', 'effort', 'execution_mode')}
+        if 'recorded_difficulty' in first:
+            point['recorded_difficulty'] = first['recorded_difficulty']
         point.update(attempts=len(group), expected_attempts=expected, successes=successes,
                      completion=int(successes == expected and len(group) == expected),
                      status='pending' if len(group) < expected else 'passed' if successes == len(group) else 'failed',
@@ -335,7 +375,7 @@ def summarize(rows, scheduled):
     return {'scheduled': scheduled, 'attempted': len(rows), 'pending': max(0, scheduled-len(rows)), 'groups': summary}
 
 
-CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'provider', 'model', 'effort', 'repeat', 'completion', 'status',
+CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'recorded_difficulty', 'provider', 'model', 'effort', 'repeat', 'completion', 'status',
               'valid', 'simulation', 'execution_mode', 'latency_seconds', 'agent_seconds', 'grader_seconds',
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
