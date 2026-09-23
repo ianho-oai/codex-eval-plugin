@@ -56,8 +56,14 @@ Mythos is excluded from default selections. The evaluation skill runs authentica
 
 Model median diamonds summarize currently selected task/configuration averages with equal weight per plotted average, pooling tasks and runs per provider/model/effort; effort levels never share a median. Compute paired X/Y medians in raw units before log clipping. The top-right Median focus switch fades task points/labels and enlarges medians; it does not alter inputs or saved results.
 
+The circle above each median is a proportional pie: green is successful completed runs divided by all completed runs for the selected model/effort group; red is the remainder. Include selected results with missing axis telemetry in that fraction. Pending repeats are excluded from the pie denominator and disclosed in hover/focus details alongside the exact passed/recorded fraction.
+
 Host-side evaluation progress uses installed visualize/live skills when available in Codex desktop, with one apply_patch-refreshed fragment and read-only `progress RUN_DIR ...` snapshots. Keep visualization outside the sealed headless agents and preserve the single exported evaluation skill. Missing visualization support falls back to text; saved running state is not proof of process liveness.
 
 Median controls, legend, and diamonds appear only when at least two task checkboxes are selected. With zero or one selected task, points retain normal contrast even if Median focus was previously enabled. Selecting multiple tasks restores the prior focus preference. Median labels include model and effort.
+
+Clicking a median diamond toggles that model/effort diamond, label, and result pie to grey; clicking again restores them. Enter/Space on the diamond provides the same toggle. This display state survives live refreshes, filters, and axis changes within the page without changing any data or calculations.
+
+Median focus includes a 0–100% minimum pass-rate slider. It filters entire model/effort medians using passed divided by completed runs for selected tasks, including recorded infrastructure errors in the denominator and excluding pending runs. Apply the threshold after aggregation; never discard failed rows before computing medians. Default zero shows all medians, and the control is hidden outside Median focus. Task points and saved evidence are unaffected.
 
 Customer runs gate dispatch on a bounded native edit-and-test probe per provider in the actual launch context, with separate receipts and costs included in spend checks. Discovery proposals include the CLI-generated coverage receipt and customer-confirmed scope; selected samples and exports never imply a complete lookback crawl. Both dashboard log axes default on. See docs/CLI_REFERENCE.md for operational details.

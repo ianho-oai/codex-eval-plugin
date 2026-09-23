@@ -14,6 +14,10 @@
       <div class="axis-setting"><label>X-axis<select id="x"></select></label><label class="scale-toggle"><input id="log-x" type="checkbox" checked>Log scale</label></div>
       <div class="axis-setting"><label>Y-axis<select id="y"></select></label><label class="scale-toggle"><input id="log-y" type="checkbox" checked>Log scale</label></div>
       </div>
+      <label id="median-score-control" class="median-score-control" hidden>
+        <span>Minimum pass rate <output id="median-score-value" for="median-score">0%</output></span>
+        <input id="median-score" type="range" min="0" max="100" step="1" value="0" aria-label="Minimum median pass rate" aria-valuetext="0 percent">
+      </label>
     </div>
     <div id="task-legend" class="legend" aria-label="Task point colors">
       <span class="legend-item"><i class="legend-symbol codex-dot" aria-hidden="true"></i>Codex</span>
@@ -28,11 +32,10 @@
         <span class="legend-item"><i class="legend-symbol diamond failed-dot" aria-hidden="true"></i>No passing runs</span>
       </div>
       <div class="legend status-legend">
-        <span class="legend-caption">Dot above diamond</span>
-        <span class="legend-item"><i class="legend-symbol pass-dot" aria-hidden="true"></i>All passed</span>
-        <span class="legend-item"><i class="legend-symbol mixed-dot" aria-hidden="true"></i>Some passed</span>
-        <span class="legend-item"><i class="legend-symbol fail-dot" aria-hidden="true"></i>All failed</span>
-        <span class="legend-item"><i class="legend-symbol failed-dot" aria-hidden="true"></i>Repeats pending</span>
+        <span class="legend-caption">Pie above diamond · completed runs</span>
+        <span class="legend-item"><i class="legend-symbol pass-dot" aria-hidden="true"></i>Passed</span>
+        <span class="legend-item"><i class="legend-symbol fail-dot" aria-hidden="true"></i>Not passed</span>
+        <span class="legend-caption">Hover for fraction and pending repeats</span>
       </div>
     </div>
     <div id="plot-note" class="plot-note" role="status" hidden></div>

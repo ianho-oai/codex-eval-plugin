@@ -32,4 +32,7 @@ function modelMedians(rows, x, y) {
 function medianStatusLabel(r){
   return `${r.successes}/${r.attempts} runs passed${r.attempts<r.expected_attempts?`, ${r.expected_attempts-r.attempts} pending`:''}`;
 }
-if (typeof module !== 'undefined' && module.exports) module.exports = {modelMedians, medianStatusLabel};
+function medianMeetsScore(r,minimumPercent){
+  return minimumPercent<=0 || (r.attempts>0 && r.successes*100>=minimumPercent*r.attempts);
+}
+if (typeof module !== 'undefined' && module.exports) module.exports = {modelMedians, medianStatusLabel, medianMeetsScore};

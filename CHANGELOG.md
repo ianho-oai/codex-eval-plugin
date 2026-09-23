@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show proportional pass/fail pies above model medians, let users grey out individual medians, and filter medians by minimum completed-run pass rate. Preserve these display choices across the existing live refresh without changing saved results.
+
 - Add run-scoped difficulty display receipts and a Harder dashboard category. Preserve original sealed inputs/results and expose the recorded difficulty in exports. Validation: 111 unit tests, self-check, live data reconciliation, and browser verification. Remove a run's receipt to restore its original labels.
 - Clarify the main README's underlying CLI workflow: discovery helpers, configuration and approval, native agent execution, monitoring/resume, and report/dashboard commands. Documentation only; checked command syntax against the CLI parser, behavior against the implementation, local links, and diff formatting. No release or provider run required.
 

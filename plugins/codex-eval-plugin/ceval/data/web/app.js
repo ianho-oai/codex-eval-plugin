@@ -6,6 +6,8 @@ const metrics = {
 };
 let data = null;
 const modelSelections=new Map(),taskSelections=new Map();
+const mutedMedians=new Set();
+const medianKey=r=>JSON.stringify([r.provider,r.model,r.effort||'default']);
 const taskKey=r=>JSON.stringify([r.task_id,r.difficulty]);
 const modelLabel=r=>`${r.model} · ${r.effort||'default'}`;
 const modelKey=r=>JSON.stringify([r.provider,r.model]);
@@ -44,14 +46,16 @@ function plot(rows,showMedians){
   const logX=$('log-x').checked,logY=$('log-y').checked;
   const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
   const focus=showMedians&&$('median-focus').checked;
-  const medians=focus?modelMedians(rows,x,y):[];
+  const minimumScore=Number($('median-score').value);
+  const medians=focus?modelMedians(rows,x,y).filter(r=>medianMeetsScore(r,minimumScore)):[];
   root.classList.toggle('median-focus',focus);
   const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
   const omitted=measured.length-points.length;
   const omittedMedians=medians.length-medianPoints.length;
-  $('plot-note').hidden=!(omitted||omittedMedians);
-  $('plot-note').textContent=`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`;
+  const noMedians=focus&&!medians.length;
+  $('plot-note').hidden=!(omitted||omittedMedians||noMedians);
+  $('plot-note').textContent=[noMedians?`No medians meet the ${minimumScore}% minimum pass rate.`:'',omitted||omittedMedians?`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`:''].filter(Boolean).join(' ');
   if(!points.length&&!medianPoints.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},measured.length&&omitted?'Log scales require positive values.':'No measured points for these filters and axes.'));return;}
   const scale = (key,log) => {
     const values=[...points,...medianPoints].map(r=>r[key]);
@@ -89,21 +93,33 @@ function plot(rows,showMedians){
   for(const r of [...points,...medianPoints]){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
     const label=modelLabel(r),size=focus?13:9;
-    if($('labels').checked)(r.median?medianLayer:labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
+    const medianGroup=r.median?svg('g',{class:'median-mark'}):null;
+    if(medianGroup)medianLayer.append(medianGroup);
+    if($('labels').checked)(medianGroup||labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
     const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
     const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, median of ${r.point_count} task/configuration averages, ${medianStatusLabel(r)}`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
-    dot.addEventListener('click',()=>details(r,dot));dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();details(r,dot);}if(e.key==='Escape')hideDetails();});
-    (r.median?medianLayer:pointLayer).append(dot);
+    const syncMuted=()=>{const muted=mutedMedians.has(medianKey(r));medianGroup.classList.toggle('median-muted',muted);dot.setAttribute('aria-pressed',String(muted));};
+    const activate=()=>{
+      if(r.median){const key=medianKey(r);if(mutedMedians.has(key))mutedMedians.delete(key);else mutedMedians.add(key);syncMuted();}
+      details(r,dot);
+    };
+    dot.addEventListener('click',activate);
+    dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}if(e.key==='Escape')hideDetails();});
+    (medianGroup||pointLayer).append(dot);
+    if(medianGroup)syncMuted();
     if(r.median){
-      const cy=py-size-8,radius=5;
+      const cy=py-size-10,radius=7;
       const badge=svg('g',{class:'median-status','aria-hidden':'true','pointer-events':'none'});
-      const fill=r.result_status==='passed'?'#48c78e':r.result_status==='failed'?'#ef6b73':r.result_status==='mixed'?'#ef6b73':'#a3a3a3';
-      badge.append(svg('circle',{cx:px,cy,r:radius,fill}));
-      if(r.result_status==='mixed')badge.append(svg('path',{d:`M ${px} ${cy-radius} A ${radius} ${radius} 0 0 0 ${px} ${cy+radius} Z`,fill:'#48c78e'}));
+      const fraction=r.attempts>0?Math.max(0,Math.min(1,r.successes/r.attempts)):0;
+      badge.append(svg('circle',{cx:px,cy,r:radius,fill:!r.attempts?'#a3a3a3':fraction===1?'#48c78e':'#ef6b73'}));
+      if(fraction>0&&fraction<1){
+        const angle=2*Math.PI*fraction,endX=px+radius*Math.sin(angle),endY=cy-radius*Math.cos(angle);
+        badge.append(svg('path',{d:`M ${px} ${cy} L ${px} ${cy-radius} A ${radius} ${radius} 0 ${fraction>.5?1:0} 1 ${endX} ${endY} Z`,fill:'#48c78e'}));
+      }
       badge.append(svg('circle',{cx:px,cy,r:radius,fill:'none',stroke:'#171717','stroke-width':1}));
-      medianLayer.append(badge);
+      medianGroup.append(badge);
     }
   }
 }
@@ -177,6 +193,7 @@ function render(){
   const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
   const focus=showMedians&&$('median-focus').checked;
   $('median-control').hidden=!showMedians;$('median-legend').hidden=!focus;$('task-legend').hidden=focus;
+  $('median-score-control').hidden=!focus;
   const rows=filtered();plot(rows,showMedians);taskTable(filtered(data.rows));
 }
 async function load(){
@@ -192,6 +209,12 @@ async function load(){
   }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;}
 }
 for(const id of ['x','y','labels','median-focus','log-x','log-y'])$(id).addEventListener('change',render);
+$('median-score').addEventListener('input',()=>{
+  const value=$('median-score').value;
+  $('median-score-value').textContent=`${value}%`;
+  $('median-score').setAttribute('aria-valuetext',`${value} percent`);
+  render();
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideDetails();$('models-menu').open=false;$('tasks-menu').open=false;}});
 window.addEventListener('resize',hideDetails);document.addEventListener('pointerdown',e=>{if(!e.target.closest('.point'))hideDetails();if(!e.target.closest('#models-menu'))$('models-menu').open=false;if(!e.target.closest('#tasks-menu'))$('tasks-menu').open=false;});
 load();setInterval(load,15000);
