@@ -4,6 +4,25 @@ from pathlib import Path
 
 
 class DashboardMedianTests(unittest.TestCase):
+    def test_minimum_score_uses_all_completed_results_without_changing_median(self):
+        script = r'''
+const assert = require('node:assert/strict');
+const {modelMedians,medianMeetsScore} = require('./plugins/codex-eval-plugin/ceval/data/web/medians.js');
+const base={provider:'claude',model:'one',effort:'low',task_id:'a'};
+const rows=[{...base,cost_usd:1,latency_seconds:10,successes:1,attempts:1,expected_attempts:2},
+  {...base,task_id:'b',cost_usd:9,latency_seconds:90,successes:0,attempts:1,expected_attempts:1},
+  {...base,task_id:'c',cost_usd:null,latency_seconds:null,successes:1,attempts:2,expected_attempts:2}];
+const original=JSON.stringify(rows),[m]=modelMedians(rows,'cost_usd','latency_seconds');
+assert.equal(m.cost_usd,5);assert.equal(m.latency_seconds,50);
+assert.equal(m.successes,2);assert.equal(m.attempts,4);
+assert.equal(medianMeetsScore(m,50),true);assert.equal(medianMeetsScore(m,51),false);
+assert.equal(medianMeetsScore({successes:0,attempts:0},0),true);
+assert.equal(medianMeetsScore({successes:0,attempts:0},1),false);
+assert.equal(medianMeetsScore({successes:3,attempts:3,expected_attempts:5},100),true);
+assert.equal(JSON.stringify(rows),original);
+'''
+        subprocess.run(['node', '-e', script], cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True)
+
     def test_medians_pool_visible_configurations_keep_pairs_and_preserve_zero(self):
         script = r'''
 const assert = require('node:assert/strict');
