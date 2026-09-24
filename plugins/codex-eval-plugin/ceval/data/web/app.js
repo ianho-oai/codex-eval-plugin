@@ -2,7 +2,8 @@
 const $ = id => document.getElementById(id);
 const metrics = {
   cost_usd:'Task cost · USD', latency_seconds:'Task latency · s',
-  input_tokens:'Total input tokens', output_tokens:'Output tokens', cache_read_tokens:'Cache read tokens'
+  input_tokens:'Total input tokens', output_tokens:'Output tokens', cache_read_tokens:'Cache read tokens',
+  copilot_usage_value_usd:'Copilot usage value · USD (not invoice)', copilot_ai_credits:'Copilot AI credits'
 };
 let data = null;
 const modelSelections=new Map(),taskSelections=new Map();
@@ -18,17 +19,64 @@ function el(tag,text,className){const e=document.createElement(tag); if(text !==
 function option(select,value,label){const o=el('option',label);o.value=value;select.append(o);}
 for(const [key,label] of Object.entries(metrics)){option($('x'),key,label);option($('y'),key,label);}
 $('x').value='cost_usd';$('y').value='latency_seconds';
+const viewDefaults={x:'cost_usd',y:'latency_seconds',labels:true,'median-focus':false,'log-x':true,'log-y':true,'median-score':0};
+function syncScore(){
+  const value=$('median-score').value;
+  $('median-score-value').textContent=`${value}%`;
+  $('median-score').setAttribute('aria-valuetext',`${value} percent`);
+}
+function restoreView(){
+  let view={};
+  try{const parsed=JSON.parse(new URL(location.href).searchParams.get('view'));if(parsed&&parsed.v===1)view=parsed;}catch{/* Invalid links use the normal defaults. */}
+  for(const [id,fallback] of Object.entries(viewDefaults)){
+    const value=view[id];
+    if(typeof fallback==='boolean')$(id).checked=typeof value==='boolean'?value:fallback;
+    else if(id==='median-score')$(id).value=Number.isInteger(value)&&value>=0&&value<=100?value:fallback;
+    else $(id).value=Object.hasOwn(metrics,value)?value:fallback;
+  }
+  const keys=(value,size)=>Array.isArray(value)?value.filter(key=>{
+    if(typeof key!=='string')return false;
+    try{const parts=JSON.parse(key);return Array.isArray(parts)&&parts.length===size&&parts.every(part=>typeof part==='string');}catch{return false;}
+  }):[];
+  taskSelections.clear();modelSelections.clear();mutedMedians.clear();
+  for(const key of keys(view.omitTasks,2))taskSelections.set(key,false);
+  for(const key of keys(view.omitModels,2))modelSelections.set(key,false);
+  for(const key of keys(view.mutedMedians,3))mutedMedians.add(key);
+  syncScore();
+  // Rebuild controls even when only selections changed, not the available data.
+  $('task-options').replaceChildren();$('model-options').replaceChildren();
+  if(data){buildModels();buildTasks();render();}
+}
+function saveView(){
+  const view={v:1};
+  for(const [id,fallback] of Object.entries(viewDefaults)){
+    const value=typeof fallback==='boolean'?$(id).checked:typeof fallback==='number'?Number($(id).value):$(id).value;
+    // X defaults depend on the available providers; preserve an explicit cost
+    // choice too, so reload never replaces it with the Copilot token default.
+    if(id==='x'||value!==fallback)view[id]=value;
+  }
+  for(const [name,keys] of [
+    ['omitTasks',[...taskSelections].filter(([,selected])=>!selected).map(([key])=>key)],
+    ['omitModels',[...modelSelections].filter(([,selected])=>!selected).map(([key])=>key)],
+    ['mutedMedians',[...mutedMedians]]
+  ])if(keys.length)view[name]=keys.sort();
+  const url=new URL(location.href);
+  if(Object.keys(view).length>1)url.searchParams.set('view',JSON.stringify(view));else url.searchParams.delete('view');
+  if(url.href!==location.href)history.replaceState(null,'',url);
+}
+restoreView();
+window.addEventListener('popstate',restoreView);
 function filtered(rows=data.averages||data.rows){return rows.filter(r=>taskSelections.get(taskKey(r))&&modelSelections.get(modelKey(r)));}
-const colors={codex:'#339cff',claude:'#eaa582'};
+const colors={codex:'#339cff',claude:'#eaa582',copilot:'#a78bfa'};
 const pointColor=r=>(r.successes??r.completion)>0?(colors[r.provider]||'#ccc'):'#a3a3a3';
 const resultLabel=r=>r.attempts!==undefined?`${r.status==='pending'?'Pending':r.completion===1?'Pass':'Fail'} · ${r.successes}/${r.attempts} passed${r.attempts<r.expected_attempts?`, ${r.attempts}/${r.expected_attempts} run`:''}`:(r.completion===1?'Pass':'Fail');
 function hideDetails(){ $('tooltip').hidden=true; }
 function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
-  const formatMetric=key=>key==='cost_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
+  const formatMetric=key=>key==='cost_usd'||key==='copilot_usage_value_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
   const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Results',medianStatusLabel(r)],['Reasoning effort',r.effort],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
-    [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
+    [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],r.provider==='copilot'?['Usage value (not invoice)',money(r.copilot_usage_value_usd)]:['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
   for(const [label,value] of fields){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
   }
@@ -54,8 +102,10 @@ function plot(rows,showMedians){
   const omitted=measured.length-points.length;
   const omittedMedians=medians.length-medianPoints.length;
   const noMedians=focus&&!medians.length;
-  $('plot-note').hidden=!(omitted||omittedMedians||noMedians);
-  $('plot-note').textContent=[noMedians?`No medians meet the ${minimumScore}% minimum pass rate.`:'',omitted||omittedMedians?`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`:''].filter(Boolean).join(' ');
+  const missing=rows.length-measured.length;
+  const billingNote=rows.some(r=>r.provider==='copilot')?'Copilot usage value is separate from invoice cost. Task cost excludes Copilot; use token/latency axes for all providers.':'';
+  $('plot-note').hidden=!(missing||omitted||omittedMedians||noMedians||billingNote);
+  $('plot-note').textContent=[billingNote,missing?`${missing} task point${missing===1?'':'s'} have missing measurements for these axes.`:'',noMedians?`No medians meet the ${minimumScore}% minimum pass rate.`:'',omitted||omittedMedians?`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`:''].filter(Boolean).join(' ');
   if(!points.length&&!medianPoints.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},measured.length&&omitted?'Log scales require positive values.':'No measured points for these filters and axes.'));return;}
   const scale = (key,log) => {
     const values=[...points,...medianPoints].map(r=>r[key]);
@@ -77,7 +127,7 @@ function plot(rows,showMedians){
   const tick = (key,value,step) => {
     const decimals=Math.max(0,-Math.floor(Math.log10(step||value||1)));
     const formatted=value!==0&&(Math.abs(value)<.00001||Math.abs(value)>=1e8)?value.toExponential(0):new Intl.NumberFormat('en',{maximumFractionDigits:Math.min(8,decimals)}).format(value);
-    return key==='cost_usd'?'$'+formatted:formatted;
+    return key==='cost_usd'||key==='copilot_usage_value_usd'?'$'+formatted:formatted;
   };
   const left=120,right=1160,top=30,bottom=485;
   for(const value of sx.ticks){
@@ -102,7 +152,7 @@ function plot(rows,showMedians){
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     const syncMuted=()=>{const muted=mutedMedians.has(medianKey(r));medianGroup.classList.toggle('median-muted',muted);dot.setAttribute('aria-pressed',String(muted));};
     const activate=()=>{
-      if(r.median){const key=medianKey(r);if(mutedMedians.has(key))mutedMedians.delete(key);else mutedMedians.add(key);syncMuted();}
+      if(r.median){const key=medianKey(r);if(mutedMedians.has(key))mutedMedians.delete(key);else mutedMedians.add(key);syncMuted();saveView();}
       details(r,dot);
     };
     dot.addEventListener('click',activate);
@@ -148,7 +198,7 @@ function buildModels(){
   if(JSON.stringify(keys)===JSON.stringify(current))return;
   $('model-options').replaceChildren();
   for(const provider of [...new Set(models.map(m=>m.provider))]){
-    const group=el('fieldset'),legend=el('legend',provider==='codex'?'Codex':provider==='claude'?'Claude Code':provider,provider==='codex'?'codex-key':'claude-key');group.dataset.provider=provider;group.append(legend);
+    const group=el('fieldset'),legend=el('legend',({codex:'Codex',claude:'Claude Code',copilot:'GitHub Copilot'})[provider]||provider);legend.style.color=colors[provider]||'#aaa';group.dataset.provider=provider;group.append(legend);
     for(const model of models.filter(m=>m.provider===provider)){
       const key=modelKey(model);if(!modelSelections.has(key))modelSelections.set(key,true);
       const label=el('label',undefined,'model-option'),input=el('input');input.type='checkbox';input.className='choice';input.value=key;input.checked=modelSelections.get(key);input.style.accentColor=colors[provider]||'#aaa';
@@ -160,7 +210,7 @@ function buildModels(){
   modelSummary();bulkControls($('model-options'),modelSelections,modelSummary,'models');
 }
 function buildTasks(){
-  const rank={easy:0,medium:1,hard:2,harder:3};
+  const rank={easy:0,medium:1,hard:2,harder:3,'harder-1':4,'harder-2':5};
   const tasks=[...new Map(data.rows.map(r=>[taskKey(r),r])).values()].sort((a,b)=>(rank[a.difficulty]??4)-(rank[b.difficulty]??4)||a.task_id.localeCompare(b.task_id));
   const keys=tasks.map(taskKey),current=[...$('task-options').querySelectorAll('input.choice')].map(b=>b.value);
   if(JSON.stringify(keys)===JSON.stringify(current))return;
@@ -190,6 +240,7 @@ function taskTable(rows){
 }
 function render(){
   if(!data)return;
+  saveView();
   const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
   const focus=showMedians&&$('median-focus').checked;
   $('median-control').hidden=!showMedians;$('median-legend').hidden=!focus;$('task-legend').hidden=focus;
@@ -199,7 +250,12 @@ function render(){
 async function load(){
   try{
     const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);
-    const next=await r.json(),unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
+    const next=await r.json(),firstLoad=!data,unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
+    if(firstLoad&&data.rows.some(r=>r.provider==='copilot')){
+      let savedX;
+      try{const view=JSON.parse(new URL(location.href).searchParams.get('view'));if(view?.v===1)savedX=view.x??'cost_usd';}catch{}
+      if(!Object.hasOwn(metrics,savedX))$('x').value='input_tokens';
+    }
     const simulated=data.run.simulation||data.rows.some(r=>r.simulation);
     $('banner').hidden=!simulated;
     $('banner').textContent=simulated?'Demo data — synthetic interface fixtures.':'';
@@ -210,9 +266,7 @@ async function load(){
 }
 for(const id of ['x','y','labels','median-focus','log-x','log-y'])$(id).addEventListener('change',render);
 $('median-score').addEventListener('input',()=>{
-  const value=$('median-score').value;
-  $('median-score-value').textContent=`${value}%`;
-  $('median-score').setAttribute('aria-valuetext',`${value} percent`);
+  syncScore();
   render();
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideDetails();$('models-menu').open=false;$('tasks-menu').open=false;}});

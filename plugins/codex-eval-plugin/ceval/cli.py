@@ -23,6 +23,7 @@ from .runner import clean_env, execute, preflight, execution_summary, run, sched
 from .catalog import examples, portfolio
 from .progress import progress
 from .reflection import reflect, clear_review_pause
+from .copilot_auth import selected_account
 
 
 def load_local_keys():
@@ -31,7 +32,7 @@ def load_local_keys():
     if not path.is_file():
         return
     for number, line in enumerate(path.read_text().splitlines(), 1):
-        match = re.match(r'^\s*(?:export\s+)?(OPENAI_API_KEY|ANTHROPIC_API_KEY)\s*=\s*(.*)$', line)
+        match = re.match(r'^\s*(?:export\s+)?(OPENAI_API_KEY|ANTHROPIC_API_KEY|COPILOT_GITHUB_TOKEN)\s*=\s*(.*)$', line)
         if not match or match[1] in os.environ:
             continue
         try:
@@ -67,7 +68,11 @@ def initialize(destination, mode, image, purpose='customer'):
 
 def models(provider, refresh):
     if not refresh:
-        return read_json(DATA / 'models.json')
+        catalog = read_json(DATA / 'models.json')
+        if provider:
+            catalog['models'] = [m for m in catalog['models'] if m['provider'] == provider]
+        return catalog
+    require(provider != 'copilot', 'Copilot has no integrated account model-list endpoint. Check /model in Copilot CLI; then run a bounded native smoke test. Catalog membership is not access proof.')
     require(provider in ('codex', 'claude'), '--refresh requires --provider')
     key_name = 'OPENAI_API_KEY' if provider == 'codex' else 'ANTHROPIC_API_KEY'
     require(bool(os.environ.get(key_name)), f'{key_name} is missing; set it securely in the invoking terminal')
@@ -98,6 +103,10 @@ def doctor(suite, check_model_access=False):
     if check_model_access:
         for provider in sorted({lane['provider'] for lane in suite['matrix']}):
             probe = result[provider]
+            if provider == 'copilot':
+                probe.update(account_check_note='Copilot account listing is not integrated; access remains unverified until a bounded native execution succeeds.',
+                             model_listing_supported=False)
+                continue
             try:
                 listing = models(provider, True)
             except EvalError as error:
@@ -154,27 +163,48 @@ def self_check():
             'status': 'passed', 'note': 'Structure validation only. Run validate --check-graders and unit/integration tests for behavior.'}
 
 
-def smoke(provider, output, model=None, binary=None, repeats=1):
+def cli_pin(provider, binary=None):
+    exe = shutil.which(binary or provider)
+    require(bool(exe), f'{provider} CLI is not installed or executable; pass --binary with its path')
+    exe = str(Path(exe).absolute())
+    v = execute([exe, '--version'], None, clean_env(), 30)
+    match = re.search(r'\b\d+\.\d+\.\d+\b', v['stdout'])
+    require(v['exit_code'] == 0 and match is not None, 'Cannot resolve native CLI version; verify the executable path')
+    return exe, match.group()
+
+
+def smoke(provider, output, model=None, binary=None, repeats=1, effort=None, copilot_account=None,
+          copilot_max_ai_credits=None):
     """One-command live check using only the bundled original, trusted slug task."""
     destination = Path(output).resolve()
     require(not destination.exists(), 'Smoke output exists; choose a new directory to preserve the earlier run')
-    key = 'OPENAI_API_KEY' if provider == 'codex' else 'ANTHROPIC_API_KEY'
-    require(bool(os.environ.get(key)), f'{key} is missing. Set it securely in the same terminal, then rerun this command.')
-    exe = binary or shutil.which('codex' if provider == 'codex' else 'claude')
-    require(bool(exe), f'{provider} CLI is not installed or is not on PATH')
-    v = execute([exe, '--version'], None, clean_env(), 30)
-    import re
-    match = re.search(r'\b\d+\.\d+\.\d+\b', v['stdout'])
-    require(v['exit_code'] == 0 and match is not None, 'Cannot resolve native CLI version; pass --binary with the installed executable path')
+    key = {'codex': 'OPENAI_API_KEY', 'claude': 'ANTHROPIC_API_KEY', 'copilot': 'COPILOT_GITHUB_TOKEN'}[provider]
+    require(provider == 'copilot' or (copilot_account is None and copilot_max_ai_credits is None),
+            'Copilot authentication and credit options require --provider copilot')
+    if provider == 'copilot' and copilot_account:
+        selected_account(copilot_account)
+    else:
+        require(bool(os.environ.get(key)), f'{key} is missing. Set it securely in this terminal or ignored .env.local.'
+                + (' Or use --copilot-account LOGIN after copilot login --web-flow.' if provider == 'copilot' else ''))
+    exe, version = cli_pin(provider, binary)
+    selected_model = model or {'codex': 'gpt-5.6-luna', 'claude': 'claude-sonnet-5', 'copilot': 'gpt-5.4'}[provider]
+    capabilities = next((m for m in read_json(DATA/'models.json')['models']
+                         if m['provider'] == provider and m['id'] == selected_model), None)
+    chosen_effort = effort or (capabilities['default_effort'] if capabilities else 'medium')
+    if capabilities:
+        require(chosen_effort in capabilities['efforts'], 'Unsupported effort for the selected model; check models --provider '+provider)
     initialize(destination/'suite', 'local', None, purpose='smoke')
     path = destination/'suite/suite.json'
     s = read_json(path)
-    selected_model = model or ('gpt-5.6-luna' if provider == 'codex' else 'claude-sonnet-5')
     s.update(tasks=['tasks/slug-normalization'], repeats=repeats,
-             matrix=[{'provider':provider, 'model':selected_model, 'efforts':['default' if 'haiku' in selected_model else 'medium']}])
+             matrix=[{'provider':provider, 'model':selected_model, 'efforts':[chosen_effort]}])
     s['execution'][provider+'_bin'] = exe
-    s['execution'][provider+'_version'] = match.group()
+    s['execution'][provider+'_version'] = version
     s['limits'].update(agent_seconds=120)
+    if provider == 'copilot':
+        s['limits']['copilot_max_ai_credits'] = copilot_max_ai_credits
+        if copilot_account:
+            s['execution']['copilot_account'] = copilot_account
     write_json(path,s)
     checks = validate_graders(path)
     seal=load_suite(path)[4]
@@ -185,7 +215,7 @@ def smoke(provider, output, model=None, binary=None, repeats=1):
     report(destination/'run')
     rows=read_json(destination/'run/results.json')['rows']
     return {'output':str(destination/'run'), 'state':result['state'], 'stop_reason':result.get('stop_reason'),
-            'rows':[{k:r.get(k) for k in ('task_id','model','completion','status','latency_seconds','input_tokens','output_tokens','cost_usd','cost_source')} for r in rows],
+            'rows':[{k:r.get(k) for k in ('task_id','model','completion','status','latency_seconds','input_tokens','output_tokens','cost_usd','cost_source','copilot_ai_credits','copilot_usage_value_usd')} for r in rows],
             'note':'Live trusted-local development smoke test, not a hermetic benchmark. Dashboard: codex-eval dashboard '+str(destination/'run')}
 
 
@@ -217,14 +247,21 @@ def demo(output):
     return {'output': str(out.resolve()), 'simulation': True, 'rows': len(rows)}
 
 
-def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False, all_efforts=False, efforts=None, spend_stop_usd=None, no_spend_stop=False):
+def configure(suite, selected_models=None, task_ids=None, repeats=None, all_models=False, all_tasks=False, all_efforts=False, efforts=None, spend_stop_usd=None, no_spend_stop=False,
+              copilot_account=None, copilot_token=False, copilot_binary=None,
+              copilot_max_ai_credits=None, copilot_no_credit_limit=False, providers=None):
     path, s, _, _, _ = load_suite(suite)
     catalog = read_json(DATA/'models.json')['models']
-    if all_models:
-        selected_models = [m['provider']+':'+m['id'] for m in catalog if m.get('default')]
+    require(not (providers is not None and selected_models is not None), 'Choose --provider defaults or exact --model selections')
+    if providers is not None:
+        require(bool(providers) and set(providers) <= {'codex', 'claude', 'copilot'}, 'Unsupported provider selection')
+    if all_models or providers is not None:
+        selected = set(providers) if providers is not None else {'codex', 'claude'}
+        selected_models = [m['provider']+':'+m['id'] for m in catalog
+                           if m['provider'] in selected and (m.get('default') or m.get('provider_default'))]
     if selected_models is not None:
         known = {(m['provider'],m['id']):m['efforts'] for m in catalog}
-        if not all_models:
+        if not all_models and providers is None:
             known.update({(m['provider'],m['model']):m['efforts'] for m in s['matrix']})
         matrix = []
         for value in selected_models:
@@ -249,6 +286,25 @@ def configure(suite, selected_models=None, task_ids=None, repeats=None, all_mode
         s['selection'] = {'task_ids':task_ids}
     if repeats is not None:
         s['repeats'] = repeats
+    if any(m['provider'] == 'copilot' for m in s['matrix']):
+        s['execution'].setdefault('copilot_bin', 'copilot')
+        s['execution'].setdefault('copilot_version', '1.0.88')
+        s['limits'].setdefault('copilot_max_ai_credits', None)
+        require(not (copilot_account and copilot_token), 'Choose native Copilot account or dedicated token')
+        if copilot_account:
+            selected_account(copilot_account)
+            s['execution']['copilot_account'] = copilot_account
+        elif copilot_token:
+            s['execution'].pop('copilot_account', None)
+        if copilot_binary:
+            binary, version = cli_pin('copilot', copilot_binary)
+            s['execution'].update(copilot_bin=binary, copilot_version=version)
+        require(not (copilot_no_credit_limit and copilot_max_ai_credits is not None), 'Choose a Copilot credit limit or no limit')
+        if copilot_no_credit_limit or copilot_max_ai_credits is not None:
+            s['limits']['copilot_max_ai_credits'] = None if copilot_no_credit_limit else copilot_max_ai_credits
+    else:
+        require(not (copilot_account or copilot_token or copilot_binary or copilot_no_credit_limit or copilot_max_ai_credits is not None),
+                'Copilot options require a selected Copilot lane')
     require(not (no_spend_stop and spend_stop_usd is not None), 'Choose a spend stop or no spend stop')
     if no_spend_stop or spend_stop_usd is not None:
         s['limits']['spend_stop_usd'] = None if no_spend_stop else spend_stop_usd
@@ -262,6 +318,8 @@ def configure(suite, selected_models=None, task_ids=None, repeats=None, all_mode
         candidate.unlink(missing_ok=True)
     write_json(path, s)
     return {'suite':str(path), 'matrix':s['matrix'],
+            'copilot_configuration': {k:s['execution'][k] for k in ('copilot_account','copilot_bin','copilot_version') if k in s['execution']} if any(m['provider'] == 'copilot' for m in s['matrix']) else None,
+            'copilot_max_ai_credits':s['limits'].get('copilot_max_ai_credits'),
             'task_ids':s.get('selection', {}).get('task_ids', [t['spec']['id'] for t in tasks]),
             'spend_stop_usd':s['limits']['spend_stop_usd'], 'repeats':s['repeats'], 'scheduled_cells':len(schedule(s,tasks)), 'seal':seal,
             'next':'Run validate --check-graders, review plan, then approve before execution. Prior approvals do not authorize changed settings.'}
@@ -278,12 +336,16 @@ def parser():
         if name == 'approve': a.add_argument('--by', required=True)
         if name == 'doctor': a.add_argument('--check-model-access', action='store_true', help='Also check exact model IDs against authenticated provider listings; no inference calls')
     a = sub.add_parser('configure'); a.add_argument('suite'); a.add_argument('--repeats', type=int)
+    a.add_argument('--provider', action='append', choices=['codex', 'claude', 'copilot'], help='Select catalog defaults only for these harnesses; repeat to compare providers. Replaces model selection; cannot combine with --model.')
+    auth = a.add_mutually_exclusive_group(); auth.add_argument('--copilot-account', metavar='LOGIN'); auth.add_argument('--copilot-token', action='store_true', help='Use COPILOT_GITHUB_TOKEN; remove any native account selection')
+    a.add_argument('--copilot-binary', metavar='PATH', help='Resolve and pin this installed Copilot executable and version')
+    credits = a.add_mutually_exclusive_group(); credits.add_argument('--copilot-max-ai-credits', type=float); credits.add_argument('--copilot-no-credit-limit', action='store_true')
     b = a.add_mutually_exclusive_group(); b.add_argument('--spend-stop-usd', type=float); b.add_argument('--no-spend-stop', action='store_true')
     m = a.add_mutually_exclusive_group(); m.add_argument('--model', action='append'); m.add_argument('--all-models', action='store_true')
     e = a.add_mutually_exclusive_group(); e.add_argument('--all-efforts', action='store_true', help='Use every catalog-supported effort for each selected model'); e.add_argument('--effort', action='append', help='Select an effort supported by every selected model; repeat for more')
     t = a.add_mutually_exclusive_group(); t.add_argument('--task', action='append'); t.add_argument('--all-tasks', action='store_true')
     a = sub.add_parser('run'); a.add_argument('suite'); a.add_argument('--output', required=True); a.add_argument('--resume', action='store_true'); a.add_argument('--workers', type=int, default=5, help='Concurrent attempts; refill each freed slot (default: 5)'); a.add_argument('--slot-pool', help='Share the worker limit with other batches using this directory'); a.add_argument('--transient-retries', '--rate-limit-retries', dest='rate_limit_retries', type=int, default=3, help='Cumulative additional attempts per cell for rate limits or explicit capacity errors; invocation-wide ceiling (default: 3)'); a.add_argument('--retry-delay', type=float, default=30, help='Initial retry delay in seconds, doubled per retry (default: 30)')
-    a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude']); a.add_argument('--refresh', action='store_true')
+    a = sub.add_parser('models'); a.add_argument('--provider', choices=['codex', 'claude', 'copilot']); a.add_argument('--refresh', action='store_true')
     sub.add_parser('benchmarks'); sub.add_parser('self-check')
     a = sub.add_parser('examples'); a.add_argument('--query', default=''); a.add_argument('--workflow'); a.add_argument('--limit', type=int, default=10); a.add_argument('--inventory', action='store_true')
     a = sub.add_parser('portfolio'); a.add_argument('discovery'); a.add_argument('--suite'); a.add_argument('--output')
@@ -303,7 +365,9 @@ def parser():
     a = sub.add_parser('export'); a.add_argument('--output', default='dist')
     a = sub.add_parser('demo'); a.add_argument('--output', default='evaluations/demo')
     a = sub.add_parser('image-pin'); a.add_argument('suite'); a.add_argument('--image', required=True)
-    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary'); a.add_argument('--repeats', type=int, default=1)
+    a = sub.add_parser('smoke'); a.add_argument('--provider', required=True, choices=['codex','claude','copilot']); a.add_argument('--output', required=True); a.add_argument('--model'); a.add_argument('--binary'); a.add_argument('--repeats', type=int, default=1)
+    a.add_argument('--effort', help='Exact model effort to probe (default: catalog default)'); a.add_argument('--copilot-account', metavar='LOGIN', help='Use this explicitly selected native github.com account instead of a token')
+    a.add_argument('--copilot-max-ai-credits', type=float, help='Optional soft credit limit, minimum 30 (default: no credit limit)')
     return p
 
 
@@ -327,7 +391,8 @@ def main(argv=None):
                 result = {'seal': seal, 'suite': s, 'tasks': [t['spec'] for t in tasks],
                           'execution_summary': execution_summary(s), 'scheduled_cells': len(schedule(s, tasks)), 'pricing_checked_at': pricing.get('checked_at'),
                           'note': 'Review tasks, limits, CLI versions, exact model IDs, rates, and execution mode before approval. Model support and API access need doctor/live validation.'}
-        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks, a.all_efforts, a.effort, a.spend_stop_usd, a.no_spend_stop)
+        elif c == 'configure': result = configure(a.suite, a.model, a.task, a.repeats, a.all_models, a.all_tasks, a.all_efforts, a.effort, a.spend_stop_usd, a.no_spend_stop,
+                                                  a.copilot_account, a.copilot_token, a.copilot_binary, a.copilot_max_ai_credits, a.copilot_no_credit_limit, a.provider)
         elif c == 'run':
             from .parallel import run as queued_run
             result = queued_run(a.suite, a.output, a.resume, a.workers, a.slot_pool, a.rate_limit_retries, a.retry_delay)
@@ -352,7 +417,7 @@ def main(argv=None):
         elif c == 'export': result = export_plugin(a.output)
         elif c == 'self-check': result = self_check()
         elif c == 'demo': result = demo(a.output)
-        elif c == 'smoke': result = smoke(a.provider, a.output, a.model, a.binary, a.repeats)
+        elif c == 'smoke': result = smoke(a.provider, a.output, a.model, a.binary, a.repeats, a.effort, a.copilot_account, a.copilot_max_ai_credits)
         elif c == 'image-pin':
             s = read_json(a.suite)
             r = execute(['docker', 'image', 'inspect', a.image, '--format', '{{.Id}}'], None, clean_env(), 30)

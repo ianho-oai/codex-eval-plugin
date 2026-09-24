@@ -1,6 +1,6 @@
 # Codex Eval Plugin
 
-Build a customer-owned Codex versus Claude Code headless evaluation kit. The exportable plugin is `plugins/codex-eval-plugin/` and contains exactly one skill.
+Build a customer-owned headless evaluation kit comparing Codex with Claude Code and optional GitHub Copilot. The exportable plugin is `plugins/codex-eval-plugin/` and contains exactly one skill.
 
 - Keep customer sessions, repositories, credentials, raw runs, and results in ignored evaluation directories. Publish only original code, synthetic fixtures, and public-source references.
 - Success is a deterministic verifier result, never the agent's claim. Keep failures and missing telemetry visible.

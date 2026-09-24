@@ -1,6 +1,8 @@
 # Codex Eval Plugin
 
-Evaluate **Codex against Claude Code** on tasks that represent your software development workflows. One skill handles discovery and task design; a bundled CLI runs the approved comparisons and opens a local dashboard.
+Evaluate **Codex against Claude Code, GitHub Copilot, or both** on tasks that represent your software development workflows. One skill handles discovery and task design; a bundled CLI runs the approved comparisons and opens a local dashboard.
+
+**GitHub Copilot CLI is also available as an opt-in experimental provider.** See the [Copilot setup and limits](plugins/codex-eval-plugin/skills/evaluate/references/copilot.md). It uses Copilot account authentication and billing; headless editing and grading were verified with CLI 1.0.88. Each customer must still check their own account and model access.
 
 ## Start here: the customer starter prompt
 
@@ -25,8 +27,8 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 
 - **Codex with the plugin installed:** follow the [starter prompt](CUSTOMER_STARTER_PROMPT.md), then start a task in your own project.
 - **Workflows to evaluate:** a short description is enough to begin. History and repository access are optional and scoped by you.
-- **OpenAI and Anthropic API keys with billing and model access:** keep them in your environment or an ignored `.env.local`; never paste keys into chat or commit them.
-- **Local tools:** Python 3.11+, native Codex and Claude Code CLIs, and the runtime for your tasks. The bundled examples also need Node.js 18+. The agent checks readiness and flags upgrades.
+- **Credentials for selected providers:** OpenAI/Anthropic API keys for Codex/Claude; explicit Copilot login or a dedicated GitHub token for Copilot. Keep keys in your environment or an ignored `.env.local`; never paste them into chat or commit them.
+- **Local tools:** Python 3.11+, native CLIs for the selected providers, and the runtime for your tasks. The bundled examples also need Node.js 18+. The agent checks readiness and flags upgrades.
 
 The main checkpoints for you are **task approval** and **run-plan approval**. After that, the CLI handles execution and grading. Tests use lightweight local runners such as unittest, pytest, or Node tests; ordinary evaluations do not require Docker, iOS simulators, or desktop-app integrations. Actual failures remain recorded.
 
@@ -38,7 +40,7 @@ The main checkpoints for you are **task approval** and **run-plan approval**. Af
 - **Concurrency:** five attempts total, starting the next as soon as a slot opens.
 - **Spend:** no spend stop by default. Set an optional threshold or narrow models, tasks, and efforts before approval.
 
-The example matrix is **3 tasks × 36 model/effort configurations × 1 repeat = 108 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks the selected IDs against account-visible models. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
+The example matrix is **3 tasks × 36 model/effort configurations × 1 repeat = 108 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks Codex/Claude IDs against account-visible models. Copilot requires the documented model-picker and approved smoke checks. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
 ## Under the hood: the CLI commands
 
@@ -66,6 +68,14 @@ The agent then records your workflows in `discovery.json`, authors the approved 
 Prefix these commands with `./eval`. `FILE`, `PATH`, `DISCOVERY`, and `SUITE` are placeholders for your chosen paths. History and repository collection are optional, based on your approved discovery scope.
 
 ### 2. Configure, validate, and approve
+
+Choose the harnesses before freezing the plan. For Codex + Copilot catalog defaults:
+
+```sh
+./eval configure evaluations/customer/suite.json --provider codex --provider copilot --all-efforts
+```
+
+Add `--provider claude` for all three, or use repeated `--model PROVIDER:MODEL` flags for exact models. Configure Copilot's explicit account/token and installed executable using the [Copilot setup guide](plugins/codex-eval-plugin/skills/evaluate/references/copilot.md). Copilot remains opt-in; bare `--all-models` restores Codex + Claude defaults.
 
 After the customer tasks are authored:
 
@@ -143,7 +153,7 @@ See the [CLI reference](docs/CLI_REFERENCE.md) for all options, shared worker po
 
 The agent follows an adaptive loop: design observable requirements, challenge its grader with correct and incorrect alternatives, monitor execution, diagnose anomalies, and repair demonstrated defects. It chooses checks for the customer's tasks rather than relying on a fixed edge-case list. The lightweight `reflect` CLI flags infrastructure errors and frequent task failures; the host agent also investigates unexpected evidence below those thresholds. Repairs use fresh validated, approved revisions and fair reruns under the agreed scope. Genuine coding failures stay failures. See [task-quality review](plugins/codex-eval-plugin/skills/evaluate/references/task-review.md). Deterministic CLI evidence supports the agent's diagnosis; it does not certify a test as error-free.
 
-Python 3.11+, native Codex and Claude Code CLIs, provider API keys, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
+Python 3.11+, native CLIs for the selected providers, provider credentials, and the runtime needed by your selected tasks. Example graders also use Node.js 18+. The orchestration and dashboard have no third-party Python dependencies. Keep keys in the environment or ignored `.env.local`, never in chat or Git.
 
 Completion is **1 or 0**, determined by separate behavioral checks and allowed-file changes. The runner records latency, tokens, native turns/tool calls when available, Claude's reported cost, and OpenAI rate-card estimates. Comparison results exclude explicit rate-limit error trials; successful retries contribute their measured task metrics. Raw logs and separate accounting retain all attempts and charges. Missing non-rate-limit values remain unavailable; other provider errors are distinct from task failures. Inputs and grading are fixed, while model outputs and provider caches remain nondeterministic. See the [methodology](plugins/codex-eval-plugin/ceval/data/methodology.md).
 

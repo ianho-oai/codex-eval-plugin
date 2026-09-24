@@ -14,7 +14,8 @@ SUM_FIELDS = ('cost_usd', 'cost_lower_usd', 'cost_upper_usd', 'input_tokens',
               'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'tool_calls',
               'agent_seconds', 'grader_seconds', 'provider_duration_ms',
-              'provider_api_duration_ms', 'invalid_event_lines')
+              'provider_api_duration_ms', 'invalid_event_lines',
+              'copilot_premium_requests', 'copilot_nano_aiu', 'copilot_ai_credits', 'copilot_usage_value_usd')
 
 
 def messages(directory):
@@ -37,6 +38,8 @@ def messages(directory):
             found.append(json.dumps(event.get('error', event.get('message', event))))
         elif kind == 'result' and event.get('is_error'):
             found.append(json.dumps(event.get('errors', event.get('error', event.get('result', '')))))
+        elif kind == 'session.error':
+            found.append(json.dumps(event.get('data', {})))
     return found
 
 
@@ -46,7 +49,8 @@ def transient_reason(row, directory):
     errors = ' '.join(messages(directory)).lower()
     if any(term in errors for term in ('insufficient_quota', 'credit balance', 'billing hard limit',
                                       'invalid_api_key', 'authentication_error', 'permission_denied',
-                                      'does not exist', 'model_not_found', 'not have access')):
+                                      'does not exist', 'model_not_found', 'not have access',
+                                      'access denied by policy', 'unauthorized', 'forbidden')):
         return None
     if re.search(r'rate[ _-]?limit|too many requests|\b429\b', errors):
         return 'rate_limit'
@@ -67,7 +71,7 @@ class Cooldown:
         self.path.mkdir(parents=True, exist_ok=True)
 
     def _state(self, provider, delay=None):
-        require(provider in ('codex', 'claude'), 'Invalid cooldown provider')
+        require(provider in ('codex', 'claude', 'copilot'), 'Invalid cooldown provider')
         with (self.path / 'cooldown.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             file = self.path / f'cooldown-{provider}.json'
@@ -143,6 +147,10 @@ def rollup(trials, directory, wait_seconds, exhausted=False, paused=False):
     final['retry_wait_seconds'] = wait_seconds
     final['known_cost_usd'] = sum(r.get('cost_usd') or 0 for r in rows)
     final['known_cost_upper_usd'] = sum(r.get('cost_upper_usd') or 0 for r in rows)
+    if final.get('provider') == 'copilot':
+        for field in ('copilot_ai_credits', 'copilot_usage_value_usd'):
+            known = [r[field] for r in rows if r.get(field) is not None]
+            final['known_'+field] = sum(known) if known else None
     unknown = [r for r in rows if r.get('cost_upper_usd') is None and not r.get('not_started')]
     final['rate_limit_cost_incomplete'] = bool(unknown) and all(r.get('rate_limited') for r in unknown)
     final['transient_cost_incomplete'] = bool(unknown) and all(r.get('transient_reason') or r.get('rate_limited') for r in unknown)

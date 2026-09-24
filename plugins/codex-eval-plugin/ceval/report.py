@@ -195,7 +195,7 @@ def difficulty_labels(root, run, descriptions, rows, accounting_rows):
         task_id, original, label = entry.get('task_id'), entry.get('from'), entry.get('to')
         require(isinstance(task_id, str) and task_id in known and task_id not in labels
                 and original == known[task_id] and isinstance(label, str)
-                and label in ('easy', 'medium', 'hard', 'harder'),
+                and label in ('easy', 'medium', 'hard', 'harder', 'harder-1', 'harder-2'),
                 'Unknown, duplicate, or invalid difficulty-label task')
         labels[task_id] = (original, label)
 
@@ -314,7 +314,8 @@ def dashboard_dataset(roots, *, scope=False):
                             rate_limit_only_cells=len(accounting_rows)-len(rows))}
 
 
-MEAN_FIELDS = ('cost_usd', 'latency_seconds', 'input_tokens', 'output_tokens', 'cache_read_tokens')
+MEAN_FIELDS = ('cost_usd', 'latency_seconds', 'input_tokens', 'output_tokens', 'cache_read_tokens',
+               'copilot_ai_credits', 'copilot_usage_value_usd')
 
 
 def average_attempts(rows, run):
@@ -365,7 +366,16 @@ def summarize(rows, scheduled):
         p = wins/n if n else None
         center = (p+z*z/(2*n))/(1+z*z/n) if n else None
         half = z*math.sqrt(p*(1-p)/n+z*z/(4*n*n))/(1+z*z/n) if n else None
-        summary.append({'provider': provider, 'model': model, 'effort': effort, 'attempts': len(group),
+        billing = {}
+        if provider == 'copilot':
+            for field in ('copilot_ai_credits', 'copilot_usage_value_usd'):
+                values = [r.get(field) for r in group]
+                known_values = [r.get(field) if r.get(field) is not None else r.get('known_'+field) for r in group]
+                known_values = [v for v in known_values if type(v) in (int, float) and math.isfinite(v)]
+                billing['known_'+field] = sum(known_values) if known_values else None
+                billing[field+'_missing'] = sum(type(v) not in (int, float) or not math.isfinite(v) for v in values)
+            billing['billing_note'] = 'Credit-derived usage value, not net invoice charges; missing receipts are excluded from known totals.'
+        summary.append({'provider': provider, 'model': model, 'effort': effort, 'attempts': len(group), **billing,
                         'scorable': n, 'infrastructure_invalid': len(group)-n, 'successes': wins,
                         'success_rate_all': wins/len(group), 'success_rate_scorable': p,
                         'success_rate_95_interval': [max(0, center-half), min(1, center+half)] if n else None,
@@ -381,7 +391,10 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'recorded_difficulty', 'pro
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
               'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
               'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted',
-              'comparison_policy', 'excluded_rate_limit_attempts', 'comparison_note', 'recorded_latency_seconds']
+              'comparison_policy', 'excluded_rate_limit_attempts', 'comparison_note', 'recorded_latency_seconds',
+              'copilot_premium_requests', 'copilot_nano_aiu', 'copilot_ai_credits',
+              'copilot_usage_value_usd', 'known_copilot_ai_credits', 'known_copilot_usage_value_usd',
+              'copilot_usage_value_source', 'copilot_usage_source', 'observed_models']
 
 
 def csv_text(rows):

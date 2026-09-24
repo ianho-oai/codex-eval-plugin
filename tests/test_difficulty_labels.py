@@ -67,6 +67,23 @@ class DifficultyLabelTests(unittest.TestCase):
             rows = [r for r in combined['rows'] if r['task_id'] == 'deep-task']
             self.assertEqual([r['difficulty'] for r in rows], ['harder', 'hard'])
 
+    def test_numbered_harder_categories_combine_without_rewriting_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots = [Path(tmp) / label for label in ('harder-1', 'harder-2')]
+            originals = {}
+            for root in roots:
+                receipt = self.fixture(root)
+                receipt['tasks'][0]['to'] = root.name
+                originals[root] = (root / 'results.json').read_bytes()
+                write_json(root / 'difficulty-labels.json', receipt)
+            combined = dashboard_dataset(roots, scope=True)
+            for key in ('rows', 'tasks', 'averages'):
+                rows = [r for r in combined[key] if r['task_id'] == 'deep-task']
+                self.assertEqual([r['difficulty'] for r in rows], ['harder-1', 'harder-2'])
+                self.assertTrue(all(r['recorded_difficulty'] == 'hard' for r in rows))
+            for root in roots:
+                self.assertEqual((root / 'results.json').read_bytes(), originals[root])
+
     def test_stale_unknown_duplicate_or_invalid_labels_are_rejected(self):
         variants = [
             {'run_seal': 'different-seal'},

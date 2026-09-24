@@ -1,6 +1,8 @@
 # Codex Eval
 
-One skill for workflow discovery, task design, and approved headless Codex versus Claude Code evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
+One skill for workflow discovery, task design, and approved headless Codex versus Claude Code and/or GitHub Copilot evaluation. The CLI and dark local dashboard are bundled and run without third-party Python packages.
+
+GitHub Copilot CLI is an opt-in experimental provider. Read [Copilot setup and limits](skills/evaluate/references/copilot.md) before selecting it. Copilot uses account billing rather than the direct-model API rate card; unknown currency cost remains null.
 
 ## Start with the customer prompt
 
@@ -25,7 +27,7 @@ python3 bin/codex-eval smoke --provider claude --output ./claude-smoke
 python3 bin/codex-eval dashboard ./claude-smoke/run
 ```
 
-Use `--provider codex` for an OpenAI smoke test. API keys are loaded from `.env.local` in the current directory; exported environment variables take precedence. Only `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are loaded, with no shell execution or variable expansion. `--binary PATH` pins a native executable when your normal command is an updater/launcher. Native product versions and model IDs must support the documented flags. Host API restrictions still apply. No Claude live result is implied by passing offline adapter tests.
+Use `--provider codex` for an OpenAI smoke test or `--provider copilot --model gpt-6-astra --effort low --copilot-account YOUR_LOGIN` for native Copilot login. Omit `--copilot-account` to use the dedicated `COPILOT_GITHUB_TOKEN` instead. Copilot smoke tests have no credit cap by default; an optional `--copilot-max-ai-credits 30` is a soft cap. Credentials are loaded from `.env.local` in the current directory; exported environment variables take precedence. Only `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `COPILOT_GITHUB_TOKEN` are loaded, with no shell execution or variable expansion. `--binary PATH` pins a native executable when your normal command is an updater/launcher. Native product versions and model IDs must support the documented flags. Host API restrictions still apply. Offline adapter tests do not establish live provider access.
 
 Use `python3 bin/codex-eval dashboard` to show every live run under `evaluations/`, with automatic refresh every 15 seconds. Pass a different workspace directory if needed. A live run inside `evaluations/` also opens the entire workspace. Synthetic demos remain separate unless opened explicitly. The dashboard verifies original artifacts and retains failures, pending counts, and source provenance; separate smoke tests do not establish a controlled benchmark.
 
@@ -40,7 +42,7 @@ The [offline catalog](ceval/data/catalog.md) bundles 1,658 public task reference
 
 Keep one suite per directory: `validation.json` and `approval.json` belong to that directory. For separately approved provider suites, use separate directories with identical task snapshots; do not put two suite JSON files beside the same approval receipt.
 
-The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.
+The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex, Claude Code, and opt-in local GitHub Copilot.
 
 ## Concurrent execution
 
@@ -93,3 +95,7 @@ Customer runs automatically perform a bounded native edit-and-test check in the 
 Use `history --source-kind direct|export` and `discovery-report DISCOVERY --evidence HISTORY_OR_REPO_JSON --output coverage.json` to generate a JSON/Markdown coverage receipt. Repeat evidence arguments for combined sources or omit for interview-only discovery. The receipt distinguishes requested dates from observed records, states collection limits and exclusions, and displays workflow source references and customer confirmation from discovery.json. A selected export is never presented as a complete three-month crawl.
 
 Both dashboard axes default to logarithmic scale; either can be switched off independently.
+
+### Select evaluation harnesses
+
+Use `configure SUITE --provider codex --provider copilot --all-efforts` for the catalog defaults of those harnesses; add `--provider claude` for all three. Repeated provider flags replace the selection and cannot combine with exact `--model` flags. Copilot defaults are Astra, Sol and Terra; other catalog models remain available through `--model`. Bare `--all-models` restores Codex + Claude defaults. Configure only the selected providers’ credentials, verify their installed executables, then validate and approve the exact matrix. Copilot model access still requires its separate documented smoke checks.

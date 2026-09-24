@@ -19,6 +19,7 @@ from pathlib import Path
 from .core import (DATA, EvalError, allowed_changes, child, copy_tree, digest, load_suite, now,
                    read_json, redact, require, tree, write_json)
 from .telemetry import normalize
+from .copilot_auth import selected_account, seed_account
 
 
 def clean_env():
@@ -154,6 +155,16 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
                 '-c', 'shell_environment_policy.inherit="none"',
                 '-c', 'shell_environment_policy.exclude=["*KEY*","*TOKEN*","*SECRET*"]',
                 '-c', f'shell_environment_policy.set={{PATH={shell_path}}}', '-']
+    if provider == 'copilot':
+        require(not docker, 'Copilot currently supports local execution only')
+        return [binary, '--model', model,
+                *(['--reasoning-effort', effort] if effort != 'default' else []),
+                '--output-format', 'json', '--no-ask-user', '--no-auto-update',
+                '--no-custom-instructions', '--disable-builtin-mcps', '--no-bash-env',
+                '--no-remote', '--no-remote-export', '--no-color',
+                '--available-tools=view,edit,create,bash,grep,glob',
+                '--allow-tool=read,write,shell', '--secret-env-vars=COPILOT_GITHUB_TOKEN']
+    require(provider == 'claude', 'Unsupported provider')
     return [binary, '-p', '--bare', '--no-session-persistence', '--output-format', 'stream-json',
             '--verbose', '--model', model, *(['--effort', effort] if effort != 'default' else []), '--max-turns', str(max_turns),
             *(['--max-budget-usd', str(budget)] if budget is not None else []), '--setting-sources', '', '--settings', '{}',
@@ -165,14 +176,16 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
 def execution_summary(s):
     stop = s['limits']['spend_stop_usd']
     return {
-        'message': 'Default: all cataloged GPT-5.6 models and GPT-6 Astra, plus cataloged default Claude models, at every supported single-agent effort level, one iteration per task/model/effort. Review the first round before approving two additional rounds for consistency. No spend stop by default. Specify different models, efforts, or a spend stop before approving if you want a narrower run.',
+        'message': 'Review the exact selected harness/model/effort matrix below. New suites default to Codex and Claude; Copilot is opt-in. One iteration per task/model/effort by default; review the first round before approving two additional rounds. No spend stop by default. Configure different providers, models, efforts, or limits before approval.',
         'selected_matrix': s['matrix'],
-        'execution_check': 'Before each pending customer-run invocation: bounded edit-and-test check using the first configured model/effort per provider, same native environment and slots, up to 120 seconds per trial. Probe costs are separate from scored tasks and count toward spend stops. A failure blocks the matrix. Smoke runs are themselves readiness checks.',
+        'execution_check': 'Before each pending customer-run invocation: edit-and-test check using the first configured model/effort per provider, same native environment and slots. Numeric timeouts are capped at 120 seconds for agents and 30 for graders; explicit unlimited timeouts remain unlimited. Probe costs are separate from scored tasks and count toward spend stops. A failure blocks the matrix. Smoke runs are themselves readiness checks.',
         'execution_mode': s['execution']['mode'],
         'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',
         'repeats': s['repeats'],
         'agent_timeout_seconds': s['limits']['agent_seconds'],
         'spend_stop_usd': stop,
+        'copilot_max_ai_credits': s['limits'].get('copilot_max_ai_credits'),
+        'copilot_billing': 'Opt-in Copilot account billing. AI credits are a soft per-attempt limit, not USD. Missing currency cost stays null; API rate cards never price Copilot tokens.',
         'spend_policy': 'No spend stop; missing cost remains visible and does not stop dispatch.' if stop is None else f'Stop dispatch at known spend of ${stop:g}; missing cost may pause execution.',
         'overrides': 'configure SUITE --model PROVIDER:MODEL --effort LEVEL --spend-stop-usd AMOUNT; use --all-models --all-efforts --no-spend-stop to restore defaults.',
         'availability': 'Catalog membership does not establish account access. Unavailable models remain visible as failures; no silent substitution.'}
@@ -185,7 +198,13 @@ def preflight(s):
     for lane in s['matrix']:
         print(f"  {lane['provider']}:{lane['model']} — {', '.join(lane['efforts'])}", file=sys.stderr, flush=True)
     print(f"Selected: {s['repeats']} repeat(s). {summary['spend_policy']}", file=sys.stderr, flush=True)
-    print(f"Agent timeout: {summary['agent_timeout_seconds']:g} seconds per attempt, for both providers.", file=sys.stderr, flush=True)
+    if any(lane['provider'] == 'copilot' for lane in s['matrix']):
+        credits = s['limits']['copilot_max_ai_credits']
+        print('Copilot credit limit: none.' if credits is None else f'Copilot credit soft limit: {credits:g} per attempt.', file=sys.stderr, flush=True)
+    for label, key in (('Agent', 'agent_seconds'), ('Grader', 'grader_seconds')):
+        seconds = s['limits'][key]
+        limit = 'unlimited' if seconds is None else f'{seconds:g} seconds per attempt'
+        print(f'{label} timeout: {limit}.', file=sys.stderr, flush=True)
     print(f"Execution: {summary['execution_mode']}. {summary['task_setup']}", file=sys.stderr, flush=True)
     print(summary['execution_check'], file=sys.stderr, flush=True)
     result = {'execution_summary': summary}
@@ -204,13 +223,26 @@ def preflight(s):
                     cleanup_container(name)
         ver = invoke(['--version'])
         expected = ex[provider + '_version']
-        ok = ver['exit_code'] == 0 and expected in ver['stdout'].split()
+        ok = ver['exit_code'] == 0 and expected in [word.rstrip('.') for word in ver['stdout'].split()]
         capability = invoke(['exec', '--help'] if provider == 'codex' else ['--help']) if ok else None
-        flags = ('--json', '--ephemeral', '--ignore-user-config') if provider == 'codex' else ('--bare', '--strict-mcp-config', '--effort')
+        flags = ('--json', '--ephemeral', '--ignore-user-config') if provider == 'codex' else (
+            ('--output-format', '--no-ask-user', '--no-custom-instructions', '--available-tools',
+             '--disable-builtin-mcps', '--no-remote-export', '--max-ai-credits', '--usage-output-file', '--reasoning-effort')
+            if provider == 'copilot' else ('--bare', '--strict-mcp-config', '--effort'))
         if capability:
             ok = capability['exit_code'] == 0 and all(flag in capability['stdout'] for flag in flags)
-        key = 'OPENAI_API_KEY' if provider == 'codex' else 'ANTHROPIC_API_KEY'
-        ok = ok and bool(os.environ.get(key))
+            if provider == 'copilot':
+                ok = ok and any(flag in capability['stdout'] for flag in ('--effort', '--reasoning-effort'))
+        key = {'codex': 'OPENAI_API_KEY', 'claude': 'ANTHROPIC_API_KEY', 'copilot': 'COPILOT_GITHUB_TOKEN'}[provider]
+        auth_diagnostic = ''
+        if provider == 'copilot' and ex.get('copilot_account'):
+            try:
+                selected_account(ex['copilot_account'])
+            except EvalError as error:
+                ok = False
+                auth_diagnostic = str(error)
+        else:
+            ok = ok and bool(os.environ.get(key))
         catalog = {(m['provider'], m['id']): m for m in read_json(DATA / 'models.json')['models']}
         version_match = re.search(r'\b(\d+)\.(\d+)\.(\d+)\b', ver['stdout'])
         version_tuple = tuple(map(int, version_match.groups())) if version_match else ()
@@ -229,7 +261,7 @@ def preflight(s):
         result[provider] = {'ok': ok and models_ok, 'runtime_ok': ok, 'models': model_checks,
                             'version': ver['stdout'].strip(), 'required_version': expected,
                             'key_present': bool(os.environ.get(key)),
-                            'diagnostic': ('Missing key, CLI/version/capability mismatch, or unavailable execution image; run doctor.' if not ok
+                            'diagnostic': (auth_diagnostic or 'Missing key, CLI/version/capability mismatch, or unavailable execution image; run doctor.' if not ok
                                            else '; '.join(m['diagnostic'] for m in model_checks.values() if not m['ok']))}
     return result
 
@@ -271,11 +303,23 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
         copy_tree(task['root'] / 'baseline', candidate)
         before = tree(candidate)
         env = clean_env()
-        key = 'CODEX_API_KEY' if cell['provider'] == 'codex' else 'ANTHROPIC_API_KEY'
-        env[key] = os.environ['OPENAI_API_KEY' if cell['provider'] == 'codex' else key]
+        key = {'codex': 'CODEX_API_KEY', 'claude': 'ANTHROPIC_API_KEY', 'copilot': 'COPILOT_GITHUB_TOKEN'}[cell['provider']]
+        native_copilot = cell['provider'] == 'copilot' and ex.get('copilot_account')
+        if not native_copilot:
+            env[key] = os.environ['OPENAI_API_KEY' if cell['provider'] == 'codex' else key]
         config_home = Path(td) / 'agent-home'
         config_home.mkdir(mode=0o700)
-        env['CODEX_HOME' if cell['provider'] == 'codex' else 'CLAUDE_CONFIG_DIR'] = str(config_home)
+        if native_copilot:
+            seed_account(config_home, ex['copilot_account'])
+        env[{'codex': 'CODEX_HOME', 'claude': 'CLAUDE_CONFIG_DIR', 'copilot': 'COPILOT_HOME'}[cell['provider']]] = str(config_home)
+        if cell['provider'] == 'copilot':
+            env.update(HOME=str(Path.home()) if native_copilot else str(config_home), COPILOT_AUTO_UPDATE='false',
+                       COPILOT_GH_HOST='github.com',
+                       COPILOT_OTEL_FILE_EXPORTER_PATH=str((directory / 'copilot-otel.jsonl').resolve()),
+                       OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT='false',
+                       GITHUB_COPILOT_PROMPT_MODE_EXTENSIONS='false',
+                       GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS='false',
+                       GITHUB_COPILOT_PROMPT_MODE_WORKSPACE_MCP='false')
         env['DISABLE_AUTOUPDATER'] = '1'
         native = native_argv(cell['provider'], ex[cell['provider']+'_bin'], cell['model'], cell['effort'],
                              s['limits']['agent_seconds'], s['limits']['claude_max_turns'],
@@ -292,16 +336,38 @@ def attempt(cell, task, s, pricing, directory, preflight_result):
         prompt += ('\n\nImplement the requested behavior in this workspace. Allowed changed paths: '
                    + ', '.join(task['spec']['allowed_paths'])
                    + '. Remove any backups or scratch files you create outside those paths, including .orig and .rej files, before finishing.'
-                   + f" Finish within {s['limits']['agent_seconds']} seconds without asking follow-up questions.\n")
-        write_json(directory / 'invocation.json', {'argv': cmd, 'prompt_sha256': digest(prompt), 'key_env': key})
+                   + (f" Finish within {s['limits']['agent_seconds']} seconds without asking follow-up questions.\n"
+                      if s['limits']['agent_seconds'] is not None else
+                      ' Complete the task without asking follow-up questions.\n'))
+        if cell['provider'] == 'copilot':
+            cmd += ['--usage-output-file', str((directory / 'copilot-usage.json').resolve())]
+            if s['limits']['copilot_max_ai_credits'] is not None:
+                cmd += ['--max-ai-credits', str(s['limits']['copilot_max_ai_credits'])]
+            cmd += ['-p', prompt]
+        write_json(directory / 'invocation.json', {'argv': cmd, 'prompt_sha256': digest(prompt),
+                   'key_env': None if native_copilot else key,
+                   **({'copilot_account': ex['copilot_account']} if native_copilot else {})})
         try:
-            r = execute(cmd, cwd, env, s['limits']['agent_seconds'], prompt)
+            r = execute(cmd, cwd, env, s['limits']['agent_seconds'], None if cell['provider'] == 'copilot' else prompt)
         finally:
             if ex['mode'] == 'docker':
                 cleanup_container(name)
         (directory / 'events.jsonl').write_text(r['stdout'])
         (directory / 'stderr.txt').write_text(r['stderr'])
         row.update(normalize(cell['provider'], r['stdout'], cell['model'], pricing))
+        if cell['provider'] == 'copilot':
+            from .telemetry import copilot_usage
+            usage_path = directory / 'copilot-usage.json'
+            if usage_path.exists():
+                try:
+                    copilot_usage(row, read_json(usage_path), cell['model'])
+                except (ValueError, OSError, EvalError):
+                    row['copilot_usage_diagnostic'] = 'Native usage receipt unreadable; missing fields remain unknown'
+            if 'access denied by policy settings' in r['stderr'].lower():
+                row['diagnostic'] = 'Copilot access denied. Verify the selected account, token permission, plan/model access and, for an organization seat, CLI/model policy. This message alone does not identify the account or plan.'
+            otel = directory / 'copilot-otel.jsonl'
+            if otel.exists():
+                otel.write_text(redact(otel.read_text()))
         row.update(agent_seconds=r['seconds'], exit_code=r['exit_code'],
                    runtime_diagnostics=runtime_diagnostics(r['stderr']))
         try:
