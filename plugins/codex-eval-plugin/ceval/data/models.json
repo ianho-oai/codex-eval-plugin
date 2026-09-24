@@ -135,6 +135,77 @@
       ],
       "availability": "Explicit opt-in only after verifying account access and native CLI support; excluded from default evaluations.",
       "source": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "id": "gpt-5.4",
+      "provider": "copilot",
+      "default": false,
+      "default_effort": "low",
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "minimum_cli_version": "1.0.88",
+      "availability": "Opt-in experimental adapter; verify Copilot seat, CLI policy, exact model and effort with a bounded native task. USD billing unavailable.",
+      "source": "https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-programmatic-reference",
+      "checked_at": "2026-09-23"
+    },
+    {
+      "id": "gpt-6-astra",
+      "provider": "copilot",
+      "default": false,
+      "default_effort": "low",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "minimum_cli_version": "1.0.88",
+      "availability": "Opt-in. Efforts reported by authenticated CLI 1.0.88 models.list on 2026-09-23. Account/model listing is not inference proof; validate selected settings in the launch context.",
+      "source": "https://github.com/github/copilot-sdk/blob/main/nodejs/src/client.ts",
+      "checked_at": "2026-09-23",
+      "provider_default": true
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "provider": "copilot",
+      "default": false,
+      "default_effort": "low",
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "minimum_cli_version": "1.0.88",
+      "availability": "Opt-in. Efforts reported by authenticated CLI 1.0.88 models.list on 2026-09-23. Account/model listing is not inference proof; validate selected settings in the launch context.",
+      "source": "https://github.com/github/copilot-sdk/blob/main/nodejs/src/client.ts",
+      "checked_at": "2026-09-23",
+      "provider_default": true
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "provider": "copilot",
+      "default": false,
+      "default_effort": "low",
+      "minimum_cli_version": "1.0.88",
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "availability": "Opt-in. Efforts reported by authenticated CLI 1.0.88 models.list on 2026-09-23. Account/model listing is not inference proof; validate selected settings in the launch context.",
+      "source": "https://github.com/github/copilot-sdk/blob/main/nodejs/src/client.ts",
+      "checked_at": "2026-09-23",
+      "provider_default": true
     }
   ],
   "effort_scope": "Efforts supported by the fixed single-agent native headless harness. Codex model-cache ultra enables automatic delegation and is excluded because this comparison disables multi_agent. API-only none is not listed by these installed Codex model capability records. Review installed CLI capabilities before changing this scope.",

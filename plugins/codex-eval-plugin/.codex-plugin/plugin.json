@@ -1,7 +1,7 @@
 {
   "name": "codex-eval-plugin",
-  "version": "0.10.1",
-  "description": "Explicitly requested headless evaluation tests comparing Codex with Claude Code.",
+  "version": "0.11.0",
+  "description": "Explicitly requested headless evaluation tests comparing Codex with Claude Code and/or GitHub Copilot.",
   "author": {
     "name": "Ian Ho"
   },
@@ -9,11 +9,11 @@
   "interface": {
     "displayName": "Codex Eval",
     "shortDescription": "Run explicitly requested Codex comparisons.",
-    "longDescription": "Invoke only when the user explicitly wants to run evaluation tests comparing Codex against another coding agent. Discover workflows, approve tasks, run native Codex and Claude Code, and inspect measured results.",
+    "longDescription": "Invoke only when the user explicitly wants to run evaluation tests comparing Codex against another coding agent. Discover workflows, approve tasks, run native Codex, Claude Code and optional GitHub Copilot, and inspect measured results.",
     "developerName": "Ian Ho",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use $evaluate to run evaluation tests comparing Codex against Claude Code on my software development workflows."
+    "defaultPrompt": "Use $evaluate to compare Codex with Claude Code, GitHub Copilot, or both on my software development workflows."
   },
   "repository": "https://github.com/ianho-oai/codex-eval-plugin",
   "homepage": "https://github.com/ianho-oai/codex-eval-plugin",
@@ -22,6 +22,7 @@
     "evaluation",
     "benchmark",
     "codex",
-    "claude-code"
+    "claude-code",
+    "github-copilot"
   ]
 }

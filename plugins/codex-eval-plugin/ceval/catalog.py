@@ -45,7 +45,14 @@ def normalized_workflows(items):
         require(isinstance(item['id'], str) and ID.fullmatch(item['id']) and item['id'] not in ids, 'Invalid or duplicate workflow id')
         require(all(isinstance(item[k], str) and item[k].strip() for k in ('name', 'description')), 'Workflow name and description cannot be empty')
         ids.add(item['id'])
-        workflows.append({k: item[k] for k in ('id', 'name', 'description')})
+        workflow = {k: item[k] for k in ('id', 'name', 'description')}
+        if 'difficulties' in item:
+            tiers = item['difficulties']
+            require(isinstance(tiers, list) and bool(tiers)
+                    and all(isinstance(t, str) and t in TIERS for t in tiers)
+                    and len(tiers) == len(set(tiers)), 'Workflow difficulties must be unique easy, medium, or hard values')
+            workflow['difficulties'] = list(tiers)
+        workflows.append(workflow)
     return workflows
 
 
@@ -54,7 +61,7 @@ def portfolio(discovery, suite=None, output=None):
     cells = []
     for workflow in workflows:
         candidates = examples(workflow['name']+' '+workflow['description'], limit=3)['examples']
-        for tier in TIERS:
+        for tier in workflow.get('difficulties', TIERS):
             cells.append({'workflow_id': workflow['id'], 'workflow': workflow['name'], 'difficulty': tier,
                           'difficulty_guidance': TIER_GUIDANCE[tier],
                           'candidate_inspirations': [{'id': c['id'], 'title': c['title'], 'source_url': c['source_url']} for c in candidates],
@@ -83,9 +90,10 @@ def coverage(suite, tasks):
         require(spec.get('workflow_id') in allowed, 'Every customer task must reference a discovered workflow_id')
         require('provenance' in spec, 'Every customer task must explain its inspiration or original design')
         present.add((spec['workflow_id'], spec['difficulty']))
-    missing = [{'workflow_id': w['id'], 'difficulty': tier} for w in workflows for tier in TIERS
+    missing = [{'workflow_id': w['id'], 'difficulty': tier} for w in workflows for tier in w.get('difficulties', TIERS)
                if (w['id'], tier) not in present]
-    return {'enforced': True, 'workflow_count': len(workflows), 'minimum_tasks': len(workflows)*3, 'missing': missing}
+    return {'enforced': True, 'workflow_count': len(workflows),
+            'minimum_tasks': sum(len(w.get('difficulties', TIERS)) for w in workflows), 'missing': missing}
 
 
 def validate_provenance(task):

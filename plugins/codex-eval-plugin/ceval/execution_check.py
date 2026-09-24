@@ -36,6 +36,7 @@ def shell_check_ran(row, folder):
     directory = folder / trials[-1]['directory'] if trials else folder
     path = directory / 'events.jsonl'
     bash = set()
+    copilot_shell = set()
     if not path.exists():
         return False
     for line in path.read_text().splitlines():
@@ -45,6 +46,19 @@ def shell_check_ran(row, folder):
             continue
         if not isinstance(event, dict):
             continue
+        data = event.get('data')
+        if isinstance(data, dict):
+            arguments = data.get('arguments')
+            call_id = data.get('toolCallId')
+            if (event.get('type') == 'tool.execution_start' and data.get('toolName') == 'bash'
+                    and isinstance(call_id, str) and isinstance(arguments, dict)
+                    and 'check.py' in str(arguments.get('command', ''))):
+                copilot_shell.add(call_id)
+            shell = data.get('shellExecution')
+            if (event.get('type') == 'tool.execution_complete' and isinstance(call_id, str) and call_id in copilot_shell
+                    and data.get('success') is True and isinstance(shell, dict)
+                    and type(shell.get('exitCode')) is int and shell['exitCode'] == 0):
+                return True
         item = event.get('item') or {}
         if not isinstance(item, dict):
             item = {}
@@ -90,8 +104,9 @@ def check(suite, pricing, output, preflight, slots, cooldown, max_retries, base_
     receipt = {'created_at': now(), 'ok': True, 'rows': [],
                'scope': 'First configured model and effort per selected provider; not all-model capability proof.'}
     probe_suite = copy.deepcopy(suite)
-    probe_suite['limits']['agent_seconds'] = min(120, suite['limits']['agent_seconds'])
-    probe_suite['limits']['grader_seconds'] = min(30, suite['limits']['grader_seconds'])
+    for key, cap in (('agent_seconds', 120), ('grader_seconds', 30)):
+        seconds = suite['limits'][key]
+        probe_suite['limits'][key] = None if seconds is None else min(cap, seconds)
     probe_suite['limits']['claude_max_turns'] = min(8, suite['limits']['claude_max_turns'])
     index = len(list(checks.glob('receipt-*.json'))) + 1
     receipt_path = checks / f'receipt-{index:04d}.json'

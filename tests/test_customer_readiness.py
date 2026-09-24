@@ -48,6 +48,7 @@ print(json.dumps({'type':'turn.completed','usage':{'input_tokens':10,'cached_inp
 ''')
         binary.chmod(0o700)
         self.s['execution']['codex_bin'] = str(binary)
+        self.s['limits'].update(agent_seconds=None, grader_seconds=None)
         for model, expected in [('ok',True),('no-edit',False),('helper-error',False)]:
             output=self.root/model;output.mkdir()
             self.s['matrix'][0]['model']=model
@@ -59,6 +60,39 @@ print(json.dumps({'type':'turn.completed','usage':{'input_tokens':10,'cached_inp
             if model=='helper-error':
                 self.assertEqual(receipt['rows'][0]['completion'],1)
                 self.assertTrue(receipt['rows'][0]['runtime_diagnostics'])
+
+    def test_copilot_readiness_requires_matching_successful_shell(self):
+        start = {'type':'tool.execution_start','data':{'toolName':'bash','toolCallId':'check',
+                                                      'arguments':{'command':'python3 check.py'}}}
+        for shell, success, expected in [({'exitCode':0},True,True), ({'exitCode':1},True,False),
+                                          ({'exitCode':False},True,False), ({},True,False),
+                                          ({'exitCode':0},False,False)]:
+            end = {'type':'tool.execution_complete','data':{'toolCallId':'check','success':success,'shellExecution':shell}}
+            (self.root/'events.jsonl').write_text(json.dumps(start)+'\n'+json.dumps(end))
+            self.assertEqual(shell_check_ran({}, self.root), expected)
+        (self.root/'events.jsonl').write_text(json.dumps(end))
+        self.assertFalse(shell_check_ran({}, self.root))
+
+    def test_copilot_customer_probe_uses_native_tool_receipts(self):
+        binary = self.root/'copilot-probe'
+        binary.write_text('#!'+sys.executable+'\n'+'''import json, subprocess, sys
+from pathlib import Path
+Path('value.txt').write_text('2\\n')
+subprocess.run([sys.executable, 'check.py'], check=True)
+print(json.dumps({'type':'tool.execution_start','data':{'toolName':'bash','toolCallId':'check','arguments':{'command':'python3 check.py'}}}))
+print(json.dumps({'type':'tool.execution_complete','data':{'toolCallId':'check','success':True,'shellExecution':{'exitCode':0}}}))
+print(json.dumps({'type':'result','exitCode':0}))
+''')
+        binary.chmod(0o700)
+        self.s['matrix'] = [{'provider':'copilot','model':'gpt-6-astra','efforts':['low']}]
+        self.s['execution'].update(copilot_bin=str(binary),copilot_version='1.0.88')
+        self.s['limits']['copilot_max_ai_credits'] = None
+        self.s['limits']['spend_stop_usd'] = None
+        output=self.root/'copilot-run';output.mkdir()
+        with patch.dict(os.environ, {'COPILOT_GITHUB_TOKEN':'offline-test-token'}):
+            receipt=check(self.s,{},output,{'copilot':{'ok':True}},Slots(None,1),Cooldown(output/'cooldown'),0,0)
+        self.assertTrue(receipt['ok'])
+        self.assertEqual(receipt['rows'][0]['completion'],1)
 
     def prepare_customer(self):
         self.s['purpose']='customer'

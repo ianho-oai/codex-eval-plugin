@@ -74,6 +74,19 @@ class Workspace(unittest.TestCase):
 
 
 class SuiteTests(Workspace):
+    def test_explicit_unlimited_timeouts_validate_and_are_sealed(self):
+        self.s['limits'].update(agent_seconds=None, grader_seconds=None)
+        self.save()
+        unlimited_seal = load_suite(self.path)[4]
+        self.s['limits']['agent_seconds'] = 900
+        self.save()
+        self.assertNotEqual(unlimited_seal, load_suite(self.path)[4])
+        for bad in (0, -1, 'unlimited', True):
+            self.s['limits']['agent_seconds'] = bad
+            self.save()
+            with self.assertRaises(EvalError):
+                load_suite(self.path)
+
     def test_example_grader_accepts_dataclass_based_candidate(self):
         candidate = self.root / 'dataclass-candidate'
         candidate.mkdir()
@@ -647,6 +660,23 @@ class DiscoveryAndReportTests(Workspace):
 if __name__ == '__main__':unittest.main()
 
 class CatalogTests(Workspace):
+    def test_explicit_difficulty_scope_and_invalid_values(self):
+        from ceval.catalog import coverage, normalized_workflows, portfolio
+        workflow = {'id':'repository', 'name':'Repository changes',
+                    'description':'Explicit hard-only evaluation', 'difficulties':['hard']}
+        suite = {'schema_version':2, 'purpose':'customer', 'workflows':[workflow]}
+        task = {'workflow_id':'repository', 'difficulty':'hard', 'provenance':{}}
+        self.assertEqual(coverage(suite, [task]),
+                         {'enforced':True, 'workflow_count':1, 'minimum_tasks':1, 'missing':[]})
+        self.assertEqual(coverage(suite, [])['missing'],
+                         [{'workflow_id':'repository', 'difficulty':'hard'}])
+        discovery = self.suite_dir/'scope.json'
+        write_json(discovery, {'workflows':[workflow]})
+        self.assertEqual([s['difficulty'] for s in portfolio(discovery)['slots']], ['hard'])
+        for bad in ([], ['hard','hard'], ['unknown'], None, 'hard', [{}]):
+            with self.assertRaises(EvalError):
+                normalized_workflows([dict(workflow, difficulties=bad)])
+
     def test_catalog_integrity_and_lookup(self):
         from ceval.catalog import examples
         cards = read_json(DATA/'task-examples.json')['examples']

@@ -136,18 +136,31 @@ def load_suite(path):
     require(type(s['repeats']) is int and 1 <= s['repeats'] <= 100, 'repeats must be 1..100')
     require(type(s['seed']) is int, 'seed must be integer')
     ex = s['execution']
-    require(set(ex) == {'mode', 'image', 'codex_bin', 'claude_bin', 'codex_version', 'claude_version', 'cpus', 'memory_mb'}, 'Invalid execution fields')
+    execution_fields = {'mode', 'image', 'codex_bin', 'claude_bin', 'codex_version', 'claude_version', 'cpus', 'memory_mb'}
+    require(execution_fields <= set(ex) <= execution_fields | {'copilot_bin', 'copilot_version', 'copilot_account'}, 'Invalid execution fields')
+    if 'copilot_account' in ex:
+        require(isinstance(ex['copilot_account'], str) and bool(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]{0,38}', ex['copilot_account'])), 'Invalid Copilot account login')
+        require(ex['mode'] == 'local', 'Native Copilot login requires local execution')
     require(ex['mode'] in ('docker', 'local'), 'Execution must be docker or local')
     if ex['mode'] == 'docker':
         require(bool(re.fullmatch(r'(?:[^\s]+@)?sha256:[0-9a-f]{64}', ex['image'])), 'Docker image must be an immutable sha256 ID or repo@sha256 digest; run image-pin')
-    for provider in ('codex', 'claude'):
-        require(isinstance(ex[provider + '_version'], str) and bool(ex[provider + '_version']), 'Pin both CLI versions')
-        require(isinstance(ex[provider + '_bin'], str) and bool(ex[provider + '_bin']), 'Specify CLI binaries')
+    providers = {'codex', 'claude'} | {m.get('provider') for m in s.get('matrix', []) if isinstance(m, dict)}
+    for provider in providers:
+        require(provider in ('codex', 'claude', 'copilot'), 'Unsupported provider')
+        require(isinstance(ex.get(provider + '_version'), str) and bool(ex[provider + '_version']), 'Pin selected CLI versions')
+        require(isinstance(ex.get(provider + '_bin'), str) and bool(ex[provider + '_bin']), 'Specify CLI binaries')
+    if 'copilot' in providers:
+        require(ex['mode'] == 'local', 'Copilot currently supports local execution only')
     number(ex['cpus'], 'cpus', 0.1)
     number(ex['memory_mb'], 'memory_mb', 128)
-    require(set(s['limits']) == {'agent_seconds', 'grader_seconds', 'spend_stop_usd', 'claude_max_turns'}, 'Invalid limits')
+    limit_fields = {'agent_seconds', 'grader_seconds', 'spend_stop_usd', 'claude_max_turns'}
+    require(limit_fields <= set(s['limits']) <= limit_fields | {'copilot_max_ai_credits'}, 'Invalid limits')
+    if 'copilot' in providers:
+        require('copilot_max_ai_credits' in s['limits'], 'Declare copilot_max_ai_credits; null means no credit limit')
+        if s['limits']['copilot_max_ai_credits'] is not None:
+            number(s['limits']['copilot_max_ai_credits'], 'copilot_max_ai_credits', 30)
     for k, v in s['limits'].items():
-        if k == 'spend_stop_usd' and v is None:
+        if k in ('spend_stop_usd', 'agent_seconds', 'grader_seconds', 'copilot_max_ai_credits') and v is None:
             continue
         number(v, k, 1 if k != 'spend_stop_usd' else 0.01)
     require(type(s['limits']['claude_max_turns']) is int, 'claude_max_turns must be integer')
@@ -155,12 +168,13 @@ def load_suite(path):
     lanes = set()
     for m in s['matrix']:
         require(isinstance(m, dict) and set(m) == {'provider', 'model', 'efforts'}, 'Invalid model matrix entry')
-        require(m['provider'] in ('codex', 'claude'), 'Unsupported provider')
+        require(m['provider'] in ('codex', 'claude', 'copilot'), 'Unsupported provider')
         require(isinstance(m['model'], str) and ID.fullmatch(m['model']), 'Invalid exact model ID')
-        require(m['model'] not in {'sonnet', 'opus', 'fable', 'haiku', 'gpt-5.6'}, 'Use full model IDs, not convenience aliases')
+        require(m['model'] not in {'auto', 'sonnet', 'opus', 'fable', 'haiku', 'gpt-5.6'}, 'Use full model IDs, not convenience aliases')
         require(isinstance(m['efforts'], list) and m['efforts'], 'Empty effort list')
         for effort in m['efforts']:
-            require(effort in ('default', 'low', 'medium', 'high', 'xhigh', 'max'), 'Unsupported effort')
+            require(effort in ('default', 'low', 'medium', 'high', 'xhigh', 'max') or
+                    (m['provider'] == 'copilot' and effort == 'none'), 'Unsupported effort')
             require((m['provider'], m['model'], effort) not in lanes, 'Duplicate matrix lane')
             lanes.add((m['provider'], m['model'], effort))
     pricing_path = child(path.parent, s['pricing'])
@@ -216,8 +230,8 @@ def load_suite(path):
 
 
 def redact(text):
-    for k in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'ANTHROPIC_API_KEY'):
+    for k in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'ANTHROPIC_API_KEY', 'COPILOT_GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'):
         v = os.environ.get(k)
         if v:
             text = text.replace(v, '[REDACTED]')
-    return re.sub(r'\bsk-[A-Za-z0-9_-]{12,}', '[REDACTED]', text)
+    return re.sub(r'\b(?:sk-|gh[opusr]_|github_pat_)[A-Za-z0-9_-]{12,}', '[REDACTED]', text)

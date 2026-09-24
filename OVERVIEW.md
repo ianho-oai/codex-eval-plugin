@@ -6,13 +6,13 @@
 
 | Stage | Customer experience | Underlying functionality |
 | --- | --- | --- |
-| Start | Follow the starter prompt to install from this repository and invoke `$evaluate`. | One exportable plugin bundles one skill, the CLI, task references, schemas, and dashboard. No repository clone is required for customer installation. |
+| Start | Choose Codex + Claude Code, Codex + GitHub Copilot, or all three. Follow the starter prompt to install from this repository and invoke `$evaluate`. | One exportable plugin bundles one skill, the CLI, task references, schemas, and dashboard. No repository clone is required for customer installation. |
 | Discover | Combine a conversation, selected local sessions from the last 90 days, or selected repositories/PRs/MRs. Ask to build the proposal whenever ready. | The agent asks follow-ups; CLI helpers extract consented evidence into ignored customer files. The CLI does not independently infer workflows. |
 | Approve tasks | Review easy/medium/hard coverage per workflow, plain-language summaries, acceptance checks, and source links. | The skill adapts examples from the local benchmark catalog or explains an original design. Tasks are freshly authored, not official benchmark reproductions. |
 | Prepare | Review self-contained tasks using available lightweight test runners. | Each task has instructions, baseline files, allowed changes, a separate grader, and a known-good solution. Validation checks that baseline fails and solution passes. Environment preparation precedes timed execution. |
-| Approve execution | Review exact model/effort combinations, repeats, versions, pricing, and any limits. Configure keys securely. | A sealed approval binds tasks, settings, pricing, and engine inputs. Doctor checks local prerequisites and known model minimum CLI versions; model access still requires live verification. Changed inputs require renewed validation and approval. |
-| Run | Let the CLI complete the approved matrix and report actionable blockers. | A five-worker queue refills immediately. Each attempt gets a fresh workspace, native Codex or Claude Code execution, separate grading, and saved evidence. An automatic edit-and-test gate checks the actual launch environment first. Explicit rate-limit/capacity errors receive bounded retries with a shared provider cooldown. |
-| Compare | Explore cost, latency, and tokens for both providers in one dashboard, or scope a dashboard to each workflow. | The dashboard reads saved artifacts and refreshes every 15 seconds. Each point averages repeats within the same run/task/model/effort. Raw attempts remain available. |
+| Approve execution | Review exact model/effort combinations, repeats, versions, pricing, and any limits. Configure credentials securely; Copilot uses a separate explicit account or dedicated token. | A sealed approval binds tasks, settings, pricing, and engine inputs. Doctor checks local prerequisites and known model minimum CLI versions; model access still requires live verification. Changed inputs require renewed validation and approval. |
+| Run | Let the CLI complete the approved matrix and report actionable blockers. | A five-worker queue refills immediately. Each attempt gets a fresh workspace, native Codex, Claude Code, or GitHub Copilot execution, separate grading, and saved evidence. An automatic edit-and-test gate checks the actual launch environment first. Explicit rate-limit/capacity errors receive bounded retries with a shared provider cooldown. |
+| Compare | Explore cost, latency, and tokens for all selected providers in one dashboard, or scope a dashboard to each workflow. | The dashboard reads saved artifacts and refreshes every 15 seconds. Each point averages repeats within the same run/task/model/effort. Raw attempts remain available. |
 
 ## Current defaults
 
@@ -28,17 +28,19 @@ The agent audits grader requirements and checks an independent valid alternative
 
 ## What is deterministic
 
-Task snapshots, settings, seeded schedule, orchestration code, and behavioral checks are fixed. Concurrent completion order, model outputs, cache behavior, and observed timing can vary. Codex and Claude Code have different native harnesses, prompts, and tokenizers, so this compares product/model configurations.
+Task snapshots, settings, seeded schedule, orchestration code, and behavioral checks are fixed. Concurrent completion order, model outputs, cache behavior, and observed timing can vary. Codex, Claude Code, and Copilot have different native harnesses, prompts, and tokenizers, so this compares product/model configurations.
 
-Completion requires successful provider execution, allowed changes, and a passing separate grader. Agent assertions alone never count. Infrastructure errors are distinguished from scorable task failures; missing metrics remain null. Claude cost comes from native telemetry; OpenAI cost is estimated from frozen rates and available usage, with uncertainty retained.
+Completion requires successful provider execution, allowed changes, and a passing separate grader. Agent assertions alone never count. Infrastructure errors are distinguished from scorable task failures; missing metrics remain null. Copilot credits and credit-derived usage value are separate from unknown invoice cost. Claude cost comes from native telemetry; OpenAI cost is estimated from frozen rates and available usage, with uncertainty retained.
 
 Local mode runs trusted fixtures on the customer's host. It does not enforce grader secrecy or host isolation. Difficulty should come from software behavior and interacting modules, with setup already prepared.
 
 ## Dashboard
 
+With Copilot results, the initial chart uses input tokens versus latency so all providers can appear. Saved axis choices take precedence. Copilot credits and usage value have separate axes; missing measurements are disclosed.
+
 The chart comes first, with provider/model and difficulty/task checkbox groups, select-all controls, toggleable model labels, and independent logarithmic axes. Hover details show model/effort, task, difficulty, pass count, cost, and end-to-end latency. The task table uses short workflow descriptions. A diamond marks each model × reasoning-effort median across selected task/configuration averages. The top-right Median focus switch fades task points and emphasizes these diamonds; hover shows sample coverage and the selected-axis medians.
 
-Codex is blue and Claude orange when at least one repeat passes; groups with no successful repeat are grey. A point averages only its own run/task/model/effort group, including failed attempts. Missing metrics and pending attempts remain explicit. Combining separate runs does not establish that their settings are comparable.
+Codex is blue, Claude orange, and Copilot purple when at least one repeat passes; groups with no successful repeat are grey. A point averages only its own run/task/model/effort group, including failed attempts. Missing metrics and pending attempts remain explicit. Combining separate runs does not establish that their settings are comparable.
 
 ## Files and ownership
 

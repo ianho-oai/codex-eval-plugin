@@ -16,13 +16,82 @@
   "additionalProperties": false,
   "properties": {
     "execution": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "copilot_account": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$",
+          "description": "Explicit native github.com Copilot login. Must match the active saved account. Uses OS credential storage instead of token environment variables."
+        },
+        "copilot_bin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "copilot_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "limits": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "agent_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Null means no timeout."
+        },
+        "grader_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Null means no timeout."
+        },
+        "copilot_max_ai_credits": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 30,
+          "description": "Required for Copilot. Null means no credit limit; otherwise a soft per-attempt AI-credit cap that can overshoot."
+        }
+      }
     },
     "matrix": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "efforts"
+        ],
+        "properties": {
+          "provider": {
+            "enum": [
+              "codex",
+              "claude",
+              "copilot"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "efforts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "name": {
       "type": "string"
@@ -71,6 +140,19 @@
           },
           "description": {
             "type": "string"
+          },
+          "difficulties": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "easy",
+                "medium",
+                "hard"
+              ]
+            },
+            "description": "Explicit requested scope; defaults to all three tiers."
           }
         }
       }
@@ -93,7 +175,7 @@
       }
     }
   },
-  "description": "Schema 2 customer suites require all three difficulty tiers and provenance for every declared workflow. Schema 1 remains readable for existing runs. Runtime validation additionally checks hashes, source links, paths, and native settings.",
+  "description": "Schema 2 customer suites require provenance and coverage for every declared workflow; difficulties defaults to all three tiers and can explicitly narrow the requested scope. Schema 1 remains readable. Runtime validation additionally checks hashes, source links, paths, and native settings.",
   "allOf": [
     {
       "if": {

@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 — 2026-09-24
+
+- Complete Copilot customer integration: explicit harness selectors, selected-provider preflight, canonical reasoning flag and usage-file capability checks, separate credit/value summaries and chart axes, visible missing measurements, and consistent setup/methodology documentation. Preserve historical signed evidence and default Copilot opt-in.
+
+- Guide customers through optional Copilot provider selection, CLI 1.0.88, native account or dedicated token authentication, model/effort smoke checks, and explicit credit policy. Add configure/smoke options and native usage-receipt token/credit/value logging without treating usage value as an invoice.
+- Catalog authenticated Copilot Astra/Sol/Terra effort capabilities, including Copilot-only `none` for Sol and Terra; retain per-model validation and opt-in selection.
+- Support explicitly scoped workflow difficulty tiers, optional unlimited agent/grader timeouts, Harder-1/Harder-2 display labels, and shareable dashboard filter/axis settings without rewriting sealed results.
+
+- Add an opt-in experimental GitHub Copilot CLI provider: pinned local headless runs, explicit GitHub token authentication, sealed credit limits, native-event normalization, separate billing units, and dashboard/CSV support. A bounded personal-account pilot verified unattended execution and grading. Support the observed CLI result and billing-checkpoint events alongside SDK events; preserve missing token/USD telemetry and access failures.
 
 - Show proportional pass/fail pies above model medians, let users grey out individual medians, and filter medians by minimum completed-run pass rate. Preserve these display choices across the existing live refresh without changing saved results.
 

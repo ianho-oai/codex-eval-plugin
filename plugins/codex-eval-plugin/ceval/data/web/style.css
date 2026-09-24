@@ -28,6 +28,8 @@
 @media(prefers-reduced-motion:reduce){#plot .task-point-layer,#plot .task-label-layer{transition:none}}
 
 #median-control[hidden],#median-legend[hidden]{display:none}
+.copilot-dot{background:#a78bfa}
+.model-options fieldset[data-provider=copilot] input{accent-color:#a78bfa}.model-options fieldset[data-provider=copilot] .bulk-option{color:#a78bfa}
 .median-score-control{grid-column:1/-1;max-width:440px;padding-top:4px}
 .median-score-control>span{display:flex;justify-content:space-between;gap:16px}
 .median-score-control output{color:#f0f0f0;font-variant-numeric:tabular-nums}

@@ -33,7 +33,7 @@ The starter matrix covers the public OpenAI 5.6 Sol/Terra/Luna and GPT-6 Astra m
 
 New suites use local execution by default. Pin existing local CLI versions/paths and use small, self-contained tasks with unittest, already-installed pytest, Node tests, or an equivalent available runner. For iOS workflows, test extracted logic without Xcode, simulators, or SwiftUI/UIKit UI testing. Docker remains available only when explicitly requested with `init ... --mode docker`; it is not part of the default customer flow. Local mode cannot guarantee host or grader isolation and is labeled as such in results. If a CLI launcher downloads or updates at runtime, pin the resolved native binary instead.
 
-New customer suites allow **30 minutes per agent attempt** (`limits.agent_seconds: 1800`) for both providers. The deterministic grader keeps its separate 60-second limit; smoke and readiness probes remain short. Retry attempts each receive the configured agent limit, so total elapsed time including retries and waiting can exceed 30 minutes. To choose another limit, edit `limits.agent_seconds` in the unapproved suite, then validate and approve it. Changing an approved limit requires a new suite revision and output directory; it does not extend an in-flight process or rewrite historical timeouts.
+New customer suites allow **30 minutes per agent attempt** (`limits.agent_seconds: 1800`) for all selected providers. The deterministic grader defaults to a separate 60-second limit. To explicitly remove time limits, set both `limits.agent_seconds` and `limits.grader_seconds` to JSON `null` before approval; this also leaves readiness probes unlimited. Numeric readiness limits remain capped at 120 seconds for agents and 30 seconds for graders. Retry attempts each receive the configured agent limit, so total elapsed time including retries and waiting can exceed 30 minutes. To choose another limit, edit `limits.agent_seconds` in the unapproved suite, then validate and approve it. Changing an approved limit requires a new suite revision and output directory; it does not extend an in-flight process or rewrite historical timeouts.
 
 ### CLI map
 
@@ -101,6 +101,8 @@ The dashboard automatically combines every saved live run under `evaluations/` a
 
 You can also pass another evaluation workspace. Existing commands that point to a live run within `evaluations/` expand to the whole evaluation workspace. Synthetic demos stay separate and can be opened explicitly. The combined view retains failures, pending counts, source provenance, and checks of the original result artifacts. It does not rerun models or modify saved results. Separate smoke runs may use different environments and settings.
 
+Dashboard settings update the URL automatically. Bookmark or copy the current URL to restore task/model omissions, X/Y metrics, log scales, labels, Median focus, minimum pass rate, and greyed-out medians after refresh or in another tab on the same server. The view continues to use the latest results; newly discovered tasks/models are included by default. Open `/` without the `view` parameter (or click Codex Eval) to reset the view. CSV export retains the full server dataset, independent of these display filters.
+
 The CLI loads `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` from `.env.local` in the current directory. Exported environment variables take precedence. Quoted values and `export KEY=...` are supported; shell commands and variable expansion are never executed.
 
 After securely setting the provider's key in the same terminal:
@@ -128,7 +130,7 @@ The plugin bundles 1,658 upstream task records and 46 detailed design cards acro
 
 Keep one suite per directory: `validation.json` and `approval.json` belong to that directory. For separately approved provider suites, use separate directories with identical task snapshots; do not put two suite JSON files beside the same approval receipt.
 
-The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex and Claude Code.
+The `evaluate` skill is explicit-only (`allow_implicit_invocation: false`). Invoke `$evaluate` when asking to run evaluation tests comparing Codex against another coding agent. Ordinary coding, unit tests, general benchmarks, and plugin maintenance do not trigger it. The current execution adapters support Codex, Claude Code, and opt-in local GitHub Copilot.
 
 ### Dashboard design
 
@@ -144,7 +146,7 @@ For an explicitly requested post-run difficulty correction, place `difficulty-la
 }
 ```
 
-Labels can be `easy`, `medium`, `hard`, or `harder`. Task IDs and original labels must match the saved task metadata. Reports and dashboards verify the original results first, then apply the receipt to task descriptions, result rows, averages, and CSV exports, retaining `recorded_difficulty`. Saved input definitions, approvals, scores, and raw results stay unchanged. Remove the receipt to restore the original labels; regenerate any report exports afterward. An already-running dashboard server must be restarted when upgrading to code that supports these receipts.
+Labels can be `easy`, `medium`, `hard`, `harder`, `harder-1`, or `harder-2`. Task IDs and original labels must match the saved task metadata. Reports and dashboards verify the original results first, then apply the receipt to task descriptions, result rows, averages, and CSV exports, retaining `recorded_difficulty`. Saved input definitions, approvals, scores, and raw results stay unchanged. Remove the receipt to restore the original labels; regenerate any report exports afterward. An already-running dashboard server must be restarted when upgrading to code that supports these receipts.
 
 The chart is the main view. Model-name labels use Codex blue (`#339cff`, blue300 in the [OpenAI developer stylesheet](https://developers.openai.com/_astro/PageLayout.BSuKgUPa.css)) and Claude orange. Typography prefers locally installed OpenAI Sans, the family identified in [OpenAI design guidelines](https://openai.com/brand/), with system sans-serif fallbacks; no font download is required. The task-description table remains; model summary tables, explanatory sections, and run-count badges are omitted from the UI. Detailed telemetry and source provenance remain available through CLI reports, JSON, and CSV.
 
@@ -278,4 +280,29 @@ The legend follows the active view: normal mode explains provider colors and gre
 
 ### Comparison versus full accounting
 
-Comparison reports, CSVs, chart points, and medians exclude explicit native rate-limit error trials for both providers. After recovery, use the non-rate-limited trial's measured cost, tokens, and task latency; exclude the rate-limit trials and their external retry waits. A rate-limit-only cell remains unmeasured and is counted separately, never as a coding failure or a pass. Genuine verifier failures, timeouts, authentication/quota errors, and capacity errors are not excluded by this policy. Preserve original signed results and trials, total elapsed time, unknown charges, and full spend accounting. The reporting view uses `exclude_rate_limits_v1`; `report` writes comparison `results.csv`, separate `accounting.csv`, and `rate-limit-exclusions.json`. `summary.json` includes separate accounting totals and excluded counts. Missing non-rate-limit telemetry remains unknown. Historical mixed capacity/rate-limit backoff cannot be split reliably, so its comparison latency stays unknown. Native internal retries within a successful CLI call remain included when separate trial telemetry is unavailable.
+Comparison reports, CSVs, chart points, and medians exclude explicit native rate-limit error trials for all selected providers. After recovery, use the non-rate-limited trial's measured cost, tokens, and task latency; exclude the rate-limit trials and their external retry waits. A rate-limit-only cell remains unmeasured and is counted separately, never as a coding failure or a pass. Genuine verifier failures, timeouts, authentication/quota errors, and capacity errors are not excluded by this policy. Preserve original signed results and trials, total elapsed time, unknown charges, and full spend accounting. The reporting view uses `exclude_rate_limits_v1`; `report` writes comparison `results.csv`, separate `accounting.csv`, and `rate-limit-exclusions.json`. `summary.json` includes separate accounting totals and excluded counts. Missing non-rate-limit telemetry remains unknown. Historical mixed capacity/rate-limit backoff cannot be split reliably, so its comparison latency stays unknown. Native internal retries within a successful CLI call remain included when separate trial telemetry is unavailable.
+
+### Explicit workflow scope
+
+Customer workflows default to easy, medium, and hard coverage. For a user-requested narrower evaluation, set a workflow's `difficulties` to a nonempty subset, for example `["hard"]`. Portfolio generation and validation enforce that declared scope; provenance and all execution checks still apply. Freeze this field with the rest of the suite before running.
+
+### GitHub Copilot (experimental, opt-in)
+
+Use the [guided Copilot setup](../plugins/codex-eval-plugin/skills/evaluate/references/copilot.md) for personal/organization access, installation, GitHub permissions, credentials, model checks and troubleshooting. Latest verified stable CLI: 1.0.88 (2026-09-23). It has separate authentication from Codex and Claude.
+
+```sh
+./eval configure SUITE --model codex:gpt-6-astra --model copilot:gpt-6-astra --effort low --repeats 1 --copilot-account YOUR_LOGIN --copilot-binary /absolute/path/copilot --copilot-no-credit-limit
+./eval smoke --provider copilot --model gpt-6-astra --effort low --copilot-account YOUR_LOGIN --binary /absolute/path/copilot --output evaluations/copilot-smoke
+```
+
+Configure replaces the model selection, so repeat `--model` for every lane to retain. `--copilot-binary` reads and pins the installed path/version. `--copilot-account LOGIN` requires that active native github.com account; `--copilot-token` removes native selection and uses only `COPILOT_GITHUB_TOKEN` from the environment or invoking directory's ignored `.env.local`. No key goes on the command line or into suite JSON. Native mode ignores stale environment tokens. These settings enter the seal.
+
+New Copilot selections have no credit cap; existing limits are preserved. Use `--copilot-max-ai-credits N` (minimum 30) or `--copilot-no-credit-limit` explicitly. This is separate from `--spend-stop-usd` / `--no-spend-stop`. Smoke runs use one bundled slug fixture, a 120-second agent timeout, catalog default effort unless `--effort` is supplied, no credit cap by default, and a new output directory per attempt. In smoke token mode, omit `--copilot-account`; `--copilot-max-ai-credits` remains available.
+
+`models --provider copilot` filters the static catalog; it is not account discovery. `doctor --check-model-access` leaves Copilot access `not_probed`; check `/model` and run the exact approved smoke model/effort before a broad sweep. The catalog includes runtime-reported Astra efforts low through max, and Sol/Terra none plus low through max. These capabilities are a dated account snapshot, not inference proof.
+
+Final native `copilot-usage.json` receipts enrich tokens, model identity, credits and `copilot_usage_value_usd` in new result JSON/CSV. Usage value is calculated from top-level nanoAIU at the documented credit value, not net invoice cost. It never populates `cost_usd` or uses vendor API rates. Missing telemetry remains unknown; use latency/token dashboard axes when dollar cost is absent. Historical signed results remain untouched.
+
+### Select evaluation harnesses
+
+Use `configure SUITE --provider codex --provider copilot --all-efforts` for the catalog defaults of those harnesses; add `--provider claude` for all three. Repeated provider flags replace the selection and cannot combine with exact `--model` flags. Copilot defaults are Astra, Sol and Terra; other catalog models remain available through `--model`. Bare `--all-models` restores Codex + Claude defaults. Configure only the selected providers’ credentials, verify their installed executables, then validate and approve the exact matrix. Copilot model access still requires its separate documented smoke checks.

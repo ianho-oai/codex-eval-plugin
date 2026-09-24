@@ -94,6 +94,14 @@ print(json.dumps({'type': 'turn.completed', 'usage': {'input_tokens': 100,
         self.assertIn('allow_login_shell=false', argv)
         self.assertNotIn('excluded', str(argv))
 
+    def test_unlimited_agent_and_grader_complete_without_deadline_prompt(self):
+        self.suite['limits'].update(agent_seconds=None, grader_seconds=None)
+        row, directory = self.run_attempt()
+        self.assertEqual((row['status'], row['grader_exit_code']), ('passed', 0))
+        prompt = json.loads((directory / 'events.jsonl').read_text().splitlines()[0])['prompt']
+        self.assertNotIn('Finish within', prompt)
+        self.assertNotIn('None seconds', prompt)
+
     def test_timeout_candidate_passes_grader_but_stays_timeout_and_cost_missing(self):
         self.suite['limits']['agent_seconds'] = 2
         row, directory = self.run_attempt('timeout')
