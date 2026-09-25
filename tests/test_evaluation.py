@@ -2,11 +2,13 @@ import contextlib
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
 import unittest
 import zipfile
+from urllib.parse import unquote, urlsplit
 from pathlib import Path
 from unittest.mock import patch
 
@@ -674,6 +676,30 @@ class DiscoveryAndReportTests(Workspace):
             z.extractall(self.root/'extracted')
         r=execute([sys.executable,str(self.root/'extracted/codex-eval-plugin/bin/codex-eval'),'self-check'],None,clean_env(),30)
         self.assertEqual(r['exit_code'],0,r['stderr'])
+
+        # The installed skill must reach the same guide as repository users,
+        # and every local documentation link must work without the source repo.
+        package = self.root/'extracted/codex-eval-plugin'
+        guide = package/'skills/evaluate/WORKFLOW.md'
+        self.assertEqual(guide.read_bytes(), (ROOT/'plugins/codex-eval-plugin/skills/evaluate/WORKFLOW.md').read_bytes())
+        entrypoint = package/'skills/evaluate/SKILL.md'
+        local_links = []
+        for doc in package.rglob('*.md'):
+            for target in re.findall(r'\]\(([^)]+)\)', doc.read_text()):
+                url = urlsplit(target)
+                if url.scheme or url.netloc or not url.path:
+                    continue
+                resolved = (doc.parent/unquote(url.path)).resolve()
+                self.assertTrue(resolved.is_relative_to(package.resolve()), (doc, target))
+                self.assertTrue(resolved.exists(), (doc, target))
+                if doc == entrypoint:
+                    local_links.append(resolved)
+        self.assertIn(guide.resolve(), local_links)
+
+        guide.unlink()
+        r=execute([sys.executable,str(package/'bin/codex-eval'),'self-check'],None,clean_env(),30)
+        self.assertNotEqual(r['exit_code'],0)
+        self.assertIn('Missing shared evaluation workflow', r['stderr'])
 
 
 if __name__ == '__main__':unittest.main()

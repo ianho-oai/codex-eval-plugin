@@ -8,7 +8,7 @@ Evaluate **Codex against Claude Code, GitHub Copilot, or both** on tasks that re
 
 **Open [CUSTOMER_STARTER_PROMPT.md](CUSTOMER_STARTER_PROMPT.md).** It is the customer entry point: install the plugin from this repository, then copy the evaluation prompt into a new Codex task in your project.
 
-The file contains both installation commands and a copy-ready kickoff prompt. You do not need to clone this repository or assemble CLI commands yourself. The complete plugin is bundled in [`plugins/codex-eval-plugin/`](plugins/codex-eval-plugin/).
+The file contains both installation commands and a copy-ready kickoff prompt. Plugin users do not need a separate clone or manual CLI setup. Existing checkout users can choose the direct-repository prompt in the same file. The complete plugin is bundled in [`plugins/codex-eval-plugin/`](plugins/codex-eval-plugin/).
 
 ## The flow at a glance
 
@@ -42,113 +42,20 @@ The main checkpoints for you are **task approval** and **run-plan approval**. Af
 
 The example matrix is **3 tasks × 36 model/effort configurations × 1 repeat = 108 scheduled attempts**. Catalog inclusion does not guarantee account access. Doctor checks local prerequisites and CLI versions; `doctor --check-model-access` also checks Codex/Claude IDs against account-visible models. Copilot requires the documented model-picker and approved smoke checks. See [provider troubleshooting](docs/TROUBLESHOOTING.md) before a large sweep.
 
-## Under the hood: the CLI commands
+## One workflow, two entrypoints
 
-The skill interviews you, designs tasks, and reviews problems. It calls the bundled **`codex-eval` CLI** to validate and seal inputs, schedule native agents, grade their changes, and display results. Task design requires the agent; `init` and `portfolio` only create scaffolding.
+The [shared evaluation workflow](plugins/codex-eval-plugin/skills/evaluate/WORKFLOW.md) is the authoritative guided process. The installed `$evaluate` skill loads it; repository users ask Codex to read the same file and use `./eval`. Plugin installation is optional when using this checkout. Keep the guide, catalog, CLI, and dashboard from the same version together.
 
-The examples below use **`./eval` from this repository's root**. With an installed or extracted plugin, use `python3 /path/to/codex-eval-plugin/bin/codex-eval` instead. Both invoke the same CLI. Run `./eval --help` to list commands or `./eval run --help` for one command's options.
+The plugin is a thin distribution layer. The skill handles discovery and task design, while the CLI validates, seals, runs native agents, grades, and reports. It does not require another evaluation engine or a separately generated dashboard.
 
-### 1. Prepare the evaluation
-
-```sh
-# Create suite.json, discovery.json, rates.json, and example task folders.
-./eval init evaluations/customer
-```
-
-The agent then records your workflows in `discovery.json`, authors the approved tasks and graders, and pins the installed provider CLI paths and versions in `suite.json`. These discovery helpers support that work:
-
-| Command | What it does |
-| --- | --- |
-| `history --provider codex --days 90 --consent --output FILE` | Reads local user-message history after you grant access; use `--provider claude` for Claude history. |
-| `repo --path PATH --output FILE` | Collects workflow evidence from a selected local Git repository. |
-| `discovery-report DISCOVERY --evidence FILE --output FILE` | Writes a source-coverage receipt, including sampling limits and workflow confirmation. |
-| `examples --query TEXT` | Searches the bundled task-design catalog. |
-| `portfolio DISCOVERY --suite SUITE --output FILE` | Seeds three Basic and five Hard slots per workflow; the agent adapts their focus to the customer and implements the tasks. |
-
-Prefix these commands with `./eval`. `FILE`, `PATH`, `DISCOVERY`, and `SUITE` are placeholders for your chosen paths. History and repository collection are optional, based on your approved discovery scope.
-
-### 2. Configure, validate, and approve
-
-Choose the harnesses before freezing the plan. For Codex + Copilot catalog defaults:
+For direct repository use:
 
 ```sh
-./eval configure evaluations/customer/suite.json --provider codex --provider copilot --all-efforts
+./eval self-check
+./eval --help
 ```
 
-Add `--provider claude` for all three, or use repeated `--model PROVIDER:MODEL` flags for exact models. Configure Copilot's explicit account/token and installed executable using the [Copilot setup guide](plugins/codex-eval-plugin/skills/evaluate/references/copilot.md). Copilot remains opt-in; bare `--all-models` restores Codex + Claude defaults.
-
-After the customer tasks are authored:
-
-```sh
-# Inspect the bundled model catalog.
-./eval models
-
-# Keep the chosen harnesses/models; select efforts, one repeat, and spend policy.
-./eval configure evaluations/customer/suite.json \
-  --all-efforts --repeats 1 --no-spend-stop
-
-# Check local prerequisites and authenticated model listings; no inference calls.
-./eval doctor evaluations/customer/suite.json --check-model-access
-
-# Run local graders: starting code must fail and reference solutions must pass.
-./eval validate evaluations/customer/suite.json --check-graders
-
-# Display the exact inputs and scheduled attempt count for review.
-./eval plan evaluations/customer/suite.json
-
-# Only after customer approval: record who approved these exact inputs.
-./eval approve evaluations/customer/suite.json --by 'Customer reviewer'
-```
-
-To narrow the matrix, add repeated `--model PROVIDER:MODEL_ID` flags, and replace `--all-efforts` with repeated `--effort LEVEL` flags. Select tasks with repeated `--task TASK_ID`. Replace `--no-spend-stop` with `--spend-stop-usd AMOUNT` to set a threshold. Changes require validation and approval again. `validate` writes `validation.json`; `approve` writes `approval.json` tied to the input seal, which fingerprints the evaluation inputs.
-
-### 3. Run, monitor, and resume
-
-```sh
-# Starts paid provider calls, including native edit-and-test readiness checks.
-./eval run evaluations/customer/suite.json \
-  --output evaluations/customer/run --workers 5
-```
-
-For each scheduled task/model/effort/repeat, the runner prepares a fresh copy of the starting code, invokes the selected native CLI, then runs the separate behavioral grader and checks allowed-file changes. **The grader determines pass/fail.** The runner saves native events, results, timing, and available usage/cost telemetry.
-
-| Native agent | What `run` invokes |
-| --- | --- |
-| Codex | `codex … exec --json --ephemeral …`: the pinned model and effort, API authentication, and `workspace-write` sandbox in local mode. |
-| Claude Code | `claude -p --bare --no-session-persistence --output-format stream-json …`: the pinned model, supported effort setting, turn limit, and configured coding tools. |
-| GitHub Copilot | `copilot --prompt … --output-format json …`: the pinned model/effort, explicit account/token, isolated settings, and native usage receipt. Local execution only. |
-
-These are abbreviated command shapes; the [runner implementation](plugins/codex-eval-plugin/ceval/runner.py) builds the full arguments and settings. New suites have no agent or grader timeout; explicit numeric limits are enforced. The CLI queues up to five attempts by default and applies bounded retries for explicit native rate-limit, capacity, connection, and temporary service errors.
-
-In another terminal, inspect saved checkpoints and review signals:
-
-```sh
-./eval progress evaluations/customer/run
-./eval reflect evaluations/customer/run
-```
-
-`progress` reads saved counts and state; `reflect` flags patterns for the agent to investigate. Neither command above starts model calls or changes grades. To continue an interrupted run with the same sealed inputs and output directory:
-
-```sh
-./eval run evaluations/customer/suite.json \
-  --output evaluations/customer/run --workers 5 --resume
-```
-
-`--resume` verifies saved evidence, skips completed cells, and continues eligible unfinished work under the retry policy. It can incur additional provider costs.
-
-### 4. Export results and open the dashboard
-
-```sh
-# Write summary.json, averages.json, results.csv, and accounting exports.
-./eval report evaluations/customer/run
-
-# Show only this customer's runs, combining providers within this directory.
-./eval dashboard evaluations/customer --scope --port 8765
-```
-
-Open [localhost:8765](http://127.0.0.1:8765). To combine all saved live runs under `evaluations/`, use `./eval dashboard` without `--scope`. Reports and dashboards read and verify existing result artifacts; they do not call models. Missing or invalid artifacts must be resolved or excluded by selecting specific run directories.
-
-See the [CLI reference](docs/CLI_REFERENCE.md) for all options, shared worker pools, retry settings, and additional discovery sources.
+For an installed or extracted package, the equivalent command is `python3 /path/to/codex-eval-plugin/bin/codex-eval`. The [starter prompt](CUSTOMER_STARTER_PROMPT.md) includes both routes. The [CLI reference](docs/CLI_REFERENCE.md) documents manual commands; it is not a second customer workflow.
 
 ## Requirements and results
 
@@ -162,7 +69,8 @@ Completion is **1 or 0**, determined by separate behavioral checks and allowed-f
 
 | Document | Use it for |
 | --- | --- |
-| **[Customer starter prompt](CUSTOMER_STARTER_PROMPT.md)** | **Install and begin your evaluation in Codex** |
+| **[Customer starter prompt](CUSTOMER_STARTER_PROMPT.md)** | **Begin through the plugin or an existing checkout** |
+| [Evaluation workflow](plugins/codex-eval-plugin/skills/evaluate/WORKFLOW.md) | Authoritative guided process shared by both routes |
 | [Product walkthrough](OVERVIEW.md) | Customer experience and underlying functionality |
 | [CLI reference](docs/CLI_REFERENCE.md) | Manual commands, model/task selectors, queues, retries, exports, dashboards |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | CLI compatibility, unavailable models, and safe recovery |

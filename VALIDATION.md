@@ -1,5 +1,9 @@
 # Validation guide
 
+## 0.12.1 shared-workflow packaging — 2026-09-25
+
+All 151 offline tests, skill validation, self-check, local Markdown links, and diff checks passed. The standalone export has 59 files and exactly one skill. Its extraction test verifies that the skill reaches the same shared workflow shipped in the repository, every packaged local documentation link resolves inside the package, and self-check rejects a missing workflow guide. The existing operational procedure was moved intact apart from its title and version-consistent entrypoint guidance. No inference calls or dashboard UI changes were made.
+
 ## 0.12.0 release audit — 2026-09-25
 
 - All 151 offline tests passed, including Basic/Hard portfolio counts, legacy suite compatibility, first-round/follow-up scheduling, three-provider configuration, transient recovery, score/grouping symmetry, cost per success, and current-rate Codex dashboard pricing with unchanged signed evidence.
