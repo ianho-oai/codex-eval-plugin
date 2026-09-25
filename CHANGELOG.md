@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1 — 2026-09-25
+
+- Make the single evaluation skill a thin entrypoint to a shared packaged workflow guide, used by both installed-plugin and direct-repository customers. Preserve the existing execution and approval contract.
+- Consolidate duplicated workflow guidance in the starter prompt, READMEs and project context into links and focused references. Document plugin-free repository use and keep the bundled CLI, catalog and dashboard together.
+- Validate the shared guide in package self-check and exercise all packaged documentation links after standalone extraction. Correct the stale portfolio command summary to three Basic and five Hard slots.
+
 ## 0.12.0 — 2026-09-25
 - Clarify the complete-first-round approval gate across Basic/Hard tasks and all selected harnesses: one initial attempt per task/model/effort, then exactly two optional attempts with explicit customer approval. Correct stale three-repeat CLI guidance and specify pooling means/medians from three raw observations.
 - Use Basic/Hard for new schema 3 suites, defaulting to three Basic and five distinct Hard tasks per workflow. Update customer discovery, task-design guidance and coverage validation; retain the offline reference catalog and legacy suite/run meanings.

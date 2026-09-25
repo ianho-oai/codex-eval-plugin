@@ -1,5 +1,7 @@
 # CLI reference
 
+For the guided customer process, use the shared [evaluation workflow](../plugins/codex-eval-plugin/skills/evaluate/WORKFLOW.md). This document is the manual command reference; installed packages also provide version-matched `COMMAND --help`.
+
 Run directories should live under your project, outside system temporary directories. Local attempts use private scratch beneath their result directory and preserve the installed toolchain PATH. `reflect` also flags native helper/sandbox diagnostic codes independently of pass/fail; investigate those signals before interpreting timings. Missing cost is unknown, including after timeouts, and a known-spend upper estimate does not bound attempts with missing costs.
 
 Codex evaluation shells use `allow_login_shell=false` so login startup scripts do not reactivate unrelated virtual environments or alter task behavior. This uses the supported [Codex configuration](https://developers.openai.com/codex/config-reference/) and preserves managed sandbox requirements. Verify the selected language runtime with the same invocation used by the grader before approving tasks.
@@ -47,7 +49,7 @@ New suites and smoke tests default to **no agent or grader timeout** (`limits.ag
 | `repo --provider gitlab --repo GROUP/REPO --host HOST --output FILE` | Read MR metadata through `glab` |
 | `snapshot --repo PATH --commit FULL_SHA --output TASK/baseline` | Export a regular-file snapshot without Git history |
 | `examples --query TEXT [--inventory]` | Search offline task design examples and upstream metadata |
-| `portfolio DISCOVERY --suite SUITE --output FILE` | Seed three difficulty slots per workflow and register coverage; the skill adds a distinct repository-reasoning hard task before approval |
+| `portfolio DISCOVERY --suite SUITE --output FILE` | Seed three Basic and five Hard slots per workflow by default and register coverage; author the customer-approved tasks before configuring execution |
 | `benchmarks`, `models` | Inspect dated methodology/model catalogs |
 | `validate SUITE --check-graders` | Verify schema, paths, baseline failure, and oracle success |
 | `plan SUITE`, `approve SUITE --by NAME` | Review and seal exact inputs |

@@ -156,8 +156,9 @@ def self_check():
     if manifest:
         require(manifest['version'] == __version__, 'Version mismatch')
         require(len(list((root / 'skills').rglob('SKILL.md'))) == 1, 'Exactly one skill required')
+        require((root / 'skills/evaluate/WORKFLOW.md').is_file(), 'Missing shared evaluation workflow')
         require(manifest['repository'] == 'https://github.com/ianho-oai/codex-eval-plugin', 'Repository metadata mismatch')
-    for name in ('index.html', 'app.js', 'style.css'):
+    for name in ('index.html', 'app.js', 'medians.js', 'style.css'):
         require((DATA / 'web' / name).is_file(), 'Missing dashboard asset')
     import tempfile
     with tempfile.TemporaryDirectory() as td:

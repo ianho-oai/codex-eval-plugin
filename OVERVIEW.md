@@ -2,6 +2,8 @@
 
 **Begin with the [customer starter prompt](CUSTOMER_STARTER_PROMPT.md).** It contains installation instructions and the prompt to paste into a new Codex task. The workflow happens in Codex chat; the dashboard is for results.
 
+The shared [evaluation workflow](plugins/codex-eval-plugin/skills/evaluate/WORKFLOW.md) is authoritative for both the installed skill and direct repository use. This page is a product overview. The plugin packages the guide, CLI and dashboard; it does not add a separate execution engine or require installation for repository users.
+
 ## Customer experience and implementation
 
 | Stage | Customer experience | Underlying functionality |
