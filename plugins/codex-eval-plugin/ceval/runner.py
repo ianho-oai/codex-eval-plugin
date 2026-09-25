@@ -176,13 +176,14 @@ def native_argv(provider, binary, model, effort, seconds, max_turns, budget, doc
 def execution_summary(s):
     stop = s['limits']['spend_stop_usd']
     return {
-        'message': 'Review the exact selected harness/model/effort matrix below. New suites default to Codex and Claude; Copilot is opt-in. One iteration per task/model/effort by default; review the first round before approving two additional rounds. No spend stop by default. Configure different providers, models, efforts, or limits before approval.',
+        'message': 'Review the exact selected harness/model/effort matrix below. New suites default to Codex and Claude; Copilot is opt-in. One iteration per task/model/effort by default; review the first round before approving two additional rounds. No spend stop or agent/grader timeout by default. Configure different providers, models, efforts, or limits before approval.',
         'selected_matrix': s['matrix'],
         'execution_check': 'Before each pending customer-run invocation: edit-and-test check using the first configured model/effort per provider, same native environment and slots. Numeric timeouts are capped at 120 seconds for agents and 30 for graders; explicit unlimited timeouts remain unlimited. Probe costs are separate from scored tasks and count toward spend stops. A failure blocks the matrix. Smoke runs are themselves readiness checks.',
         'execution_mode': s['execution']['mode'],
         'task_setup': 'Default tasks use self-contained local fixtures and existing simple test runners. No Docker, simulators, GUI applications, or external services are required unless explicitly requested.',
         'repeats': s['repeats'],
         'agent_timeout_seconds': s['limits']['agent_seconds'],
+        'grader_timeout_seconds': s['limits']['grader_seconds'],
         'spend_stop_usd': stop,
         'copilot_max_ai_credits': s['limits'].get('copilot_max_ai_credits'),
         'copilot_billing': 'Opt-in Copilot account billing. AI credits are a soft per-attempt limit, not USD. Missing currency cost stays null; API rate cards never price Copilot tokens.',

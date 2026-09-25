@@ -195,7 +195,7 @@ def difficulty_labels(root, run, descriptions, rows, accounting_rows):
         task_id, original, label = entry.get('task_id'), entry.get('from'), entry.get('to')
         require(isinstance(task_id, str) and task_id in known and task_id not in labels
                 and original == known[task_id] and isinstance(label, str)
-                and label in ('easy', 'medium', 'hard', 'harder', 'harder-1', 'harder-2'),
+                and label in ('basic', 'easy', 'medium', 'hard', 'harder', 'harder-1', 'harder-2'),
                 'Unknown, duplicate, or invalid difficulty-label task')
         labels[task_id] = (original, label)
 
@@ -253,7 +253,45 @@ def dataset(root, *, comparison=False):
             'averages': average_attempts(rows, run), 'summary': summary}
 
 
-def dashboard_dataset(roots, *, scope=False):
+def dashboard_pricing(data, pricing, provenance):
+    """Reprice only the Codex view, after integrity checks and retry exclusions."""
+    from .telemetry import codex_cost
+    rows = []
+    for row in data['rows']:
+        if row.get('provider') != 'codex' or row.get('simulation') or row.get('not_started'):
+            rows.append(row)
+            continue
+        costs = codex_cost(row, pricing['models'].get(row['model']))
+        rows.append(dict(row, **costs,
+                         recorded_cost_usd=row.get('recorded_cost_usd', row.get('cost_usd')),
+                         known_cost_usd=costs['cost_usd'], known_cost_upper_usd=costs['cost_upper_usd'],
+                         cost_source='dashboard_rate_card_estimate' if costs['cost_usd'] is not None else 'unavailable',
+                         cost_adjustment='current_dashboard_rate_card',
+                         pricing_sha256=provenance['sha256'], pricing_path=provenance['path'],
+                         cost_note='Recalculated from recorded tokens and the current dashboard rate card. '
+                         'Standard short-context estimate; missing cache writes use zero in the lower estimate. '
+                         'Request-level long-context charges remain uncertain. Reasoning is included in output. '
+                         'Missing rates or required usage remain unavailable; signed results and accounting are unchanged.'))
+    summary = dict(data['summary'], **summarize(rows, data['summary']['scheduled']))
+    return dict(data, rows=rows, averages=average_attempts(rows, data['run']), summary=summary,
+                dashboard_pricing=provenance)
+
+
+def dashboard_dataset(roots, *, scope=False, pricing_path=None):
+    pricing_path = Path(pricing_path or DATA/'rates.json').resolve()
+    pricing = read_json(pricing_path)  # Re-read on every request; no server restart for rate edits.
+    require(isinstance(pricing, dict) and pricing.get('schema_version') == 1
+            and pricing.get('currency') == 'USD' and pricing.get('unit') == 'per_million_tokens'
+            and isinstance(pricing.get('models'), dict), 'Invalid dashboard rate card')
+    try:
+        provenance = dict(path=str(pricing_path), sha256=digest(pricing),
+                          basis='current_repo_rate_card', checked_at=pricing.get('openai_checked_at', pricing.get('checked_at')))
+    except (ValueError, TypeError) as exc:
+        raise EvalError('Invalid dashboard rate card') from exc
+
+    def view(root):
+        return dashboard_pricing(dataset(root, comparison=True), pricing, provenance)
+
     if isinstance(roots, (str, Path)):
         roots = [roots]
     discovered = []
@@ -284,12 +322,12 @@ def dashboard_dataset(roots, *, scope=False):
     roots = list(dict.fromkeys(discovered))
     require(bool(roots), 'No live runs found. Run an evaluation first, or pass a demo run directory explicitly.')
     if len(roots) == 1:
-        return dataset(roots[0], comparison=True)
+        return view(roots[0])
     rows, sources, stopped, tasks, averages, reset_rows, excluded_rows = [], [], [], [], [], [], []
     accounting_rows, rate_limit_exclusions = [], []
     scheduled = 0
     for root in roots:
-        data = dataset(root, comparison=True)  # Verify every original artifact before combining views.
+        data = view(root)  # Verify every original artifact before combining views.
         run = data['run']
         source = str(root)
         sources.append({'id': source, 'name': run['suite']['name'],
@@ -304,7 +342,7 @@ def dashboard_dataset(roots, *, scope=False):
         scheduled += data['summary']['scheduled']
         if run.get('stop_reason'):
             stopped.append(f"{run['suite']['name']}: {run['stop_reason']}")
-    return {'schema_version': 1, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
+    return {'schema_version': 1, 'dashboard_pricing': provenance, 'run': {'suite': {'name': f'{len(sources)} runs · combined results'},
             'state': 'combined', 'sources': sources, 'stop_reason': '; '.join(stopped) or None,
             'comparison_note': 'Separate runs are shown together. Tasks, settings, and environments may differ. Displaying runs together does not establish a controlled benchmark.'},
             'rows': rows, 'reset_rows': reset_rows, 'excluded_rows': excluded_rows, 'tasks': tasks, 'averages': averages,
@@ -390,6 +428,7 @@ CSV_FIELDS = ['source_run', 'task_id', 'difficulty', 'recorded_difficulty', 'pro
               'input_tokens', 'uncached_input_tokens', 'output_tokens', 'cache_read_tokens',
               'cache_write_tokens', 'reasoning_tokens', 'turns', 'turn_unit', 'tool_calls', 'cost_usd',
               'cost_lower_usd', 'cost_upper_usd', 'cost_source', 'cost_note', 'recorded_cost_usd', 'cost_adjustment',
+              'pricing_sha256', 'pricing_path',
               'retry_count', 'retry_wait_seconds', 'known_cost_usd', 'rate_limit_cost_incomplete', 'rate_limit_retries_exhausted', 'transient_reason', 'transient_cost_incomplete', 'transient_retries_exhausted',
               'comparison_policy', 'excluded_rate_limit_attempts', 'comparison_note', 'recorded_latency_seconds',
               'copilot_premium_requests', 'copilot_nano_aiu', 'copilot_ai_credits',

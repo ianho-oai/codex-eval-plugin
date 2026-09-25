@@ -57,6 +57,13 @@ def transient_reason(row, directory):
     if re.search(r'\b(?:model|server|service) is (?:temporarily )?at capacity\b|'
                  r'\boverloaded_error\b|\b(?:server|service) (?:is )?(?:temporarily )?overloaded\b', errors):
         return 'capacity'
+    if re.search(r'\b(?:econnreset|econnrefused|etimedout|eai_again|enotfound|apiconnectionerror|apitimeouterror)\b|'
+                 r'\b(?:connection|network|socket) (?:error|reset|closed|timed out)\b|'
+                 r'\b(?:fetch failed|stream disconnected|temporary failure in name resolution)\b', errors):
+        return 'connection'
+    if re.search(r'\b(?:http(?: status)?|status(?: code)?)\s*[:=]?\s*(?:500|502|503|504)\b|'
+                 r'\b(?:internal_server_error|service_unavailable|bad gateway|gateway timeout)\b', errors):
+        return 'service_error'
     return None
 
 

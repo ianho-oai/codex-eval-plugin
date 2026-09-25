@@ -20,7 +20,7 @@
         "async-concurrency"
       ],
       "adaptation_guidance": "Adapt to the customer's editor or shared controls. Grade user-visible state and cleanup rather than private implementation names.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/ink-grid-box-layout",
@@ -39,7 +39,7 @@
         "developer-tooling"
       ],
       "adaptation_guidance": "For web interfaces use pinned browser/viewport geometry checks; add responsive integration for the hard tier.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/happy-dom-abort-pending-body-reads",
@@ -59,7 +59,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Use the customer's fetch or view lifecycle with deterministic scheduling and stale-result regressions.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/fastapi-implicit-head-options",
@@ -78,7 +78,7 @@
         "testing-quality"
       ],
       "adaptation_guidance": "Create an analogous API extension with response-contract tests and regressions for existing routes.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/httpx-streaming-json-iteration",
@@ -98,7 +98,7 @@
         "async-concurrency"
       ],
       "adaptation_guidance": "Use deterministic in-memory byte streams; scale difficulty from one format to chunk boundaries and cancellation.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/cliffy-config-file-parsing",
@@ -117,7 +117,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Keep configuration loading local and specify precedence explicitly; include invalid configuration and compatibility checks.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/sqlite-utils-safe-import-checkpoints",
@@ -137,7 +137,7 @@
         "distributed-systems"
       ],
       "adaptation_guidance": "Create a small customer-like import dataset; hard tasks include schema changes, nested failures, and retry behavior.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/vitest-duration-sharding",
@@ -157,7 +157,7 @@
         "performance"
       ],
       "adaptation_guidance": "Use synthetic timing history and assert deterministic scheduling; never depend on wall-clock test jitter for correctness.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/bandit-interprocedural-taint-checks",
@@ -177,7 +177,7 @@
         "testing-quality"
       ],
       "adaptation_guidance": "Build a bounded defensive analyzer on synthetic code; score both missed findings and false positives.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/deepswe/tasks/yjs-map-conflict-detection",
@@ -197,7 +197,7 @@
         "database-data"
       ],
       "adaptation_guidance": "Use an original local collaborative-state model; verify interleavings and invariants without live services.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/cancel-async-tasks",
@@ -216,7 +216,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Use a deterministic cancellation barrier where possible; test queued versus running work separately.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/kv-store-grpc",
@@ -236,7 +236,7 @@
         "devops-build"
       ],
       "adaptation_guidance": "Preinstall dependencies and choose isolated ports. Extend the hard tier with persistence and recovery requirements.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/multi-source-data-merger",
@@ -255,7 +255,7 @@
         "data-science"
       ],
       "adaptation_guidance": "Use invented customer-shaped records; vary precedence, missing fields, duplicates, and malformed rows.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/query-optimize",
@@ -274,7 +274,7 @@
         "performance"
       ],
       "adaptation_guidance": "Use isolated hardware, warmups, repeated timings, a noise margin, and independent result-equivalence checks.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/build-cython-ext",
@@ -293,7 +293,7 @@
         "refactoring-migration"
       ],
       "adaptation_guidance": "Prestage source and toolchain; compare behavior and package imports under the pinned target runtime.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/modernize-scientific-stack",
@@ -313,7 +313,7 @@
         "devops-build"
       ],
       "adaptation_guidance": "Strengthen the customer verifier with numeric output equivalence and dependency constraints; file existence alone is insufficient.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/cobol-modernization",
@@ -332,7 +332,7 @@
         "database-data"
       ],
       "adaptation_guidance": "Use fresh record layouts and independent differential cases, including malformed input and transaction order.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/terminal-bench/nginx-request-logging",
@@ -351,7 +351,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Run only inside an isolated container; use synthetic requests and avoid modifying the customer's host services.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/cpp/exercises/practice/bank-account",
@@ -370,7 +370,7 @@
         "algorithms"
       ],
       "adaptation_guidance": "Use a different bounded state machine; add synchronization and invalid-transition tests.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/cpp/exercises/practice/circular-buffer",
@@ -389,7 +389,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Use randomized operation traces against a simple reference model.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/go/exercises/practice/react",
@@ -409,7 +409,7 @@
         "algorithms"
       ],
       "adaptation_guidance": "Adapt to derived UI state; include event coalescing and subscriber lifecycle checks.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/go/exercises/practice/forth",
@@ -428,7 +428,7 @@
         "algorithms"
       ],
       "adaptation_guidance": "Create a small customer-specific expression language with independent expected outputs.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/go/exercises/practice/markdown",
@@ -447,7 +447,7 @@
         "parsing-compilers"
       ],
       "adaptation_guidance": "Add measurable structural constraints only when the customer needs them; do not grade subjective cleanliness as binary.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/aider-polyglot/java/exercises/practice/sgf-parsing",
@@ -466,7 +466,7 @@
         "algorithms"
       ],
       "adaptation_guidance": "Use an original document format and include round-trip and invalid nesting cases.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
@@ -485,7 +485,7 @@
         "frontend-ui"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
@@ -504,7 +504,7 @@
         "refactoring-migration"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_NodeBB__NodeBB-51d8f3b195bddb13a13ddc0de110722774d9bb1b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
@@ -523,7 +523,7 @@
         "security-hardening"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
@@ -542,7 +542,7 @@
         "backend-api"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
@@ -561,7 +561,7 @@
         "testing-quality"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-bench-pro/instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59",
@@ -580,7 +580,7 @@
         "security-hardening"
       ],
       "adaptation_guidance": "Create a fresh analogous defect. Rebuild independent acceptance tests; upstream selectors and historical patches are not proof of verifier quality.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-lancer/17387_1",
@@ -598,7 +598,7 @@
         "frontend-ui"
       ],
       "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-lancer/32236_652",
@@ -616,7 +616,7 @@
         "frontend-ui"
       ],
       "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-lancer/18641_837",
@@ -634,7 +634,7 @@
         "frontend-ui"
       ],
       "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/swe-lancer/49298_510",
@@ -652,7 +652,7 @@
         "frontend-ui"
       ],
       "adaptation_guidance": "Use a synthetic local app and deterministic DOM/geometry/interaction checks; avoid customer services and identity data.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/featurebench/full:huggingface__transformers.e2e8dbed/test_chat_template_utils.8c88f8ec.lv1",
@@ -672,7 +672,7 @@
         "parsing-compilers"
       ],
       "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/featurebench/full:pypa__hatch.ff4b4040/test_config.38d2ef18.lv1",
@@ -691,7 +691,7 @@
         "developer-tooling"
       ],
       "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/featurebench/full:sphinx-doc__sphinx.e347e59c/test_build_linkcheck.20428c8f.lv1",
@@ -711,7 +711,7 @@
         "async-concurrency"
       ],
       "adaptation_guidance": "Adapt only the stated interface contract; add held-out customer regressions and do not import benchmark implementation constraints blindly.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/gso/huggingface__datasets-5994036",
@@ -730,7 +730,7 @@
         "data-science"
       ],
       "adaptation_guidance": "Use varied held-out inputs and controlled repeated timing. Ban output hardcoding and grade correctness before speed.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "example/gso/numpy__numpy-7ff7ec7",
@@ -749,7 +749,7 @@
         "data-science"
       ],
       "adaptation_guidance": "Use varied held-out inputs and controlled repeated timing. Ban output hardcoding and grade correctness before speed.",
-      "difficulty_policy": "Choose easy, medium, and hard variants based on the customer workflow; upstream difficulty is not a customer difficulty rating."
+      "difficulty_policy": "Choose Basic and Hard variants based on the customer workflow. Basic spans the former easy/medium/hard range; Hard targets substantive repository engineering. Upstream difficulty is not a customer difficulty rating."
     },
     {
       "id": "method/swe-bench/fail-to-pass-regression",

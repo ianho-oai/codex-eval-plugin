@@ -17,7 +17,7 @@ The file contains both installation commands and a copy-ready kickoff prompt. Yo
 | Step | What the agent does | What you provide or decide |
 | --- | --- | --- |
 | 1. Discover | Learns the workflows and shows a coverage receipt with actual sources, dates, sampling limits, and confirmed scope. | Describe your work, allow selected local session history from the last 90 days, share selected repositories/PRs/MRs, or combine these. You can end discovery at any point. |
-| 2. Propose | Proposes easy, medium, focused hard, and repository-reasoning hard tasks per workflow (at least four by default), with short descriptions, acceptance checks, and benchmark inspiration or original-design rationale. | Approve the task list or ask for changes. |
+| 2. Propose | Proposes three Basic and five distinct Hard tasks per workflow (eight by default), emphasizing repository investigation, feature integration, and recovery/compatibility, with short descriptions, acceptance checks, and benchmark inspiration or original-design rationale. | Approve the task list or ask for changes. |
 | 3. Prepare | Builds self-contained fixtures, checks starting-code failure and valid solutions, and audits graders against visible requirements. Checks CLI compatibility and model access. | Provide API keys securely and handle any required CLI upgrade or account-access step. |
 | 4. Agree the run | Shows the exact models, reasoning efforts, repeats, concurrency, and spend policy. | Approve the plan before paid calls; narrow the selection or set a spend stop if wanted. |
 | 5. Execute and adapt | First checks a real native edit-and-test operation, then monitors results, retries transient capacity/rate-limit errors within bounds, diagnoses unexpected behavior, and repairs demonstrated test defects in a fresh revision with fair reruns. Preserves original evidence and genuine coding failures. | Usually nothing. Approve repairs outside the agreed scope; handle a blocked provider command if needed. |
@@ -63,7 +63,7 @@ The agent then records your workflows in `discovery.json`, authors the approved 
 | `repo --path PATH --output FILE` | Collects workflow evidence from a selected local Git repository. |
 | `discovery-report DISCOVERY --evidence FILE --output FILE` | Writes a source-coverage receipt, including sampling limits and workflow confirmation. |
 | `examples --query TEXT` | Searches the bundled task-design catalog. |
-| `portfolio DISCOVERY --suite SUITE --output FILE` | Seeds easy/medium/hard slots per workflow; the agent adds the extra repository-reasoning hard task and implements the tasks. |
+| `portfolio DISCOVERY --suite SUITE --output FILE` | Seeds three Basic and five Hard slots per workflow; the agent adapts their focus to the customer and implements the tasks. |
 
 Prefix these commands with `./eval`. `FILE`, `PATH`, `DISCOVERY`, and `SUITE` are placeholders for your chosen paths. History and repository collection are optional, based on your approved discovery scope.
 
@@ -83,9 +83,9 @@ After the customer tasks are authored:
 # Inspect the bundled model catalog.
 ./eval models
 
-# Select the model/effort matrix, one repeat, and spend policy.
+# Keep the chosen harnesses/models; select efforts, one repeat, and spend policy.
 ./eval configure evaluations/customer/suite.json \
-  --all-models --all-efforts --repeats 1 --no-spend-stop
+  --all-efforts --repeats 1 --no-spend-stop
 
 # Check local prerequisites and authenticated model listings; no inference calls.
 ./eval doctor evaluations/customer/suite.json --check-model-access
@@ -100,7 +100,7 @@ After the customer tasks are authored:
 ./eval approve evaluations/customer/suite.json --by 'Customer reviewer'
 ```
 
-To narrow the matrix, replace `--all-models` with repeated `--model PROVIDER:MODEL_ID` flags, and `--all-efforts` with repeated `--effort LEVEL` flags. Select tasks with repeated `--task TASK_ID`. Replace `--no-spend-stop` with `--spend-stop-usd AMOUNT` to set a threshold. Changes require validation and approval again. `validate` writes `validation.json`; `approve` writes `approval.json` tied to the input seal, which fingerprints the evaluation inputs.
+To narrow the matrix, add repeated `--model PROVIDER:MODEL_ID` flags, and replace `--all-efforts` with repeated `--effort LEVEL` flags. Select tasks with repeated `--task TASK_ID`. Replace `--no-spend-stop` with `--spend-stop-usd AMOUNT` to set a threshold. Changes require validation and approval again. `validate` writes `validation.json`; `approve` writes `approval.json` tied to the input seal, which fingerprints the evaluation inputs.
 
 ### 3. Run, monitor, and resume
 
@@ -116,8 +116,9 @@ For each scheduled task/model/effort/repeat, the runner prepares a fresh copy of
 | --- | --- |
 | Codex | `codex … exec --json --ephemeral …`: the pinned model and effort, API authentication, and `workspace-write` sandbox in local mode. |
 | Claude Code | `claude -p --bare --no-session-persistence --output-format stream-json …`: the pinned model, supported effort setting, turn limit, and configured coding tools. |
+| GitHub Copilot | `copilot --prompt … --output-format json …`: the pinned model/effort, explicit account/token, isolated settings, and native usage receipt. Local execution only. |
 
-These are abbreviated command shapes; the [runner implementation](plugins/codex-eval-plugin/ceval/runner.py) builds the full arguments and settings. The CLI also enforces time limits, queues up to five attempts by default, and applies bounded retries for explicit rate-limit/capacity errors.
+These are abbreviated command shapes; the [runner implementation](plugins/codex-eval-plugin/ceval/runner.py) builds the full arguments and settings. New suites have no agent or grader timeout; explicit numeric limits are enforced. The CLI queues up to five attempts by default and applies bounded retries for explicit native rate-limit, capacity, connection, and temporary service errors.
 
 In another terminal, inspect saved checkpoints and review signals:
 

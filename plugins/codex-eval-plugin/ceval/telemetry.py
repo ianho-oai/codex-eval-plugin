@@ -9,6 +9,29 @@ def numeric(value):
     return value if type(value) in (float, int) and math.isfinite(value) and value >= 0 else None
 
 
+def codex_cost(usage, rate):
+    """Price recorded token totals; callers choose frozen or current rates."""
+    missing = dict(cost_usd=None, cost_lower_usd=None, cost_upper_usd=None)
+    if not isinstance(rate, dict):
+        return missing
+    i, o, c = (numeric(usage.get(k)) for k in ('input_tokens', 'output_tokens', 'cache_read_tokens'))
+    w = usage.get('cache_write_tokens')
+    if None in (i, o, c) or c > i or (w is not None and (numeric(w) is None or w > i-c)):
+        return missing
+    if any(numeric(rate.get(k)) is None for k in ('input', 'cached_input', 'cache_write', 'output')):
+        return missing
+    multipliers = [numeric(rate.get(k, 1)) for k in ('long_input_multiplier', 'long_output_multiplier')]
+    if any(v is None or v < 1 for v in multipliers):
+        return missing
+    write = w or 0
+    input_cost = ((i-c-write)*rate['input'] + c*rate['cached_input'] + write*rate['cache_write'])/1e6
+    out_cost = o*rate['output']/1e6
+    upper_input = ((i-c)*max(rate['input'], rate['cache_write']) + c*rate['cached_input'])/1e6
+    costs = dict(cost_usd=input_cost+out_cost, cost_lower_usd=input_cost+out_cost,
+                 cost_upper_usd=upper_input*multipliers[0]+out_cost*multipliers[1])
+    return costs if all(numeric(v) is not None for v in costs.values()) else missing
+
+
 def events(text):
     result, invalid = [], 0
     for line in text.splitlines():
@@ -89,17 +112,10 @@ def normalize(provider, text, model, pricing):
         i, o, c, w = (result[k] for k in ('input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens'))
         if i is not None and c is not None and 0 <= c <= i:
             result['uncached_input_tokens'] = i - c
-        if rate and None not in (i, o, c) and 0 <= c <= i and (w is None or 0 <= w <= i-c):
-            required = ('input', 'cached_input', 'cache_write', 'output')
-            if all(numeric(rate.get(k)) is not None for k in required):
-                write = w or 0
-                input_cost = ((i-c-write)*rate['input'] + c*rate['cached_input'] + write*rate['cache_write'])/1e6
-                out_cost = o*rate['output']/1e6
-                upper_input = ((i-c)*max(rate['input'], rate['cache_write']) + c*rate['cached_input'])/1e6
-                result.update(cost_usd=input_cost+out_cost, cost_lower_usd=input_cost+out_cost,
-                              cost_upper_usd=upper_input*rate.get('long_input_multiplier', 1)+out_cost*rate.get('long_output_multiplier', 1),
-                              cost_source='estimated_rate_card',
-                              cost_note='Standard global short-context estimate. Upper envelope allows long-context rates and unknown cache writes; native turn aggregates cannot identify request tiers. Reasoning is included in output cost.')
+        result.update(codex_cost(result, rate))
+        if result['cost_usd'] is not None:
+            result.update(cost_source='estimated_rate_card',
+                          cost_note='Standard global short-context estimate. Upper envelope allows long-context rates and unknown cache writes; native turn aggregates cannot identify request tiers. Reasoning is included in output cost.')
     elif provider == 'copilot':
         # CLI JSONL uses SDK event envelopes. Never interpret its billing multiplier
         # or AI units as dollars, or apply a model vendor's direct-API rate card.

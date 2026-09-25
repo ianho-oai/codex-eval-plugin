@@ -1,5 +1,14 @@
 # Validation guide
 
+## 0.12.0 release audit — 2026-09-25
+
+- All 151 offline tests passed, including Basic/Hard portfolio counts, legacy suite compatibility, first-round/follow-up scheduling, three-provider configuration, transient recovery, score/grouping symmetry, cost per success, and current-rate Codex dashboard pricing with unchanged signed evidence.
+- Self-check, both dashboard JavaScript syntax checks, local Markdown links, and `git diff --check` passed. The reproducible export contains 58 files and exactly one skill, excluding customer data and credentials.
+- The extracted ZIP independently passed self-check, Codex + Claude / Codex + Copilot / three-provider configuration, selection preservation in subsequent configuration, and all three bundled baseline-fail/oracle-pass checks.
+- Browser validation used a separate synthetic three-provider preview: stable identical dropdowns, score on either axis, grouped cost per success, missing costs, model/effort grouping, saved settings and reload, two-provider filtering, single-task aggregate mode, pie toggles, readable tooltips, and definitions below the chart. No browser console errors were observed. The existing customer dashboard and saved results were preserved.
+
+This audit made no inference calls and does not establish new live model/account availability. Copilot model/effort access still needs the documented customer smoke checks. Dashboard grouping is descriptive; separately approved first and follow-up runs require explicit provenance checks before a pooled three-observation report. New approvals use the updated engine; existing frozen engines and evidence must remain intact.
+
 Use these checks before sharing a release. Keep run logs, screenshots, provider responses, and measured results in ignored `evaluations/` directories. This repository documents the validation procedure; it does not publish comparative model results.
 
 ## Offline release checks

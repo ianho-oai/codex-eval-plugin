@@ -1,10 +1,10 @@
 # Task design
 
-Read when converting approved workflows into runnable tasks. See `benchmarks.json` for the dated public source index, and `examples/` for three small original harness-validation tasks. They demonstrate easy/medium/hard mechanics; they are not substitutes for a customer's representative portfolio or an official benchmark score.
+Read when converting approved workflows into runnable tasks. See `benchmarks.json` for the dated public source index, and `examples/` for three small original harness-validation tasks. New suites copy all three as Basic fixtures; they are not substitutes for a customer's representative portfolio or an official benchmark score.
 
 ## Evaluation objective
 
-Design for successful completion by the selected models. The primary comparison is the time, tokens, and cost needed to produce a verified correct result. Use realistic, bounded engineering tasks with clear requirements, sufficient context, supplied fixtures, and reasonable time limits. Easy/medium/hard should increase coding effort and behavioral complexity while retaining the same simple setup. Avoid ambiguous requirements, surprise acceptance criteria, intentionally unsolvable tasks, and tight timing thresholds that turn host load into a coding failure. Verify feasibility with a known-good solution before freezing. Keep genuine failures visible and apply the same fixed checks to every model; expected completion is a design target, not an assumed score.
+Measure verified correctness, time, tokens, and cost on representative customer engineering work. Use two tiers in new schema 3 suites: **Basic** spans the former easy/medium/hard range; **Hard** targets the former harder-1/harder-2 style. Supply explicit requirements and enough repository context to make tasks feasible without optimizing for a high pass rate. Hard work should expose differences in investigation, implementation and verification across interacting components. Avoid ambiguous requirements, surprise acceptance criteria, unsolvable tasks, and artificial timing thresholds. Default to no timeout unless explicitly requested. Verify feasibility with a known-good solution and independent valid alternative; apply the same fixed behavioral checks to every model and retain genuine failures.
 
 Environment provisioning belongs outside the measured task. If an explicitly selected environment uses Docker, the container should already be ready before the agent starts; implementing Docker integration is not part of success unless the customer's workflow specifically calls for it. Default local execution remains unchanged.
 
@@ -16,21 +16,20 @@ Do not introduce Docker, Xcode builds, simulators/devices, SwiftUI/UIKit UI test
 
 For iOS work, test extracted validation, formatting, routing state, parsing, or sync logic. Use a pure Swift package only when its compiler/test tooling is already available; otherwise adapt the behavior to an available runtime and disclose the language change. Do not claim extracted logic tests measure UI rendering, platform APIs, or native app builds. For frontend work, prefer state/event/markup logic with existing tools. Replace real service clients with supplied in-process fakes; use local files or SQLite instead of a server database.
 
-Hard tasks can involve several modules, cancellation, recovery, migrations, and compatibility. Keep setup as simple as easy tasks. Adapt benchmark methods and acceptance criteria rather than importing their infrastructure. Before paid execution, the grader must run on this device with the baseline failing for the intended defect and the oracle passing. Missing runtimes/dependencies are setup failures: simplify the task or resolve the small prerequisite before freezing, without escalating into platform installation.
+Hard tasks can involve several modules, cancellation, recovery, migrations, and compatibility. Keep setup as simple as Basic tasks. Adapt benchmark methods and acceptance criteria rather than importing their infrastructure. Before paid execution, the grader must run on this device with the baseline failing for the intended defect and the oracle passing. Missing runtimes/dependencies are setup failures: simplify the task or resolve the small prerequisite before freezing, without escalating into platform installation.
 
 ## Portfolio
 
-The agent should propose easy, medium, focused hard, and repository-reasoning hard tasks per workflow by default, expanding the CLI's three seed slots. Both hard types use the current `hard` schema label and distinct difficulty rationales. Follow [hard-task design](../../skills/evaluate/references/hard-task-design.md); use original tasks when suitable benchmark examples do not exist. Respect explicitly narrower customer scope.
+Propose three Basic and five distinct Hard tasks per workflow by default. The CLI seeds all eight slots; the skill adapts their focus to customer evidence and authors the actual tasks. Follow [hard-task design](../../skills/evaluate/references/hard-task-design.md). Use original tasks when suitable benchmark references do not exist. Respect explicitly narrower customer scope.
 
-Record workflow frequency, languages/frameworks, pain points, deliverable, source provenance, difficulty, and testable success criteria in `discovery.json`. New customer suites require at least one easy, medium, and hard task for **each** declared workflow. Declare workflows in discovery.json, then use `portfolio DISCOVERY --suite SUITE` to register them. Suite schema 2 enforces this at validation, planning, approval, and execution; legacy schema 1 and explicit developer smoke suites remain supported. Avoid over-weighting many small tasks merely because they are cheap. Default to one iteration per task/model/effort. Complete and review the entire first-round matrix, then ask approval for two additional iterations of the same configurations (three total); never add repeats automatically. Document any sampling choices. A task should have enough context for a headless agent to finish without clarification.
+Record workflow frequency, languages/frameworks, pain points, deliverables, source provenance and testable success criteria in `discovery.json`. `portfolio DISCOVERY --suite SUITE` registers workflows in a new schema 3 suite. Validation, planning, approval and execution enforce at least three Basic and five Hard tasks per workflow. A workflow's explicitly requested `difficulties` subset requires one task per selected tier instead. Legacy schema 1/2 keep their old meanings and coverage; explicit smoke suites remain exempt. Do not silently relabel old `hard` as new Hard or rewrite signed evidence. Default to one iteration per task/model/effort, review the full first-round matrix, then seek approval for two additional rounds if wanted.
 
-| Difficulty | Design | Example frontend workflow |
+| Tier | Design | Example frontend workflow |
 | --- | --- | --- |
-| Easy | Localized behavior with clear inputs/outputs | Fix accessible labels, empty state, or formatting; validate semantic DOM and regressions |
-| Medium | Several interacting constraints | Filter/sort/paginate correctly while preserving state and immutability |
-| Hard | Multi-stage or cross-module behavior | Async search with cancellation, stale results, keyboard navigation, disposal, and backward compatibility |
+| Basic | Bounded implementation or integration; enough regression checks to establish calibration | Filter/sort/paginate with state preservation, or a bounded async controller repair |
+| Hard | Substantive repository investigation and implementation across interacting components and observable invariants | Repair an editor's shared state, persistence, routing and derived views across restart/recovery while preserving existing public behavior |
 
-Hard customer tasks should include interactions across a small self-contained repository where the workflow warrants it. Merely adding more edge cases to a small function is not equivalent to DeepSWE's long-horizon scope. The included async controller is a compact validation example.
+The five Hard designs should test different customer behaviors, not cosmetic variants. Counts and labels alone do not establish difficulty. Small synthetic tasks remain adaptations; neither the Hard label nor a benchmark citation establishes equality with public benchmark difficulty. The bundled async controller is a compact Basic harness fixture.
 
 ## Finding task inspiration
 
@@ -59,13 +58,14 @@ Example task metadata additions:
 
 An original task uses `{"kind":"original","rationale":"Why no catalog example fits and what this task exercises","sources":[]}`. Source URLs are validated against the catalog. Difficulty describes customer scope, not an upstream rating.
 
-| Workflow | Easy | Medium | Hard |
-| --- | --- | --- | --- |
-| API/backend | Repair one validation contract | Integrate pagination, errors, and compatibility | Add streaming/cancellation across service lifecycle and recovery |
-| CLI/tooling | Fix flag parsing | Compose config-file and environment precedence | Multi-command migration with rollback and compatibility |
-| Data/performance | Correct one transformation | Join heterogeneous inputs and preserve schema | Optimize an integrated pipeline with output equivalence and fixed workload thresholds |
-| Test authoring | Catch a focused regression | Cover state transitions and error paths | Kill a defined set of realistic cross-module mutants while preserving valid behavior |
-| Frontend | Semantic DOM/empty-state repair | Filter and navigation state integration | Async interaction lifecycle, accessibility, recovery, and regressions |
+| Workflow | Basic calibration | Hard repository work |
+| --- | --- | --- |
+| API/backend | Bounded validation, pagination or cancellation change | Coordinate lifecycle, persistence, recovery and compatibility across services implemented with local fakes |
+| CLI/tooling | Configuration precedence or bounded command repair | Multi-command migration with restart-safe rollback and preservation of previous formats |
+| Data/performance | Bounded transformation or join | Incremental query maintenance across planning, execution and invalidation, preserving full-recompute equivalence |
+| Test authoring | Regression coverage for one component | Detect distinct cross-module semantic faults while accepting independently correct implementations |
+| Frontend | Filtering and navigation state integration | Shared editor state, derived views and persistence under cancellation, recovery and compatibility constraints |
+
 
 ## Layout
 

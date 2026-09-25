@@ -57,6 +57,8 @@ class CopilotTests(unittest.TestCase):
         self.assertEqual({m['model'] for m in suite['matrix'] if m['provider'] == 'copilot'},
                          {'gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra'})
         self.assertIsNone(suite['limits']['copilot_max_ai_credits'])
+        configure(self.path, all_efforts=True, repeats=1, no_spend_stop=True)
+        self.assertEqual(read_json(self.path)['matrix'], suite['matrix'])
         self.assertEqual(next(m for m in suite['matrix'] if m['provider']=='copilot' and m['model']=='gpt-5.6-sol')['efforts'],
                          ['none','low','medium','high','xhigh','max'])
         before = self.path.read_bytes()
@@ -352,6 +354,8 @@ print(json.dumps({'type':'result','exitCode':0,'usage':{'premiumRequests':1}}))
             self.assertEqual(suite['matrix'][0]['efforts'], ['low'])
             self.assertEqual(suite['execution']['copilot_account'], 'personal-user')
             self.assertIsNone(suite['limits']['copilot_max_ai_credits'])
+            self.assertIsNone(suite['limits']['agent_seconds'])
+            self.assertIsNone(suite['limits']['grader_seconds'])
             self.assertEqual(suite['execution']['copilot_version'], '1.0.88')
             write_json(output/'results.json', {'rows':[]})
             return {'state':'complete'}

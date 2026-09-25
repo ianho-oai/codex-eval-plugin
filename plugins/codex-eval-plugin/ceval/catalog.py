@@ -1,13 +1,24 @@
 """Offline task inspiration lookup and per-workflow difficulty coverage."""
 import re
+from collections import Counter
 from .core import DATA, ID, read_json, require, write_json
 
-TIERS = ('easy', 'medium', 'hard')
+TIERS = ('basic', 'hard')
+LEGACY_TIERS = ('easy', 'medium', 'hard')
 TIER_GUIDANCE = {
-    'easy': 'One localized change with explicit behavior, an edge case, and a regression check.',
-    'medium': 'Integrate interacting requirements across components; verify state, error paths, and compatibility.',
-    'hard': 'A realistic multi-stage or cross-module change; verify lifecycle, failure recovery, integration, and existing behavior. Do not manufacture difficulty through prompt length or extra edge cases alone.',
+    'basic': 'A representative calibration task spanning the former easy/medium/hard range: bounded implementation or integration with explicit behavior and regression checks.',
+    'hard': 'Former harder-1/harder-2 style: substantive repository investigation and implementation across interacting components, state transitions, recovery, and compatibility. Require observable cross-module invariants, not just more edge cases, files, or setup.',
 }
+DEFAULT_SLOTS = (
+    ('basic', 'localized-repair'),
+    ('basic', 'bounded-feature'),
+    ('basic', 'component-integration'),
+    ('hard', 'repository-repair'),
+    ('hard', 'feature-integration'),
+    ('hard', 'state-recovery-compatibility'),
+    ('hard', 'cross-module-consistency'),
+    ('hard', 'customer-critical-path'),
+)
 
 
 def examples(query='', workflow=None, limit=10, include_inventory=False):
@@ -36,7 +47,7 @@ def examples(query='', workflow=None, limit=10, include_inventory=False):
             'note': 'Customer difficulty is assigned when adapting tasks, not copied from benchmark labels. Indexed entries require source inspection. No suitable match: create an original task and explain why.'}
 
 
-def normalized_workflows(items):
+def normalized_workflows(items, allowed_tiers=TIERS):
     require(isinstance(items, list) and bool(items), 'Discovery must list at least one workflow')
     workflows, ids = [], set()
     for item in items:
@@ -49,30 +60,36 @@ def normalized_workflows(items):
         if 'difficulties' in item:
             tiers = item['difficulties']
             require(isinstance(tiers, list) and bool(tiers)
-                    and all(isinstance(t, str) and t in TIERS for t in tiers)
-                    and len(tiers) == len(set(tiers)), 'Workflow difficulties must be unique easy, medium, or hard values')
+                    and all(isinstance(t, str) and t in allowed_tiers for t in tiers)
+                    and len(tiers) == len(set(tiers)), 'Workflow difficulties must be unique values from: '+', '.join(allowed_tiers))
             workflow['difficulties'] = list(tiers)
         workflows.append(workflow)
     return workflows
 
 
 def portfolio(discovery, suite=None, output=None):
+    data = read_json(suite) if suite else None
+    if data is not None:
+        require(data.get('schema_version') == 3,
+                'New portfolios require a schema 3 suite. Run init in a new directory; do not relabel legacy or frozen tasks in place.')
     workflows = normalized_workflows(read_json(discovery).get('workflows'))
     cells = []
     for workflow in workflows:
         candidates = examples(workflow['name']+' '+workflow['description'], limit=3)['examples']
-        for tier in workflow.get('difficulties', TIERS):
-            cells.append({'workflow_id': workflow['id'], 'workflow': workflow['name'], 'difficulty': tier,
+        slots = [(tier, 'customer-scoped') for tier in workflow['difficulties']] if 'difficulties' in workflow else DEFAULT_SLOTS
+        for index, (tier, profile) in enumerate(slots, 1):
+            cells.append({'slot_id': f"{workflow['id']}-{index}-{profile}",
+                          'workflow_id': workflow['id'], 'workflow': workflow['name'], 'difficulty': tier,
+                          'design_focus': profile,
                           'difficulty_guidance': TIER_GUIDANCE[tier],
                           'candidate_inspirations': [{'id': c['id'], 'title': c['title'], 'source_url': c['source_url']} for c in candidates],
                           'original_task_allowed': True})
-    result = {'schema_version': 1, 'status': 'proposal_scaffold', 'workflows': workflows,
+    result = {'schema_version': 2, 'difficulty_taxonomy': 'basic-hard-v1', 'status': 'proposal_scaffold', 'workflows': workflows,
               'minimum_tasks': len(cells), 'slots': cells,
-              'task_design_policy': 'Self-contained local fixtures and an existing simple test runner. No Docker, GUI apps, simulators, external services, or device integrations by default. Adapt benchmark ideas to portable logic; difficulty comes from behavior and interacting modules, not environment setup. Aim for solvable tasks with clear requirements and reasonable time limits, comparing cost and latency for verified completion.',
+              'task_design_policy': 'Default to three Basic and five distinct Hard tasks per workflow. Adapt design focuses to customer evidence; do not manufacture unrelated work. Self-contained local fixtures and an existing simple test runner; no heavy setup or external services by default. Use the reference catalog for repository-engineering inspiration, not a claim of benchmark-equivalent difficulty. Supply enough context for solvable tasks without targeting high pass rates or a preferred provider. Verify correctness, cost and latency; no timeout unless explicitly selected.',
               'note': 'Author customer-specific tasks for every slot, explain source adaptations or original rationale, then obtain portfolio and concrete-suite approval.'}
     if suite:
-        data = read_json(suite)
-        data.update(schema_version=2, purpose='customer', workflows=workflows)
+        data.update(purpose='customer', workflows=workflows)
         write_json(suite, data)
     if output:
         write_json(output, result)
@@ -82,18 +99,25 @@ def portfolio(discovery, suite=None, output=None):
 def coverage(suite, tasks):
     if suite.get('schema_version') == 1 or suite.get('purpose') == 'smoke':
         return {'enforced': False, 'reason': 'Legacy suite or explicitly scoped development smoke test', 'missing': []}
-    workflows = normalized_workflows(suite.get('workflows'))
+    tiers = TIERS if suite.get('schema_version') == 3 else LEGACY_TIERS
+    workflows = normalized_workflows(suite.get('workflows'), tiers)
     allowed = {w['id'] for w in workflows}
-    present = set()
+    present = Counter()
     for task in tasks:
         spec = task.get('spec', task)
         require(spec.get('workflow_id') in allowed, 'Every customer task must reference a discovered workflow_id')
         require('provenance' in spec, 'Every customer task must explain its inspiration or original design')
-        present.add((spec['workflow_id'], spec['difficulty']))
-    missing = [{'workflow_id': w['id'], 'difficulty': tier} for w in workflows for tier in w.get('difficulties', TIERS)
-               if (w['id'], tier) not in present]
+        present[(spec['workflow_id'], spec['difficulty'])] += 1
+    required = [(w['id'], tier) for w in workflows
+                for tier in (w['difficulties'] if 'difficulties' in w else
+                             [s[0] for s in DEFAULT_SLOTS] if suite.get('schema_version') == 3 else tiers)]
+    # Repeat missing entries for unfilled slots, preserving the legacy receipt shape.
+    missing = []
+    for (workflow_id, tier), count in Counter(required).items():
+        missing.extend({'workflow_id': workflow_id, 'difficulty': tier}
+                       for _ in range(max(0, count - present[(workflow_id, tier)])))
     return {'enforced': True, 'workflow_count': len(workflows),
-            'minimum_tasks': sum(len(w.get('difficulties', TIERS)) for w in workflows), 'missing': missing}
+            'minimum_tasks': len(required), 'missing': missing}
 
 
 def validate_provenance(task):

@@ -67,9 +67,9 @@ class DifficultyLabelTests(unittest.TestCase):
             rows = [r for r in combined['rows'] if r['task_id'] == 'deep-task']
             self.assertEqual([r['difficulty'] for r in rows], ['harder', 'hard'])
 
-    def test_numbered_harder_categories_combine_without_rewriting_results(self):
+    def test_basic_and_numbered_harder_categories_preserve_results(self):
         with tempfile.TemporaryDirectory() as tmp:
-            roots = [Path(tmp) / label for label in ('harder-1', 'harder-2')]
+            roots = [Path(tmp) / label for label in ('basic', 'harder-1', 'harder-2')]
             originals = {}
             for root in roots:
                 receipt = self.fixture(root)
@@ -79,7 +79,7 @@ class DifficultyLabelTests(unittest.TestCase):
             combined = dashboard_dataset(roots, scope=True)
             for key in ('rows', 'tasks', 'averages'):
                 rows = [r for r in combined[key] if r['task_id'] == 'deep-task']
-                self.assertEqual([r['difficulty'] for r in rows], ['harder-1', 'harder-2'])
+                self.assertEqual([r['difficulty'] for r in rows], ['basic', 'harder-1', 'harder-2'])
                 self.assertTrue(all(r['recorded_difficulty'] == 'hard' for r in rows))
             for root in roots:
                 self.assertEqual((root / 'results.json').read_bytes(), originals[root])

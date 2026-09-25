@@ -23,10 +23,12 @@
     },
     "difficulty": {
       "enum": [
+        "basic",
+        "hard",
         "easy",
-        "medium",
-        "hard"
-      ]
+        "medium"
+      ],
+      "description": "Schema 3 suites accept basic/hard. Legacy schema 1/2 accept easy/medium/hard, whose old hard meaning must not be reinterpreted as the new Hard tier."
     },
     "difficulty_rationale": {
       "type": "string",

@@ -49,12 +49,17 @@ def initialize(destination, mode, image, purpose='customer'):
     require(not dest.exists(), 'Destination exists; choose a new evaluation directory')
     dest.mkdir(parents=True)
     shutil.copytree(DATA / 'examples', dest / 'tasks')
+    # Starter fixtures demonstrate the harness; none meet the new Hard contract.
+    for task_path in (dest / 'tasks').glob('*/task.json'):
+        task = read_json(task_path)
+        task['difficulty'] = 'basic'
+        write_json(task_path, task)
     shutil.copy2(DATA / 'rates.json', dest / 'rates.json')
     catalog = read_json(DATA / 'models.json')
-    s = {'schema_version': 2, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
+    s = {'schema_version': 3, 'purpose': purpose, 'workflows': [], 'name': dest.name, 'tasks': ['tasks/'+p.name for p in sorted((dest/'tasks').iterdir()) if p.is_dir()],
          'matrix': [{'provider': m['provider'], 'model': m['id'], 'efforts': m['efforts']} for m in catalog['models'] if m.get('default')],
          'repeats': 1, 'seed': 42, 'pricing': 'rates.json',
-         'limits': {'agent_seconds': 1800, 'grader_seconds': 60, 'spend_stop_usd': None, 'claude_max_turns': 50},
+         'limits': {'agent_seconds': None, 'grader_seconds': None, 'spend_stop_usd': None, 'claude_max_turns': 50},
          'execution': {'mode': mode, 'image': image or '', 'codex_bin': 'codex', 'claude_bin': 'claude',
                        'codex_version': '0.153.4', 'claude_version': '2.1.251', 'cpus': 2, 'memory_mb': 4096}}
     write_json(dest / 'suite.json', s)
@@ -200,7 +205,6 @@ def smoke(provider, output, model=None, binary=None, repeats=1, effort=None, cop
              matrix=[{'provider':provider, 'model':selected_model, 'efforts':[chosen_effort]}])
     s['execution'][provider+'_bin'] = exe
     s['execution'][provider+'_version'] = version
-    s['limits'].update(agent_seconds=120)
     if provider == 'copilot':
         s['limits']['copilot_max_ai_credits'] = copilot_max_ai_credits
         if copilot_account:
