@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0 — 2026-09-25
+- Clarify the complete-first-round approval gate across Basic/Hard tasks and all selected harnesses: one initial attempt per task/model/effort, then exactly two optional attempts with explicit customer approval. Correct stale three-repeat CLI guidance and specify pooling means/medians from three raw observations.
+- Use Basic/Hard for new schema 3 suites, defaulting to three Basic and five distinct Hard tasks per workflow. Update customer discovery, task-design guidance and coverage validation; retain the offline reference catalog and legacy suite/run meanings.
+- Move metric definitions and chart notes below the diagram as a compact bulleted list with bold labels.
+- Add Cost per verified success to both dashboard axes: total measured cost including failures divided by verified passes within the selected model/effort grouping. Require grouped mode; keep missing costs and zero-success groups unavailable.
+- Add a saved Median focus grouping selector: model × effort (default), or model with efforts pooled within each provider. Apply grouping consistently to scores, medians, pies, thresholds, labels and tooltips.
+- Recalculate Codex dashboard costs on refresh from the saved repo rate card, with original-cost and pricing provenance in dashboard exports. Preserve Claude/Copilot billing values, signed evidence, frozen accounting, and static reports.
+- Keep both dashboard axis dropdowns identical and stable, support average score on either axis, and combine Copilot dollar usage valuation into the Task cost display with explicit billing labels and preserved source accounting.
+- Retry explicit native connection and temporary service errors within the existing bounded retry policy, preserving trial evidence and unknown spend. Coding/grader failures are not retried.
+- Add a persisted checkbox for score pies and fix tooltip wrapping. Align customer/provider setup, metric definitions and recovery guidance throughout the exported skill and repository; preserve explicitly selected harnesses in the walkthrough.
+- Default new suites, smoke tests and readiness checks to no agent or grader timeout. Explicit numeric limits and previously approved runs remain unchanged.
+
 ## 0.11.0 — 2026-09-24
 
 - Complete Copilot customer integration: explicit harness selectors, selected-provider preflight, canonical reasoning flag and usage-file capability checks, separate credit/value summaries and chart axes, visible missing measurements, and consistent setup/methodology documentation. Preserve historical signed evidence and default Copilot opt-in.

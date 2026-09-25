@@ -1,25 +1,28 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const metrics = {
+  average_score:'Average score · %',
+  cost_per_success_usd:'Cost per verified success · USD',
   cost_usd:'Task cost · USD', latency_seconds:'Task latency · s',
-  input_tokens:'Total input tokens', output_tokens:'Output tokens', cache_read_tokens:'Cache read tokens',
-  copilot_usage_value_usd:'Copilot usage value · USD (not invoice)', copilot_ai_credits:'Copilot AI credits'
+  input_tokens:'Total input tokens', output_tokens:'Output tokens', cache_read_tokens:'Cache read tokens'
 };
 let data = null;
 const modelSelections=new Map(),taskSelections=new Map();
 const mutedMedians=new Set();
-const medianKey=r=>JSON.stringify([r.provider,r.model,r.effort||'default']);
+const medianKey=r=>JSON.stringify([r.provider,r.model,r.grouping==='model'?'*':r.effort||'default']);
 const taskKey=r=>JSON.stringify([r.task_id,r.difficulty]);
-const modelLabel=r=>`${r.model} · ${r.effort||'default'}`;
+const modelLabel=r=>r.grouping==='model'?r.model:`${r.model} · ${r.effort||'default'}`;
 const modelKey=r=>JSON.stringify([r.provider,r.model]);
 const defined = x => typeof x === 'number' && Number.isFinite(x);
+const aggregateMetric = key => ['average_score','cost_per_success_usd'].includes(key);
+const currencyMetric = key => ['cost_usd','cost_per_success_usd'].includes(key);
 const money = x => defined(x) ? '$'+x.toFixed(4) : 'Unavailable';
 const num = x => defined(x) ? new Intl.NumberFormat('en',{maximumFractionDigits:1}).format(x) : '—';
 function el(tag,text,className){const e=document.createElement(tag); if(text !== undefined)e.textContent=text;if(className)e.className=className;return e;}
 function option(select,value,label){const o=el('option',label);o.value=value;select.append(o);}
 for(const [key,label] of Object.entries(metrics)){option($('x'),key,label);option($('y'),key,label);}
 $('x').value='cost_usd';$('y').value='latency_seconds';
-const viewDefaults={x:'cost_usd',y:'latency_seconds',labels:true,'median-focus':false,'log-x':true,'log-y':true,'median-score':0};
+const viewDefaults={x:'cost_usd',y:'latency_seconds',labels:true,'median-focus':false,'median-scores':true,'log-x':true,'log-y':true,'median-score':0,'median-grouping':'model-effort'};
 function syncScore(){
   const value=$('median-score').value;
   $('median-score-value').textContent=`${value}%`;
@@ -29,9 +32,10 @@ function restoreView(){
   let view={};
   try{const parsed=JSON.parse(new URL(location.href).searchParams.get('view'));if(parsed&&parsed.v===1)view=parsed;}catch{/* Invalid links use the normal defaults. */}
   for(const [id,fallback] of Object.entries(viewDefaults)){
-    const value=view[id];
+    const value=['x','y'].includes(id)&&['copilot_usage_value_usd','copilot_ai_credits'].includes(view[id])?'cost_usd':view[id];
     if(typeof fallback==='boolean')$(id).checked=typeof value==='boolean'?value:fallback;
     else if(id==='median-score')$(id).value=Number.isInteger(value)&&value>=0&&value<=100?value:fallback;
+    else if(id==='median-grouping')$(id).value=['model-effort','model'].includes(value)?value:fallback;
     else $(id).value=Object.hasOwn(metrics,value)?value:fallback;
   }
   const keys=(value,size)=>Array.isArray(value)?value.filter(key=>{
@@ -51,8 +55,7 @@ function saveView(){
   const view={v:1};
   for(const [id,fallback] of Object.entries(viewDefaults)){
     const value=typeof fallback==='boolean'?$(id).checked:typeof fallback==='number'?Number($(id).value):$(id).value;
-    // X defaults depend on the available providers; preserve an explicit cost
-    // choice too, so reload never replaces it with the Copilot token default.
+    // Keep the selected X metric explicit in copied and reloaded views.
     if(id==='x'||value!==fallback)view[id]=value;
   }
   for(const [name,keys] of [
@@ -74,8 +77,10 @@ function hideDetails(){ $('tooltip').hidden=true; }
 function details(r,dot){
   const popup=$('tooltip');popup.replaceChildren();popup.style.setProperty('--point-color',pointColor(r));
   const list=el('dl');
-  const formatMetric=key=>key==='cost_usd'||key==='copilot_usage_value_usd'?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':'');
-  const fields=r.median?[['Model',r.model],['Summary',`Median of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Results',medianStatusLabel(r)],['Reasoning effort',r.effort],[metrics[$('x').value],formatMetric($('x').value)],[metrics[$('y').value],formatMetric($('y').value)]]:
+  const formatMetric=key=>currencyMetric(key)?money(r[key]):num(r[key])+(key==='latency_seconds'?' s':key==='average_score'?'%':'');
+  const metricLabel=key=>currencyMetric(key)&&r.provider==='copilot'?metrics[key]+' (usage value)':metrics[key];
+  const derivedAxes=[$('x').value,$('y').value].some(aggregateMetric);
+  const fields=r.median?[['Model',r.model],['Summary',`${derivedAxes?'Grouped outcomes; other metrics use medians':'Median'} of ${r.point_count} task/configuration averages`],['Tasks',String(r.task_count)],['Results',medianStatusLabel(r)],['Reasoning effort',r.grouping==='model'?`Pooled: ${r.efforts.join(', ')}`:r.effort],[metricLabel($('x').value),formatMetric($('x').value)],[metricLabel($('y').value),formatMetric($('y').value)]]:
     [['Model',modelLabel(r)],['Task',r.task_id],['Difficulty',r.difficulty||'Unavailable'],['Result',resultLabel(r)],r.provider==='copilot'?['Usage value (not invoice)',money(r.copilot_usage_value_usd)]:['Average cost',money(r.cost_usd)],['Average latency',defined(r.latency_seconds)?num(r.latency_seconds)+' s':'Unavailable']];
   for(const [label,value] of fields){
     list.append(el('dt',label),el('dd',value,label==='Model'?'model':undefined));
@@ -90,24 +95,52 @@ function details(r,dot){
 }
 function svg(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
 function plot(rows,showMedians){
+  rows=chartCostRows(rows);
   hideDetails();const root=$('plot');root.replaceChildren();const x=$('x').value,y=$('y').value;
+  const scoreX=x==='average_score',scoreY=y==='average_score',scoreAxis=scoreX||scoreY;
+  const aggregateAxis=aggregateMetric(x)||aggregateMetric(y);
+  const successCostAxis=x==='cost_per_success_usd'||y==='cost_per_success_usd';
   const logX=$('log-x').checked,logY=$('log-y').checked;
-  const measured=rows.filter(r=>defined(r[x])&&defined(r[y]));
+  const measured=rows.filter(r=>(aggregateMetric(x)||defined(r[x]))&&(aggregateMetric(y)||defined(r[y])));
   const focus=showMedians&&$('median-focus').checked;
   const minimumScore=Number($('median-score').value);
-  const medians=focus?modelMedians(rows,x,y).filter(r=>medianMeetsScore(r,minimumScore)):[];
+  const byModel=$('median-grouping').value==='model';
+  const medians=focus?modelMedians(rows,x,y,$('median-grouping').value).filter(r=>medianMeetsScore(r,minimumScore)):[];
   root.classList.toggle('median-focus',focus);
-  const points=measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
-  const medianPoints=medians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
-  const omitted=measured.length-points.length;
-  const omittedMedians=medians.length-medianPoints.length;
+  const points=aggregateAxis?[]:measured.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
+  const scoredMedians=medians.filter(r=>defined(r[x])&&defined(r[y]));
+  const medianPoints=scoredMedians.filter(r=>(!logX||r[x]>0)&&(!logY||r[y]>0));
+  const omitted=aggregateAxis?0:measured.length-points.length;
+  const unavailableGroups=medians.length-scoredMedians.length;
+  const omittedMedians=scoredMedians.length-medianPoints.length;
   const noMedians=focus&&!medians.length;
   const missing=rows.length-measured.length;
-  const billingNote=rows.some(r=>r.provider==='copilot')?'Copilot usage value is separate from invoice cost. Task cost excludes Copilot; use token/latency axes for all providers.':'';
-  $('plot-note').hidden=!(missing||omitted||omittedMedians||noMedians||billingNote);
-  $('plot-note').textContent=[billingNote,missing?`${missing} task point${missing===1?'':'s'} have missing measurements for these axes.`:'',noMedians?`No medians meet the ${minimumScore}% minimum pass rate.`:'',omitted||omittedMedians?`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} median${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`:''].filter(Boolean).join(' ');
+  const costAxis=currencyMetric(x)||currencyMetric(y);
+  const billingNote=costAxis?[
+    rows.some(r=>r.provider==='codex'&&!r.simulation)&&!data.run.simulation&&data.dashboard_pricing?'Codex cost is recalculated from ceval/data/rates.json on each refresh; original run costs are preserved.':'',
+    rows.some(r=>r.provider==='copilot')?'Copilot shows native dollar usage value.':'',
+    rows.some(r=>r.provider==='claude')?'Claude shows its reported dollar cost.':'',
+    'Displayed costs are not verified invoice charges.'
+  ].filter(Boolean).join(' '):'';
+  const groupingNote=focus&&byModel?'Effort levels are pooled within each provider and model.':'';
+  $('plot-note').hidden=!(aggregateAxis||missing||omitted||omittedMedians||unavailableGroups||noMedians||billingNote||groupingNote);
+  const notes=[
+    ['Average score',scoreAxis?'Passed / completed runs across selected tasks; higher is better. Pending runs are excluded.':''],
+    ['Cost per verified success',successCostAxis? 'Total completed-run cost, including failures, / verified passes in the selected group; lower is better. Pending runs are excluded. Zero successes or missing costs are unavailable. This is an observed ratio, not a predicted retry cost.':''],
+    ['Grouping',groupingNote],
+    ['Other metrics',aggregateAxis?'Task cost, latency and token axes use medians of measured task/configuration averages.':''],
+    ['Cost basis',billingNote],
+    ['Unavailable',unavailableGroups?`${unavailableGroups} group${unavailableGroups===1?' is':'s are'} unavailable for these axes.`:''],
+    ['Missing measurements',missing?`${missing} task point${missing===1?'':'s'} have missing measurements for these axes.`:''],
+    ['Pass-rate filter',noMedians?`No groups meet the ${minimumScore}% minimum pass rate.`:''],
+    ['Log scale',omitted||omittedMedians?`${omitted} task point${omitted===1?'':'s'} and ${omittedMedians} group${omittedMedians===1?'':'s'} with zero or negative values cannot appear on a logarithmic axis.`:'']
+  ];
+  $('plot-note').replaceChildren(...notes.filter(([,text])=>text).map(([label,text])=>{
+    const item=el('li');item.append(el('strong',label+': '),document.createTextNode(text));return item;
+  }));
   if(!points.length&&!medianPoints.length){root.append(svg('text',{x:600,y:260,'text-anchor':'middle',class:'empty'},measured.length&&omitted?'Log scales require positive values.':'No measured points for these filters and axes.'));return;}
   const scale = (key,log) => {
+    if(key==='average_score')return {ticks:[0,20,40,60,80,100],step:20,position:value=>value/100};
     const values=[...points,...medianPoints].map(r=>r[key]);
     if(log){
       const low=Math.floor(Math.log10(Math.min(...values))),high=Math.max(low+1,Math.ceil(Math.log10(Math.max(...values))));
@@ -125,9 +158,10 @@ function plot(rows,showMedians){
   };
   const sx=scale(x,logX),sy=scale(y,logY);
   const tick = (key,value,step) => {
+    if(key==='average_score')return value+'%';
     const decimals=Math.max(0,-Math.floor(Math.log10(step||value||1)));
     const formatted=value!==0&&(Math.abs(value)<.00001||Math.abs(value)>=1e8)?value.toExponential(0):new Intl.NumberFormat('en',{maximumFractionDigits:Math.min(8,decimals)}).format(value);
-    return key==='cost_usd'||key==='copilot_usage_value_usd'?'$'+formatted:formatted;
+    return currencyMetric(key)?'$'+formatted:formatted;
   };
   const left=120,right=1160,top=30,bottom=485;
   for(const value of sx.ticks){
@@ -138,7 +172,8 @@ function plot(rows,showMedians){
     const b=bottom-(bottom-top)*sy.position(value);
     root.append(svg('line',{x1:left,x2:right,y1:b,y2:b,class:'grid'}),svg('text',{x:left-14,y:b+6,'text-anchor':'end',class:'tick'},tick(y,value,sy.step)));
   }
-  root.append(svg('text',{x:630,y:545,'text-anchor':'middle',class:'axis-label'},'Average '+metrics[x].toLowerCase()+(logX?' · log':'')),svg('text',{transform:'translate(20 260) rotate(-90)','text-anchor':'middle',class:'axis-label'},'Average '+metrics[y].toLowerCase()+(logY?' · log':'')));
+  const axisLabel=(key,log)=>key==='average_score'?'Average score · % (higher is better)':key==='cost_per_success_usd'?'Cost per verified success · USD (lower is better)'+(log?' · log':''):(aggregateAxis?'Median ':'Average ')+metrics[key].toLowerCase()+(log?' · log':'');
+  root.append(svg('text',{x:630,y:545,'text-anchor':'middle',class:'axis-label'},axisLabel(x,logX)),svg('text',{transform:'translate(20 260) rotate(-90)','text-anchor':'middle',class:'axis-label'},axisLabel(y,logY)));
   const labelLayer=svg('g',{class:'task-label-layer'}),pointLayer=svg('g',{class:'task-point-layer'}),medianLayer=svg('g',{class:'median-layer'});root.append(labelLayer,pointLayer,medianLayer);
   for(const r of [...points,...medianPoints]){
     const px=left+sx.position(r[x])*(right-left),py=bottom-sy.position(r[y])*(bottom-top),color=pointColor(r);
@@ -147,7 +182,7 @@ function plot(rows,showMedians){
     if(medianGroup)medianLayer.append(medianGroup);
     if($('labels').checked)(medianGroup||labelLayer).append(svg('text',{x:px+(r.median?size+7:12),y:py+4,fill:color,class:r.median?'model-label median-label':'model-label'},label));
     const shape=r.median?{d:`M ${px} ${py-size} L ${px+size} ${py} L ${px} ${py+size} L ${px-size} ${py} Z`}:{cx:px,cy:py,r:7};
-    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, median of ${r.point_count} task/configuration averages, ${medianStatusLabel(r)}`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
+    const dot=svg(r.median?'path':'circle',{...shape,fill:color,class:r.median?'point median-point':'point',tabindex:0,role:'button','aria-label':r.median?`${modelLabel(r)}, ${aggregateAxis?'summary':'median'} of ${r.point_count} task/configuration averages, ${medianStatusLabel(r)}`:`${modelLabel(r)}, ${r.task_id}, ${r.difficulty}, ${resultLabel(r)}`,'aria-describedby':'tooltip'});
     dot.addEventListener('pointerenter',()=>details(r,dot));dot.addEventListener('pointerleave',()=>{if(document.activeElement!==dot)hideDetails();});
     dot.addEventListener('focus',()=>details(r,dot));dot.addEventListener('blur',hideDetails);
     const syncMuted=()=>{const muted=mutedMedians.has(medianKey(r));medianGroup.classList.toggle('median-muted',muted);dot.setAttribute('aria-pressed',String(muted));};
@@ -159,7 +194,7 @@ function plot(rows,showMedians){
     dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}if(e.key==='Escape')hideDetails();});
     (medianGroup||pointLayer).append(dot);
     if(medianGroup)syncMuted();
-    if(r.median){
+    if(r.median&&$('median-scores').checked){
       const cy=py-size-10,radius=7;
       const badge=svg('g',{class:'median-status','aria-hidden':'true','pointer-events':'none'});
       const fraction=r.attempts>0?Math.max(0,Math.min(1,r.successes/r.attempts)):0;
@@ -210,7 +245,7 @@ function buildModels(){
   modelSummary();bulkControls($('model-options'),modelSelections,modelSummary,'models');
 }
 function buildTasks(){
-  const rank={easy:0,medium:1,hard:2,harder:3,'harder-1':4,'harder-2':5};
+  const rank={basic:-1,easy:0,medium:1,hard:2,harder:3,'harder-1':4,'harder-2':5};
   const tasks=[...new Map(data.rows.map(r=>[taskKey(r),r])).values()].sort((a,b)=>(rank[a.difficulty]??4)-(rank[b.difficulty]??4)||a.task_id.localeCompare(b.task_id));
   const keys=tasks.map(taskKey),current=[...$('task-options').querySelectorAll('input.choice')].map(b=>b.value);
   if(JSON.stringify(keys)===JSON.stringify(current))return;
@@ -240,22 +275,29 @@ function taskTable(rows){
 }
 function render(){
   if(!data)return;
+  const scoreX=$('x').value==='average_score',scoreY=$('y').value==='average_score',scoreAxis=scoreX||scoreY;
+  const aggregateAxis=[$('x').value,$('y').value].some(aggregateMetric);
+  if(aggregateAxis)$('median-focus').checked=true;
+  if(scoreX)$('log-x').checked=false;
+  if(scoreY)$('log-y').checked=false;
+  $('median-focus').disabled=aggregateAxis;$('log-x').disabled=scoreX;$('log-y').disabled=scoreY;
+  $('median-control').title=aggregateAxis?'Outcome metrics require grouped mode.':'';
   saveView();
-  const showMedians=$('task-options').querySelectorAll('input.choice:checked').length>1;
+  const showMedians=aggregateAxis||$('task-options').querySelectorAll('input.choice:checked').length>1;
   const focus=showMedians&&$('median-focus').checked;
   $('median-control').hidden=!showMedians;$('median-legend').hidden=!focus;$('task-legend').hidden=focus;
   $('median-score-control').hidden=!focus;
+  $('median-grouping-control').hidden=!focus;
+  const summaryLabel=[$('x').value,$('y').value].includes('cost_per_success_usd')?'summary':'median';
+  $('median-caption').textContent=$('median-grouping').value==='model'?`Model ${summaryLabel} · efforts pooled`:`Model × effort ${summaryLabel}`;
+  $('median-scores-control').hidden=!focus;
+  $('median-scores-legend').hidden=!$('median-scores').checked;
   const rows=filtered();plot(rows,showMedians);taskTable(filtered(data.rows));
 }
 async function load(){
   try{
     const r=await fetch('/api/results');if(!r.ok)throw new Error(`Results request failed (${r.status})`);
-    const next=await r.json(),firstLoad=!data,unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
-    if(firstLoad&&data.rows.some(r=>r.provider==='copilot')){
-      let savedX;
-      try{const view=JSON.parse(new URL(location.href).searchParams.get('view'));if(view?.v===1)savedX=view.x??'cost_usd';}catch{}
-      if(!Object.hasOwn(metrics,savedX))$('x').value='input_tokens';
-    }
+    const next=await r.json(),unchanged=data&&JSON.stringify(data)===JSON.stringify(next);data=next;
     const simulated=data.run.simulation||data.rows.some(r=>r.simulation);
     $('banner').hidden=!simulated;
     $('banner').textContent=simulated?'Demo data — synthetic interface fixtures.':'';
@@ -264,7 +306,7 @@ async function load(){
     render();
   }catch(e){$('banner').hidden=false;$('banner').textContent=e.message;}
 }
-for(const id of ['x','y','labels','median-focus','log-x','log-y'])$(id).addEventListener('change',render);
+for(const id of ['x','y','labels','median-focus','median-scores','median-grouping','log-x','log-y'])$(id).addEventListener('change',render);
 $('median-score').addEventListener('input',()=>{
   syncScore();
   render();

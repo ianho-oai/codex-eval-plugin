@@ -6,7 +6,7 @@ from unittest.mock import patch
 from test_evaluation import Workspace
 from ceval.core import write_json, read_json, load_suite, digest, EvalError
 from ceval.parallel import run
-from ceval.rate_limits import is_rate_limited, retry_delay
+from ceval.rate_limits import is_rate_limited, retry_delay, transient_reason
 from ceval.report import dataset
 
 
@@ -125,6 +125,37 @@ class RetryTests(Workspace):
         row=read_json(raw);row['cost_usd']=0;write_json(raw,row)
         with self.assertRaisesRegex(EvalError,'Retry result integrity'):
             dataset(self.root/'run')
+
+    def test_connection_and_service_retries_require_native_provider_errors(self):
+        self.prepare();p=self.root/'events.jsonl'
+        for message,reason in [('APIConnectionError: fetch failed','connection'),
+                               ('ECONNRESET','connection'),('stream disconnected before completion','connection'),
+                               ('HTTP 503 Service unavailable','service_error'),('status code: 502','service_error')]:
+            with self.subTest(message=message):
+                p.write_text(json.dumps({'type':'session.error','data':{'message':message}}))
+                self.assertEqual(transient_reason({'status':'provider_error'},self.root),reason)
+                self.assertIsNone(transient_reason({'status':'failed'},self.root))
+                self.assertIsNone(transient_reason({'status':'grader_error'},self.root))
+                p.write_text(json.dumps({'type':'tool.execution_complete','data':{'message':message}}))
+                self.assertIsNone(transient_reason({'status':'provider_error'},self.root))
+        p.write_text(json.dumps({'type':'error','message':'HTTP 503 invalid_api_key'}))
+        self.assertIsNone(transient_reason({'status':'provider_error'},self.root))
+
+    def test_connection_retry_keeps_one_scored_cell_and_unknown_cost(self):
+        self.prepare();calls=[]
+        def attempt(cell, task, suite, pricing, directory, pf):
+            calls.append(directory)
+            row=self.result(cell,directory,rate=len(calls)==1,cost=None if len(calls)==1 else .1)
+            if len(calls)==1:
+                (directory/'events.jsonl').write_text(json.dumps({'type':'session.error','data':{'message':'ECONNRESET'}}))
+            return row
+        with patch('ceval.runner.preflight',return_value={'codex':{'ok':True}}), patch('ceval.runner.attempt',side_effect=attempt), contextlib.redirect_stdout(io.StringIO()):
+            info=run(self.path,self.root/'run',rate_limit_retries=3,retry_delay=0)
+        rows=read_json(self.root/'run/results.json')['rows']
+        self.assertEqual(info['state'],'complete');self.assertEqual(len(rows),1)
+        self.assertEqual(len(calls),2);self.assertEqual(rows[0]['retry_count'],1)
+        self.assertEqual(rows[0]['completion'],1);self.assertIsNone(rows[0]['cost_usd'])
+        self.assertEqual(rows[0]['known_cost_usd'],.1)
 
     def test_capacity_recovery_preserves_unknown_trial_cost_and_exhaustion_bound(self):
         self.prepare()

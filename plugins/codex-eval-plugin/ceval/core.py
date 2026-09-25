@@ -123,13 +123,13 @@ def load_suite(path):
     path = Path(path).resolve()
     s = read_json(path)
     fields = {'schema_version', 'name', 'tasks', 'matrix', 'repeats', 'seed', 'execution', 'limits', 'pricing'}
-    require(isinstance(s, dict) and s.get('schema_version') in (1, 2), 'Unsupported suite schema')
-    if s['schema_version'] == 2:
+    require(isinstance(s, dict) and s.get('schema_version') in (1, 2, 3), 'Unsupported suite schema')
+    if s['schema_version'] >= 2:
         fields |= {'purpose', 'workflows'}
     if 'selection' in s:
         fields.add('selection')
     require(set(s) == fields, f'Suite fields must be exactly {sorted(fields)}')
-    if s['schema_version'] == 2:
+    if s['schema_version'] >= 2:
         require(s['purpose'] in ('customer', 'smoke'), 'Suite purpose must be customer or smoke')
         require(isinstance(s['workflows'], list), 'workflows must be a list')
     require(isinstance(s['name'], str) and ID.fullmatch(s['name']), 'Invalid suite name')
@@ -190,7 +190,8 @@ def load_suite(path):
         require(isinstance(t, dict) and required <= set(t) <= required | {'workflow_id', 'provenance', 'human_summary'}, f'Invalid task fields: {rel}')
         require(isinstance(t['id'], str) and ID.fullmatch(t['id']) and t['id'] not in ids, 'Invalid or duplicate task id')
         ids.add(t['id'])
-        require(t['difficulty'] in ('easy', 'medium', 'hard'), 'Difficulty must be easy, medium, hard')
+        tiers = ('basic', 'hard') if s['schema_version'] == 3 else ('easy', 'medium', 'hard')
+        require(t['difficulty'] in tiers, 'Difficulty must be '+', '.join(tiers))
         for k in ('use_case', 'difficulty_rationale'):
             require(isinstance(t[k], str) and bool(t[k].strip()), f'Missing {k}')
         if 'human_summary' in t:

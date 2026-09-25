@@ -160,7 +160,8 @@ def slugify(text):
         self.assertNotIn('claude-mythos-5-1', [lane['model'] for lane in suite['matrix']])
         self.assertIsNone(suite['limits']['spend_stop_usd'])
         summary = execution_summary(suite)
-        self.assertEqual(summary['agent_timeout_seconds'], 1800)
+        self.assertIsNone(summary['agent_timeout_seconds'])
+        self.assertIsNone(summary['grader_timeout_seconds'])
         suite['limits']['agent_seconds'] = 900
         self.assertEqual(execution_summary(suite)['agent_timeout_seconds'], 900)
         self.assertIn('No spend stop', summary['message'])
@@ -497,18 +498,34 @@ class DiscoveryAndReportTests(Workspace):
         dest = self.root/'first-round'
         initialize(dest, 'local', None, purpose='smoke')
         path = dest/'suite.json'
+        configure(path, providers=['codex', 'claude', 'copilot'], all_efforts=True)
         _, suite, tasks, _, first_seal = load_suite(path)
         first = schedule(suite, tasks)
         expected = sum(len(m['efforts']) for m in suite['matrix']) * len(tasks)
         self.assertEqual(len(first), expected)
         self.assertEqual({c['repeat'] for c in first}, {1})
-        self.assertEqual({c['provider'] for c in first}, {'codex', 'claude'})
-        configure(path, repeats=2)
-        _, followup, tasks, _, second_seal = load_suite(path)
+        self.assertEqual({c['provider'] for c in first}, {'codex', 'claude', 'copilot'})
+        expected_keys = {(t['spec']['id'], m['provider'], m['model'], effort)
+                         for t in tasks for m in suite['matrix'] for effort in m['efforts']}
+        key = lambda c: (c['task_id'], c['provider'], c['model'], c['effort'])
+        self.assertEqual({key(c) for c in first}, expected_keys)
+        first_bytes = path.read_bytes()
+        followup_dir = self.root/'followup'
+        shutil.copytree(dest, followup_dir)
+        followup_path = followup_dir/'suite.json'
+        configure(followup_path, repeats=2)
+        _, followup, tasks, _, second_seal = load_suite(followup_path)
         self.assertNotEqual(first_seal, second_seal)
-        self.assertEqual(len(schedule(followup, tasks)), 2 * expected)
-        configure(path, all_efforts=True)
-        self.assertEqual(read_json(path)['repeats'], 2)
+        second = schedule(followup, tasks)
+        self.assertEqual(len(second), 2 * expected)
+        self.assertEqual({(key(c), c['repeat']) for c in second},
+                         {(k, repeat) for k in expected_keys for repeat in (1, 2)})
+        from collections import Counter
+        self.assertEqual(Counter(key(c) for c in first + second),
+                         Counter({k: 3 for k in expected_keys}))
+        self.assertEqual(path.read_bytes(), first_bytes)
+        configure(followup_path, all_efforts=True)
+        self.assertEqual(read_json(followup_path)['repeats'], 2)
 
     def test_repeat_averages_include_failures_and_preserve_missing_telemetry(self):
         rows = [{'task_id':'one','provider':'codex','model':'test','effort':'medium',
@@ -560,7 +577,9 @@ class DiscoveryAndReportTests(Workspace):
         self.assertEqual(len(combined['run']['sources']), 2)
         self.assertIn('Separate runs', combined['run']['comparison_note'])
         self.assertEqual((one/'results.json').read_bytes(), before)
-        self.assertEqual(dashboard_dataset([one]), dataset(one, comparison=True))
+        displayed = dashboard_dataset([one])
+        displayed.pop('dashboard_pricing')
+        self.assertEqual(displayed, dataset(one, comparison=True))  # Synthetic costs stay synthetic.
         self.assertIn('source_run', csv_text(combined['rows']).splitlines()[0])
 
     def test_legacy_task_descriptions_use_matching_suite_without_changing_results(self):
@@ -700,17 +719,25 @@ class CatalogTests(Workspace):
             {'id':'front','name':'Frontend','description':'Editor focus'},
             {'id':'api','name':'Backend API','description':'Streaming cancellation'}]})
         result = portfolio(discovery, self.path)
-        self.assertEqual(result['minimum_tasks'], 6)
+        self.assertEqual(result['minimum_tasks'], 16)
         self.assertEqual({(s['workflow_id'], s['difficulty']) for s in result['slots']},
-                         {(w,t) for w in ('front','api') for t in ('easy','medium','hard')})
+                         {(w,t) for w in ('front','api') for t in ('basic','hard')})
+        for workflow in ('front', 'api'):
+            slots = [s for s in result['slots'] if s['workflow_id'] == workflow]
+            self.assertEqual(sum(s['difficulty'] == 'basic' for s in slots), 3)
+            self.assertEqual(sum(s['difficulty'] == 'hard' for s in slots), 5)
+        self.assertEqual(len({s['slot_id'] for s in result['slots']}), 16)
         self.assertEqual(read_json(self.path)['purpose'], 'customer')
+        self.assertEqual(read_json(self.path)['schema_version'], 3)
 
     def test_customer_requires_each_tier_for_each_workflow(self):
+        # Schema 2 keeps the original three-tier meaning and validation.
+        self.s['schema_version'] = 2
         self.s.update(purpose='customer', workflows=[{'id':'front','name':'Frontend','description':'UI behavior'}])
         self.save()
-        for task in self.s['tasks']:
+        for task, tier in zip(self.s['tasks'], ('easy', 'medium', 'hard')):
             path = self.suite_dir/task/'task.json'
-            spec = read_json(path); spec['workflow_id'] = 'front'; write_json(path,spec)
+            spec = read_json(path); spec.update(workflow_id='front', difficulty=tier); write_json(path,spec)
         load_suite(self.path)
         self.s['workflows'].append({'id':'api','name':'Backend','description':'API behavior'})
         self.save()
@@ -735,9 +762,75 @@ class CatalogTests(Workspace):
             with self.assertRaises(EvalError): validate_provenance(task)
 
     def test_legacy_suite_compatibility(self):
+        for task in self.s['tasks']:
+            path = self.suite_dir/task/'task.json'
+            spec = read_json(path); spec['difficulty'] = 'easy'; write_json(path, spec)
         self.s['schema_version'] = 1
         self.s.pop('purpose'); self.s.pop('workflows'); self.save()
         load_suite(self.path)
+
+    def test_new_suite_starters_are_basic_and_reject_old_tiers(self):
+        self.assertEqual(self.s['schema_version'], 3)
+        self.assertEqual({t['spec']['difficulty'] for t in load_suite(self.path)[2]}, {'basic'})
+        path = self.suite_dir/self.s['tasks'][0]/'task.json'
+        spec = read_json(path)
+        for tier in ('easy', 'medium', 'harder-1', 'harder-2'):
+            spec['difficulty'] = tier; write_json(path, spec)
+            with self.assertRaisesRegex(EvalError, 'Difficulty must be basic, hard'):
+                load_suite(self.path)
+        spec['difficulty'] = 'hard'; write_json(path, spec)
+        load_suite(self.path)
+
+    def test_schema_three_requires_several_tasks_per_tier_or_explicit_scope(self):
+        from ceval.catalog import coverage
+        workflow = {'id': 'api', 'name': 'API', 'description': 'Backend workflow'}
+        suite = {'schema_version': 3, 'purpose': 'customer', 'workflows': [workflow]}
+        tasks = [{'workflow_id': 'api', 'difficulty': tier, 'provenance': {}}
+                 for tier in ['basic'] * 3 + ['hard'] * 5]
+        self.assertEqual(coverage(suite, tasks)['missing'], [])
+        self.assertEqual(coverage(suite, tasks)['minimum_tasks'], 8)
+        self.assertEqual(coverage(suite, tasks[:-2])['missing'],
+                         [{'workflow_id': 'api', 'difficulty': 'hard'}] * 2)
+        self.assertEqual(coverage(suite, tasks[1:])['missing'],
+                         [{'workflow_id': 'api', 'difficulty': 'basic'}])
+        workflow['difficulties'] = ['hard']
+        self.assertEqual(coverage(suite, tasks[3:4])['missing'], [])
+        self.assertEqual(coverage(suite, tasks[3:4])['minimum_tasks'], 1)
+        workflow['difficulties'] = ['easy']
+        with self.assertRaises(EvalError):
+            coverage(suite, tasks)
+
+    def test_portfolio_does_not_upgrade_legacy_inputs(self):
+        from ceval.catalog import portfolio
+        discovery = self.suite_dir/'discovery.json'
+        write_json(discovery, {'workflows': [{'id': 'api', 'name': 'API', 'description': 'Backend workflow'}]})
+        for version in (1, 2):
+            self.s['schema_version'] = version; self.save()
+            before = self.path.read_bytes()
+            with self.assertRaisesRegex(EvalError, 'new directory'):
+                portfolio(discovery, self.path)
+            self.assertEqual(self.path.read_bytes(), before)
+
+    def test_new_customer_suite_validates_complete_portfolio_before_selection(self):
+        self.s.update(purpose='customer', workflows=[{'id':'api', 'name':'API', 'description':'Backend work'}])
+        # Metadata fixtures exercise validation only; these are not authored Hard benchmarks.
+        for index in range(5):
+            extra = f'tasks/extra-{index}'
+            shutil.copytree(self.suite_dir/self.s['tasks'][0], self.suite_dir/extra)
+            self.s['tasks'].append(extra)
+        for index, task in enumerate(self.s['tasks']):
+            path = self.suite_dir/task/'task.json'
+            spec = read_json(path)
+            spec.update(id=f'portfolio-{index}', workflow_id='api', difficulty='basic' if index < 3 else 'hard')
+            write_json(path, spec)
+        self.save()
+        before = load_suite(self.path)[4]
+        self.s['selection'] = {'task_ids': ['portfolio-1']}
+        self.save()
+        self.assertNotEqual(load_suite(self.path)[4], before)
+        self.s['tasks'].pop(); self.save()
+        with self.assertRaisesRegex(EvalError, 'Missing workflow difficulty tiers'):
+            load_suite(self.path)
 
 class HistoryCoverageTests(unittest.TestCase):
     def test_review_transcripts_are_excluded_and_truncation_disclosed(self):

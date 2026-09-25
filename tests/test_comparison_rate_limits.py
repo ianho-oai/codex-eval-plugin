@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'plugins/codex-eval-plugin'))
 
-from ceval.core import digest, write_json, read_json
+from ceval.core import DATA, digest, write_json, read_json
 from ceval.rate_limits import rollup
-from ceval.report import dataset, report
+from ceval.report import dashboard_dataset, dataset, report
 
 
 class ComparisonRateLimitTests(unittest.TestCase):
@@ -73,6 +73,25 @@ class ComparisonRateLimitTests(unittest.TestCase):
             self.assertEqual(d['summary']['rate_limit_only_cells'], 1)
             self.assertEqual(len(d['rate_limit_exclusions']), 2)
             self.assertEqual(len(d['accounting_rows']), 1)
+
+    def test_dashboard_reprices_only_kept_retry_usage(self):
+        for additional, expected in [([], .0008),
+                                     ([{'status': 'provider_error', 'transient_reason': 'capacity', 'completion': 0}], .0016),
+                                     ([{'status': 'provider_error', 'transient_reason': 'connection', 'input_tokens': None}], None)]:
+            with self.subTest(additional=additional), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.fixture(root, 'codex', [self.rate(), *additional, {}])
+                rates = read_json(DATA/'rates.json')
+                rates['models']['model'] = rates['models']['gpt-5.6-sol']
+                write_json(root/'rates.json', rates)
+                view = dashboard_dataset(root, pricing_path=root/'rates.json')
+                row = view['rows'][0]
+                if expected is None:
+                    self.assertIsNone(row['cost_usd'])
+                else:
+                    self.assertAlmostEqual(row['cost_usd'], expected)
+                self.assertEqual(row['excluded_rate_limit_attempts'], 1)
+                self.assertEqual(view['accounting_summary'], dataset(root)['accounting_summary'])
 
     def test_other_errors_and_native_recovery_are_not_removed(self):
         for extra in ({'status': 'provider_error', 'transient_reason': 'capacity', 'completion': 0},

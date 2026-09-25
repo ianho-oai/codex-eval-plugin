@@ -85,7 +85,7 @@ def _run(path, output, suite, tasks, pricing, seal, approval, workers, slot_pool
     info.setdefault('scheduling_history', []).append({
         'started_at': now(), 'workers': workers, 'slot_pool': str(Path(slot_pool).resolve()) if slot_pool else None,
         'scheduler_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        'rate_limit_retries': rate_limit_retries, 'retry_delay': retry_delay, 'transient_retry_scope': 'Rate limits and explicit capacity errors; cumulative per cell, invocation-wide ceiling; shared provider cooldown.',
+        'rate_limit_retries': rate_limit_retries, 'retry_delay': retry_delay, 'transient_retry_scope': 'Native rate-limit, capacity, connection and temporary service errors; cumulative per cell, invocation-wide ceiling; shared provider cooldown.',
         'retry_policy_sha256': hashlib.sha256(Path(rate_limits.__file__).read_bytes()).hexdigest(),
         'policy': 'Refill on completion; drain active attempts on stop. Concurrent latency may include host contention.'})
     info['execution_checks'] = execution_check.saved_receipts(output)

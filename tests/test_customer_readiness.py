@@ -96,7 +96,8 @@ print(json.dumps({'type':'result','exitCode':0}))
 
     def prepare_customer(self):
         self.s['purpose']='customer'
-        self.s['workflows']=[{'id':'workflow','name':'Workflow','description':'Synthetic workflow'}]
+        self.s['workflows']=[{'id':'workflow','name':'Workflow','description':'Synthetic workflow',
+                              'difficulties':['basic']}]
         for path in (self.suite_dir/'tasks').glob('*/task.json'):
             task=read_json(path);task['workflow_id']='workflow';write_json(path,task)
         self.save()

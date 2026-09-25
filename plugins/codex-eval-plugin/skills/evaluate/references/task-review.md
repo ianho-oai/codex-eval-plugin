@@ -66,7 +66,7 @@ Classify with evidence:
 | --- | --- |
 | Runtime, missing dependency, auth/model/CLI access, provider outage | Repair the permitted environment or provide the exact user action. Keep errors separate from coding failures. Do not route around host restrictions. |
 | Unstated or contradictory requirement, overstrict grader, broken fixture | Explain the defect, preserve the original run, and prepare a corrected version below. |
-| Unrealistic task scope or time allowance | Propose a bounded scope/time correction, preserving workflow and easy/medium/hard coverage. Approval is needed for changed inputs. |
+| Unrealistic task scope or time allowance | Propose a bounded scope/time correction, preserving the approved workflow and difficulty coverage (Basic/Hard for new schema 3 suites). Approval is needed for changed inputs. |
 | Candidate violates a clear, independently validated requirement | Keep the failure. Do not relax that requirement or retry until it passes. Resume the unchanged approved run after recording the review. |
 | Inconclusive | State what evidence is missing. Stop further paid work if the task cannot be shown fair; do not manufacture a diagnosis. |
 

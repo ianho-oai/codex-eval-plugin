@@ -26,7 +26,7 @@ def probe_task(root, docker=False):
         "from pathlib import Path\nimport sys\np=Path(sys.argv[1])\n"
         "ok=(p/'value.txt').read_text().strip()=='2' and (p/'checked.txt').is_file() and (p/'checked.txt').read_text().strip()=='ok'\n"
         "raise SystemExit(0 if ok else 1)\n")
-    return {'root': root, 'spec': {'id': 'execution-readiness', 'difficulty': 'easy',
+    return {'root': root, 'spec': {'id': 'execution-readiness', 'difficulty': 'basic',
             'use_case': 'Native edit and shell execution', 'allowed_paths': ['value.txt', 'checked.txt'],
             'grader': [python, '{grader}/verify.py', '{candidate}']}}
 

@@ -32,6 +32,6 @@ The seven dataset scopes differ: SWE-Lancer includes 198 implementation tasks (m
 ./eval portfolio evaluations/customer/discovery.json --suite evaluations/customer/suite.json --output evaluations/customer/portfolio.json
 ```
 
-The portfolio is a proposal scaffold. The skill writes original tasks and verifiers, explains source adaptations, and seeks customer approval. Every workflow requires all three difficulty tiers. If search does not find a suitable example, write an original task with an explicit rationale.
+The portfolio is a proposal scaffold. The skill writes original tasks and verifiers, explains source adaptations, and seeks customer approval. New schema 3 workflows default to three Basic and five distinct Hard tasks. Basic covers the former easy/medium/hard range; Hard targets former harder-1/harder-2 style repository work. Explicit customer scope reductions can select a subset, with one task per selected tier. The reference library is retained unchanged; upstream labels do not determine customer difficulty. If search does not find a suitable example, write an original task with an explicit rationale.
 
 Maintainers can rerun `python3 scripts/crawl_benchmarks.py` from the source repository. It retrieves pinned public sources with the GitHub CLI and Python standard library, caches raw research only under ignored `evaluations/benchmark-research/`, and emits metadata. Refresh revisions deliberately, review the resulting diff, and separately update curated cards. The crawler is not needed by the exported plugin.
